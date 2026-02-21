@@ -9,6 +9,10 @@ members = [
     "crates/agentor-channels",
     "crates/agentor-gateway",
     "crates/agentor-cli",
+    "crates/agentor-builtins",
+]
+exclude = [
+    "skills/*",
 ]
 
 [workspace.package]
@@ -54,3 +58,4 @@ agentor-skills = { path = "crates/agentor-skills" }
 agentor-agent = { path = "crates/agentor-agent" }
 agentor-channels = { path = "crates/agentor-channels" }
 agentor-gateway = { path = "crates/agentor-gateway" }
+agentor-builtins = { path = "crates/agentor-builtins" }

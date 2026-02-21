@@ -68,12 +68,16 @@ impl MessageRouter {
             }
         };
 
-        // Get or create session
+        // Get or create session, preserving the provided session_id
         let mut session = if let Some(sid) = msg.session_id {
-            self.sessions
-                .get(sid)
-                .await?
-                .unwrap_or_else(Session::new)
+            match self.sessions.get(sid).await? {
+                Some(s) => s,
+                None => {
+                    let mut s = Session::new();
+                    s.id = sid;
+                    s
+                }
+            }
         } else {
             Session::new()
         };
@@ -143,12 +147,16 @@ impl MessageRouter {
             }
         };
 
-        // Get or create session
+        // Get or create session, preserving the provided session_id
         let mut session = if let Some(sid) = msg.session_id {
-            self.sessions
-                .get(sid)
-                .await?
-                .unwrap_or_else(Session::new)
+            match self.sessions.get(sid).await? {
+                Some(s) => s,
+                None => {
+                    let mut s = Session::new();
+                    s.id = sid;
+                    s
+                }
+            }
         } else {
             Session::new()
         };

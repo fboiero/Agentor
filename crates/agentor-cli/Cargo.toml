@@ -15,6 +15,7 @@ agentor-skills.workspace = true
 agentor-agent.workspace = true
 agentor-channels.workspace = true
 agentor-gateway.workspace = true
+agentor-builtins.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 clap.workspace = true
@@ -24,3 +25,5 @@ axum.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 anyhow = "1"
+hyper-util = { version = "0.1", features = ["tokio", "server-auto"] }
+tower.workspace = true

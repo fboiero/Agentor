@@ -1,6 +1,8 @@
 use agentor_agent::{AgentRunner, ModelConfig};
+use agentor_builtins;
 use agentor_gateway::GatewayServer;
 use agentor_security::{AuditLog, Capability, PermissionSet, RateLimiter};
+use agentor_security::tls;
 use agentor_session::FileSessionStore;
 use agentor_skills::{SkillConfig, SkillLoader, SkillRegistry};
 use clap::{Parser, Subcommand};
@@ -176,12 +178,15 @@ async fn main() -> anyhow::Result<()> {
                 FileSessionStore::new(config.data_dir.join("sessions")).await?,
             );
 
-            // Load skills from config
+            // Load skills: builtins first, then WASM skills from config
             let mut registry = SkillRegistry::new();
+            agentor_builtins::register_builtins(&mut registry);
+            info!(count = registry.skill_count(), "Built-in skills registered");
+
             if !config.skills.is_empty() {
                 let loader = SkillLoader::new()?;
                 let loaded = loader.load_all(&config.skills, &config_dir, &mut registry)?;
-                info!(count = loaded, "Skills loaded from config");
+                info!(count = loaded, "WASM skills loaded from config");
             }
 
             // Build permissions from all loaded skills' required capabilities
@@ -205,13 +210,62 @@ async fn main() -> anyhow::Result<()> {
 
             let addr = format!("{}:{}", host, port);
             let listener = tokio::net::TcpListener::bind(&addr).await?;
-            info!("Agentor gateway listening on {}", addr);
-            axum::serve(listener, app).await?;
+
+            if config.server.tls.enabled {
+                // TLS/mTLS mode
+                let tls_config = agentor_security::tls::TlsConfig {
+                    enabled: true,
+                    cert_path: config.server.tls.cert_path.clone(),
+                    key_path: config.server.tls.key_path.clone(),
+                    client_ca_path: config.server.tls.client_ca_path.clone(),
+                };
+                tls::validate_tls_config(&tls_config).await?;
+                let acceptor = tls::build_tls_acceptor(&tls_config).await?;
+
+                info!("Agentor gateway listening on {} (TLS enabled)", addr);
+                loop {
+                    let (stream, peer_addr) = listener.accept().await?;
+                    let acceptor = acceptor.clone();
+                    let app = app.clone();
+                    tokio::spawn(async move {
+                        match acceptor.accept(stream).await {
+                            Ok(tls_stream) => {
+                                let io = hyper_util::rt::TokioIo::new(tls_stream);
+                                let svc = hyper_util::service::TowerToHyperService::new(app);
+                                let conn = hyper_util::server::conn::auto::Builder::new(
+                                    hyper_util::rt::TokioExecutor::new(),
+                                );
+                                if let Err(e) = conn
+                                    .serve_connection(io, svc)
+                                    .await
+                                {
+                                    tracing::error!(
+                                        peer = %peer_addr,
+                                        error = %e,
+                                        "TLS connection error"
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    peer = %peer_addr,
+                                    error = %e,
+                                    "TLS handshake failed"
+                                );
+                            }
+                        }
+                    });
+                }
+            } else {
+                info!("Agentor gateway listening on {}", addr);
+                axum::serve(listener, app).await?;
+            }
         }
         Commands::Skill { action } => match action {
             SkillAction::List => {
-                // Load skills from config to show what's available
+                // Load all skills: builtins + config
                 let mut registry = SkillRegistry::new();
+                agentor_builtins::register_builtins(&mut registry);
                 if !config.skills.is_empty() {
                     let loader = SkillLoader::new()?;
                     let _ = loader.load_all(&config.skills, &config_dir, &mut registry);
