@@ -134,15 +134,12 @@ impl SkillLoader {
     ) -> AgentorResult<()> {
         match config.skill_type {
             SkillType::Wasm => {
-                let path = config
-                    .path
-                    .as_ref()
-                    .ok_or_else(|| {
-                        AgentorError::Config(format!(
-                            "WASM skill '{}' requires a 'path' field",
-                            config.name
-                        ))
-                    })?;
+                let path = config.path.as_ref().ok_or_else(|| {
+                    AgentorError::Config(format!(
+                        "WASM skill '{}' requires a 'path' field",
+                        config.name
+                    ))
+                })?;
 
                 let full_path = if path.is_absolute() {
                     path.clone()

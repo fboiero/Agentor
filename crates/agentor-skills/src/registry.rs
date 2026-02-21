@@ -52,7 +52,10 @@ impl SkillRegistry {
                 );
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Permission denied: skill '{}' requires capability {:?}", call.name, cap),
+                    format!(
+                        "Permission denied: skill '{}' requires capability {:?}",
+                        call.name, cap
+                    ),
                 ));
             }
         }

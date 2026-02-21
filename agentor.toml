@@ -1,5 +1,8 @@
 # Agentor Configuration
 
+# Supported providers: "claude", "openai", "openrouter"
+# OpenRouter gives access to 200+ models via a single API key.
+# Example: provider = "openrouter", model_id = "anthropic/claude-sonnet-4", api_key = "${OPENROUTER_API_KEY}"
 [model]
 provider = "claude"
 model_id = "claude-sonnet-4-20250514"
@@ -59,6 +62,20 @@ required = ["message"]
 # path = "skills/file-reader/target/wasm32-wasip1/release/file-reader.wasm"
 # [skills.capabilities]
 # file_read = ["/tmp", "/home/user/documents"]
+
+# MCP Server configuration
+# Connect to MCP-compatible tool servers (e.g., filesystem, GitHub, database tools)
+# Each [[mcp_servers]] entry spawns a subprocess and discovers its tools.
+#
+# [[mcp_servers]]
+# command = "npx"
+# args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+#
+# [[mcp_servers]]
+# command = "npx"
+# args = ["-y", "@modelcontextprotocol/server-github"]
+# [mcp_servers.env]
+# GITHUB_PERSONAL_ACCESS_TOKEN = "${GITHUB_TOKEN}"
 
 # Channel configuration
 [channels.webchat]

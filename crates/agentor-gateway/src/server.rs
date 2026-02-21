@@ -139,7 +139,10 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                         },
                     };
 
-                    if let Err(e) = router.handle_message(inbound, connection_id).await {
+                    if let Err(e) = router
+                        .handle_message_streaming(inbound, connection_id)
+                        .await
+                    {
                         error!(error = %e, "Failed to handle message");
                     }
                 }

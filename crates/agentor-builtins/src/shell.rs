@@ -16,7 +16,8 @@ impl ShellSkill {
         Self {
             descriptor: SkillDescriptor {
                 name: "shell".to_string(),
-                description: "Execute a shell command. Only allowed commands can be run.".to_string(),
+                description: "Execute a shell command. Only allowed commands can be run."
+                    .to_string(),
                 parameters_schema: serde_json::json!({
                     "type": "object",
                     "properties": {

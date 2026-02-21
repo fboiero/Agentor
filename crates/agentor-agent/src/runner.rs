@@ -1,16 +1,15 @@
-use agentor_core::{AgentorError, AgentorResult, Message, Role};
-use agentor_security::{AuditLog, PermissionSet};
-use agentor_security::audit::AuditOutcome;
-use agentor_session::Session;
-use agentor_skills::SkillRegistry;
 use crate::config::ModelConfig;
 use crate::context::ContextWindow;
 use crate::llm::{LlmClient, LlmResponse};
 use crate::stream::StreamEvent;
+use agentor_core::{AgentorError, AgentorResult, Message, Role};
+use agentor_security::audit::AuditOutcome;
+use agentor_security::{AuditLog, PermissionSet};
+use agentor_session::Session;
+use agentor_skills::SkillRegistry;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tracing::{info, warn, error};
-
+use tracing::{error, info, warn};
 
 /// The Agent Runner: orchestrates the agentic loop.
 /// Prompt -> LLM -> ToolCall -> Execute Skill -> Backfill -> Repeat.
@@ -51,14 +50,19 @@ impl AgentRunner {
         context.set_system_prompt(
             "You are Agentor, a secure AI assistant. You have access to tools (skills) \
              that you can use to help the user. Each tool runs in a sandboxed environment \
-             with specific permissions. Always explain what you're doing before using a tool."
+             with specific permissions. Always explain what you're doing before using a tool.",
         );
 
         for msg in &session.messages {
             context.push(msg.clone());
         }
 
-        let tool_descriptors: Vec<_> = self.skills.list_descriptors().into_iter().cloned().collect();
+        let tool_descriptors: Vec<_> = self
+            .skills
+            .list_descriptors()
+            .into_iter()
+            .cloned()
+            .collect();
 
         info!(session_id = %session_id, "Starting agentic loop");
 
@@ -129,10 +133,7 @@ impl AgentRunner {
                             AuditOutcome::Success,
                         );
 
-                        let result = self
-                            .skills
-                            .execute(call.clone(), &self.permissions)
-                            .await;
+                        let result = self.skills.execute(call.clone(), &self.permissions).await;
 
                         match result {
                             Ok(tool_result) => {
@@ -226,14 +227,19 @@ impl AgentRunner {
         context.set_system_prompt(
             "You are Agentor, a secure AI assistant. You have access to tools (skills) \
              that you can use to help the user. Each tool runs in a sandboxed environment \
-             with specific permissions. Always explain what you're doing before using a tool."
+             with specific permissions. Always explain what you're doing before using a tool.",
         );
 
         for msg in &session.messages {
             context.push(msg.clone());
         }
 
-        let tool_descriptors: Vec<_> = self.skills.list_descriptors().into_iter().cloned().collect();
+        let tool_descriptors: Vec<_> = self
+            .skills
+            .list_descriptors()
+            .into_iter()
+            .cloned()
+            .collect();
 
         info!(session_id = %session_id, "Starting streaming agentic loop");
 
@@ -321,10 +327,7 @@ impl AgentRunner {
                             AuditOutcome::Success,
                         );
 
-                        let result = self
-                            .skills
-                            .execute(call.clone(), &self.permissions)
-                            .await;
+                        let result = self.skills.execute(call.clone(), &self.permissions).await;
 
                         match result {
                             Ok(tool_result) => {

@@ -39,7 +39,9 @@ impl LlmClient {
     ) -> AgentorResult<LlmResponse> {
         match self.config.provider {
             LlmProvider::Claude => self.chat_claude(system_prompt, messages, tools).await,
-            LlmProvider::OpenAi => self.chat_openai(system_prompt, messages, tools).await,
+            LlmProvider::OpenAi | LlmProvider::OpenRouter => {
+                self.chat_openai(system_prompt, messages, tools).await
+            }
         }
     }
 
@@ -169,11 +171,20 @@ impl LlmClient {
             body["tools"] = serde_json::json!(openai_tools);
         }
 
-        let resp = self
+        let mut request = self
             .http
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.config.api_key))
-            .header("Content-Type", "application/json")
+            .header("Content-Type", "application/json");
+
+        // OpenRouter requires HTTP-Referer and X-Title headers
+        if matches!(self.config.provider, LlmProvider::OpenRouter) {
+            request = request
+                .header("HTTP-Referer", "https://github.com/fboiero/Agentor")
+                .header("X-Title", "Agentor");
+        }
+
+        let resp = request
             .json(&body)
             .send()
             .await
@@ -214,7 +225,7 @@ impl LlmClient {
                 self.chat_stream_claude(system_prompt, messages, tools)
                     .await
             }
-            LlmProvider::OpenAi => {
+            LlmProvider::OpenAi | LlmProvider::OpenRouter => {
                 self.chat_stream_openai(system_prompt, messages, tools)
                     .await
             }
@@ -518,11 +529,19 @@ impl LlmClient {
             body["tools"] = serde_json::json!(openai_tools);
         }
 
-        let resp = self
+        let mut request = self
             .http
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.config.api_key))
-            .header("Content-Type", "application/json")
+            .header("Content-Type", "application/json");
+
+        if matches!(self.config.provider, LlmProvider::OpenRouter) {
+            request = request
+                .header("HTTP-Referer", "https://github.com/fboiero/Agentor")
+                .header("X-Title", "Agentor");
+        }
+
+        let resp = request
             .json(&body)
             .send()
             .await

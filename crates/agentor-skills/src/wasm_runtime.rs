@@ -1,6 +1,6 @@
+use crate::skill::{Skill, SkillDescriptor};
 use agentor_core::{AgentorError, AgentorResult, ToolCall, ToolResult};
 use agentor_security::Capability;
-use crate::skill::{Skill, SkillDescriptor};
 use async_trait::async_trait;
 use std::path::Path;
 use tracing::info;
@@ -73,11 +73,9 @@ impl Skill for WasmSkill {
             .map_err(|e| AgentorError::Skill(format!("Failed to serialize args: {}", e)))?;
 
         // Run WASM in a blocking task to avoid blocking the async runtime
-        let result = tokio::task::spawn_blocking(move || {
-            run_wasm_skill(&engine, &module, &input)
-        })
-        .await
-        .map_err(|e| AgentorError::Skill(format!("WASM task panicked: {}", e)))?;
+        let result = tokio::task::spawn_blocking(move || run_wasm_skill(&engine, &module, &input))
+            .await
+            .map_err(|e| AgentorError::Skill(format!("WASM task panicked: {}", e)))?;
 
         match result {
             Ok(output) => Ok(ToolResult::success(call_id, output)),
@@ -91,10 +89,7 @@ fn run_wasm_skill(engine: &Engine, module: &Module, input: &str) -> AgentorResul
     preview1::add_to_linker_sync(&mut linker, |t| t)
         .map_err(|e| AgentorError::Skill(format!("WASI linker error: {}", e)))?;
 
-    let wasi = WasiCtxBuilder::new()
-        .inherit_stdio()
-        .arg(input)
-        .build_p1();
+    let wasi = WasiCtxBuilder::new().inherit_stdio().arg(input).build_p1();
 
     let mut store = Store::new(engine, wasi);
 

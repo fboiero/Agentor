@@ -38,12 +38,23 @@ enum Commands {
         #[command(subcommand)]
         action: SkillAction,
     },
+    /// Generate a compliance report
+    Compliance {
+        #[command(subcommand)]
+        action: ComplianceAction,
+    },
 }
 
 #[derive(Subcommand)]
 enum SkillAction {
     /// List registered skills
     List,
+}
+
+#[derive(Subcommand)]
+enum ComplianceAction {
+    /// Generate a compliance report for all frameworks
+    Report,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +68,17 @@ struct AgentorConfig {
     security: SecurityConfig,
     #[serde(default)]
     skills: Vec<SkillConfig>,
+    #[serde(default)]
+    mcp_servers: Vec<McpServerConfig>,
+}
+
+#[derive(Deserialize, Clone)]
+struct McpServerConfig {
+    command: String,
+    #[serde(default)]
+    args: Vec<String>,
+    #[serde(default)]
+    env: std::collections::HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -238,15 +260,59 @@ async fn main() -> anyhow::Result<()> {
             // Initialize sessions
             let sessions = Arc::new(FileSessionStore::new(config.data_dir.join("sessions")).await?);
 
-            // Load skills: builtins first, then WASM skills from config
+            // Initialize vector memory (persistent)
+            let memory_path = config.data_dir.join("memory").join("vectors.jsonl");
+            let vector_store: Arc<dyn agentor_memory::VectorStore> = Arc::new(
+                agentor_memory::FileVectorStore::new(memory_path)
+                    .await
+                    .expect("Failed to initialize vector store"),
+            );
+            let embedder: Arc<dyn agentor_memory::EmbeddingProvider> =
+                Arc::new(agentor_memory::LocalEmbedding::default());
+            info!("Vector memory initialized");
+
+            // Load skills: builtins (with memory) first, then WASM skills from config
             let mut registry = SkillRegistry::new();
-            agentor_builtins::register_builtins(&mut registry);
+            agentor_builtins::register_builtins_with_memory(&mut registry, vector_store, embedder);
             info!(count = registry.skill_count(), "Built-in skills registered");
 
             if !config.skills.is_empty() {
                 let loader = SkillLoader::new()?;
                 let loaded = loader.load_all(&config.skills, &config_dir, &mut registry)?;
                 info!(count = loaded, "WASM skills loaded from config");
+            }
+
+            // Connect to MCP servers and register their tools as skills
+            for mcp_config in &config.mcp_servers {
+                let args: Vec<&str> = mcp_config.args.iter().map(|s| s.as_str()).collect();
+                let env: Vec<(&str, &str)> = mcp_config
+                    .env
+                    .iter()
+                    .map(|(k, v)| (k.as_str(), v.as_str()))
+                    .collect();
+
+                match agentor_mcp::McpClient::connect(&mcp_config.command, &args, &env).await {
+                    Ok((client, tools)) => {
+                        let client = Arc::new(client);
+                        let tool_count = tools.len();
+                        for tool in &tools {
+                            let skill = agentor_mcp::McpSkill::new(tool, client.clone());
+                            registry.register(Arc::new(skill));
+                        }
+                        info!(
+                            server = %mcp_config.command,
+                            tools = tool_count,
+                            "MCP server connected"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            server = %mcp_config.command,
+                            error = %e,
+                            "Failed to connect to MCP server (skipping)"
+                        );
+                    }
+                }
             }
 
             // Build permissions from all loaded skills' required capabilities
@@ -383,6 +449,89 @@ async fn main() -> anyhow::Result<()> {
                     }
                     println!("\nTotal: {} skill(s)", skills.len());
                 }
+            }
+        },
+        Commands::Compliance { action } => match action {
+            ComplianceAction::Report => {
+                use agentor_compliance::{
+                    dpga::{assess_agentor_dpga, DpgaInput},
+                    gdpr::GdprModule,
+                    iso27001::Iso27001Module,
+                    iso42001::Iso42001Module,
+                };
+
+                println!("Agentor Compliance Report");
+                println!("========================\n");
+
+                // GDPR
+                let gdpr = GdprModule::new();
+                let gdpr_report = gdpr.assess(true, true, true, false);
+                println!("{}:", gdpr_report.framework);
+                println!("  Status: {:?}", gdpr_report.status);
+                for f in &gdpr_report.findings {
+                    let icon = if f.compliant { "+" } else { "-" };
+                    println!("  [{}] {}: {}", icon, f.title, f.description);
+                    if !f.recommendation.is_empty() {
+                        println!("      Recommendation: {}", f.recommendation);
+                    }
+                }
+
+                println!();
+
+                // ISO 27001
+                let iso27001 = Iso27001Module::new();
+                let iso_report = iso27001.assess(true, true, true, true, false);
+                println!("{}:", iso_report.framework);
+                println!("  Status: {:?}", iso_report.status);
+                for f in &iso_report.findings {
+                    let icon = if f.compliant { "+" } else { "-" };
+                    println!("  [{}] {}: {}", icon, f.title, f.description);
+                    if !f.recommendation.is_empty() {
+                        println!("      Recommendation: {}", f.recommendation);
+                    }
+                }
+
+                println!();
+
+                // ISO 42001
+                let iso42001 = Iso42001Module::new();
+                let ai_report = iso42001.assess(true, true, true, true, true);
+                println!("{}:", ai_report.framework);
+                println!("  Status: {:?}", ai_report.status);
+                for f in &ai_report.findings {
+                    let icon = if f.compliant { "+" } else { "-" };
+                    println!("  [{}] {}: {}", icon, f.title, f.description);
+                    if !f.recommendation.is_empty() {
+                        println!("      Recommendation: {}", f.recommendation);
+                    }
+                }
+
+                println!();
+
+                // DPGA
+                let dpga_input = DpgaInput {
+                    has_open_license: true,
+                    has_sdg_docs: true,
+                    has_open_data: true,
+                    has_privacy: true,
+                    has_docs: true,
+                    has_open_standards: true,
+                    has_governance: false,
+                    has_do_no_harm: true,
+                    has_interop: true,
+                };
+                let dpga_report = assess_agentor_dpga(&dpga_input);
+                println!("{}:", dpga_report.framework);
+                println!("  Status: {:?}", dpga_report.status);
+                for f in &dpga_report.findings {
+                    let icon = if f.compliant { "+" } else { "-" };
+                    println!("  [{}] {}: {}", icon, f.title, f.description);
+                    if !f.recommendation.is_empty() {
+                        println!("      Recommendation: {}", f.recommendation);
+                    }
+                }
+
+                println!("\n{}", dpga_report.summary);
             }
         },
     }

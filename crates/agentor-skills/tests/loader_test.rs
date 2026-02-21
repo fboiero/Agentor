@@ -70,7 +70,10 @@ fn test_load_valid_wasm_skill_via_loader() {
 
     // Verify the loaded skill is accessible
     let skill = registry.get("echo");
-    assert!(skill.is_some(), "The 'echo' skill should be in the registry");
+    assert!(
+        skill.is_some(),
+        "The 'echo' skill should be in the registry"
+    );
     assert_eq!(skill.unwrap().descriptor().name, "echo");
 }
 
@@ -91,7 +94,10 @@ fn test_load_skill_with_nonexistent_path_is_skipped() {
 
     // load_all should not fail; it skips individual failures and logs a warning
     let loaded = loader.load_all(&[config], &base_dir, &mut registry);
-    assert!(loaded.is_ok(), "load_all should succeed even when a skill fails to load");
+    assert!(
+        loaded.is_ok(),
+        "load_all should succeed even when a skill fails to load"
+    );
     assert_eq!(
         loaded.unwrap(),
         0,
@@ -116,7 +122,10 @@ fn test_load_skill_with_no_path_is_skipped() {
     };
 
     let loaded = loader.load_all(&[config], &base_dir, &mut registry);
-    assert!(loaded.is_ok(), "load_all should succeed even when a config is invalid");
+    assert!(
+        loaded.is_ok(),
+        "load_all should succeed even when a config is invalid"
+    );
     assert_eq!(
         loaded.unwrap(),
         0,
@@ -140,14 +149,20 @@ fn test_load_native_skill_type_is_skipped() {
     };
 
     let loaded = loader.load_all(&[config], &base_dir, &mut registry);
-    assert!(loaded.is_ok(), "load_all should succeed for native skill configs");
+    assert!(
+        loaded.is_ok(),
+        "load_all should succeed for native skill configs"
+    );
     // Native skills are logged as a warning but considered "loaded" (the load_one returns Ok)
     // Actually looking at the code: load_one returns Ok(()) for Native but does not register,
     // and load_all counts it as loaded += 1 since Ok(()) is returned.
     // Let's verify this behavior:
     let count = loaded.unwrap();
     // Native returns Ok(()) from load_one, so loaded increments
-    assert_eq!(count, 1, "Native skill config returns Ok, so it is counted as loaded");
+    assert_eq!(
+        count, 1,
+        "Native skill config returns Ok, so it is counted as loaded"
+    );
     // But nothing is actually registered in the registry
     assert_eq!(
         registry.skill_count(),

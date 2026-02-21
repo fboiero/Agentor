@@ -58,7 +58,10 @@ fn test_load_echo_skill() {
         vec![],
     );
 
-    assert!(skill.is_ok(), "load_skill should succeed for the echo WASM binary");
+    assert!(
+        skill.is_ok(),
+        "load_skill should succeed for the echo WASM binary"
+    );
 }
 
 #[test]
@@ -144,7 +147,11 @@ async fn test_register_and_list_echo_skill() {
     registry.register(Arc::new(skill));
 
     // Verify the skill count
-    assert_eq!(registry.skill_count(), 1, "Registry should contain exactly one skill");
+    assert_eq!(
+        registry.skill_count(),
+        1,
+        "Registry should contain exactly one skill"
+    );
 
     // Verify the skill is retrievable by name
     let retrieved = registry.get("echo");

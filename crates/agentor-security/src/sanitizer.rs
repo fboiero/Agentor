@@ -90,10 +90,7 @@ mod tests {
         let s = Sanitizer::default();
         let input = "Hello\x00\x01\x02World";
         let result = s.sanitize(input);
-        assert_eq!(
-            result,
-            SanitizeResult::Cleaned("HelloWorld".to_string())
-        );
+        assert_eq!(result, SanitizeResult::Cleaned("HelloWorld".to_string()));
     }
 
     #[test]

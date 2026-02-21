@@ -1,0 +1,16 @@
+[package]
+name = "agentor-mcp"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+agentor-core.workspace = true
+agentor-skills.workspace = true
+agentor-security.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+chrono.workspace = true

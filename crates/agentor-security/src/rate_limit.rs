@@ -40,8 +40,8 @@ impl RateLimiter {
 
         // Refill tokens based on elapsed time
         let elapsed = now.duration_since(bucket.last_refill);
-        bucket.tokens = (bucket.tokens + elapsed.as_secs_f64() * self.refill_rate)
-            .min(self.max_tokens);
+        bucket.tokens =
+            (bucket.tokens + elapsed.as_secs_f64() * self.refill_rate).min(self.max_tokens);
         bucket.last_refill = now;
 
         if bucket.tokens >= 1.0 {

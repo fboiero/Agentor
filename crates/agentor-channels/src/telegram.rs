@@ -94,9 +94,7 @@ impl TelegramChannel {
         loop {
             let url = self.api_url("getUpdates");
 
-            let mut params: Vec<(&str, String)> = vec![
-                ("timeout", "30".to_string()),
-            ];
+            let mut params: Vec<(&str, String)> = vec![("timeout", "30".to_string())];
             if let Some(off) = offset {
                 params.push(("offset", off.to_string()));
             }
@@ -130,10 +128,7 @@ impl TelegramChannel {
                         if let Some(text) = msg.text {
                             let channel_message = ChannelMessage {
                                 channel_id: msg.chat.id.to_string(),
-                                sender_id: msg
-                                    .from
-                                    .map(|u| u.id.to_string())
-                                    .unwrap_or_default(),
+                                sender_id: msg.from.map(|u| u.id.to_string()).unwrap_or_default(),
                                 content: text,
                                 session_id: None,
                             };

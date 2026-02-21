@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub enum LlmProvider {
     Claude,
     OpenAi,
+    OpenRouter,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,6 +42,7 @@ impl ModelConfig {
             match self.provider {
                 LlmProvider::Claude => "https://api.anthropic.com",
                 LlmProvider::OpenAi => "https://api.openai.com",
+                LlmProvider::OpenRouter => "https://openrouter.ai/api",
             }
         }
     }

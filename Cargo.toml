@@ -10,6 +10,10 @@ members = [
     "crates/agentor-gateway",
     "crates/agentor-cli",
     "crates/agentor-builtins",
+    "crates/agentor-memory",
+    "crates/agentor-mcp",
+    "crates/agentor-orchestrator",
+    "crates/agentor-compliance",
 ]
 exclude = [
     "skills/*",
@@ -18,7 +22,7 @@ exclude = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
+license = "AGPL-3.0-only"
 repository = "https://github.com/fboiero/Agentor"
 
 [workspace.dependencies]
@@ -59,3 +63,7 @@ agentor-agent = { path = "crates/agentor-agent" }
 agentor-channels = { path = "crates/agentor-channels" }
 agentor-gateway = { path = "crates/agentor-gateway" }
 agentor-builtins = { path = "crates/agentor-builtins" }
+agentor-memory = { path = "crates/agentor-memory" }
+agentor-mcp = { path = "crates/agentor-mcp" }
+agentor-orchestrator = { path = "crates/agentor-orchestrator" }
+agentor-compliance = { path = "crates/agentor-compliance" }
