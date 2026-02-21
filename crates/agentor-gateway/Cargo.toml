@@ -1,0 +1,21 @@
+[package]
+name = "agentor-gateway"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+agentor-core.workspace = true
+agentor-security.workspace = true
+agentor-agent.workspace = true
+agentor-session.workspace = true
+agentor-channels.workspace = true
+agentor-skills.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+axum.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+futures-util = "0.3"

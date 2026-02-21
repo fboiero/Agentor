@@ -1,0 +1,11 @@
+# Agentor Configuration
+
+[model]
+provider = "claude"
+model_id = "claude-sonnet-4-20250514"
+api_key = "${ANTHROPIC_API_KEY}"
+temperature = 0.7
+max_tokens = 4096
+max_turns = 20
+
+data_dir = "./data"

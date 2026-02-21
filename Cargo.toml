@@ -1,0 +1,56 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/agentor-core",
+    "crates/agentor-security",
+    "crates/agentor-session",
+    "crates/agentor-skills",
+    "crates/agentor-agent",
+    "crates/agentor-channels",
+    "crates/agentor-gateway",
+    "crates/agentor-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/fboiero/Agentor"
+
+[workspace.dependencies]
+# Core
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+
+# Web
+axum = { version = "0.8", features = ["ws"] }
+tower = { version = "0.5", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# WASM
+wasmtime = "28"
+wasmtime-wasi = "28"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# CLI & Config
+clap = { version = "4", features = ["derive"] }
+toml = "0.8"
+
+# Internal crates
+agentor-core = { path = "crates/agentor-core" }
+agentor-security = { path = "crates/agentor-security" }
+agentor-session = { path = "crates/agentor-session" }
+agentor-skills = { path = "crates/agentor-skills" }
+agentor-agent = { path = "crates/agentor-agent" }
+agentor-channels = { path = "crates/agentor-channels" }
+agentor-gateway = { path = "crates/agentor-gateway" }

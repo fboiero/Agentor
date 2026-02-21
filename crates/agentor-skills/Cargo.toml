@@ -1,0 +1,16 @@
+[package]
+name = "agentor-skills"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+agentor-core.workspace = true
+agentor-security.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+wasmtime.workspace = true
+wasmtime-wasi.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+thiserror.workspace = true
