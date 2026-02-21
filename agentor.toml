@@ -9,3 +9,66 @@ max_tokens = 4096
 max_turns = 20
 
 data_dir = "./data"
+
+# Gateway server settings
+[server]
+host = "0.0.0.0"
+port = 3000
+
+# TLS configuration (optional)
+[server.tls]
+enabled = false
+cert_path = ""
+key_path = ""
+# mTLS: require client certificates
+client_ca_path = ""
+
+# Rate limiting
+[security]
+max_requests_per_second = 10.0
+max_burst = 50.0
+max_message_length = 100000
+
+# Skills configuration
+# Each [[skills]] entry loads a skill on startup.
+# Native skills use `type = "native"`, WASM skills use `type = "wasm"`.
+
+[[skills]]
+name = "echo"
+description = "Echoes the input message back"
+type = "wasm"
+path = "skills/echo-skill/target/wasm32-wasip1/release/echo-skill.wasm"
+[skills.parameters_schema]
+type = "object"
+[skills.parameters_schema.properties]
+[skills.parameters_schema.properties.message]
+type = "string"
+description = "The message to echo"
+required = ["message"]
+[skills.capabilities]
+# echo skill needs no capabilities — fully sandboxed
+
+# Example: a file-reading skill would declare capabilities like this:
+# [[skills]]
+# name = "file_reader"
+# description = "Read files from allowed directories"
+# type = "wasm"
+# path = "skills/file-reader/target/wasm32-wasip1/release/file-reader.wasm"
+# [skills.capabilities]
+# file_read = ["/tmp", "/home/user/documents"]
+
+# Channel configuration
+[channels.webchat]
+enabled = true
+
+[channels.telegram]
+enabled = false
+bot_token = "${TELEGRAM_BOT_TOKEN}"
+
+[channels.slack]
+enabled = false
+bot_token = "${SLACK_BOT_TOKEN}"
+
+[channels.discord]
+enabled = false
+bot_token = "${DISCORD_BOT_TOKEN}"

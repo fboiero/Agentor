@@ -1,0 +1,52 @@
+/// WIT interface for Agentor skills.
+/// Skills implement this interface to run inside the WASM sandbox.
+///
+/// MVP uses WASI _start convention (args for input, stdout for output).
+/// Future versions will use this typed interface via wit-bindgen.
+
+package agentor:skill@0.1.0;
+
+interface types {
+    /// A key-value pair for metadata.
+    record metadata-entry {
+        key: string,
+        value: string,
+    }
+
+    /// Input passed to a skill execution.
+    record skill-input {
+        /// The tool call ID (for correlation).
+        call-id: string,
+        /// JSON-encoded arguments from the LLM.
+        arguments: string,
+        /// Optional metadata.
+        metadata: list<metadata-entry>,
+    }
+
+    /// Output returned from a skill execution.
+    record skill-output {
+        /// The tool call ID (for correlation).
+        call-id: string,
+        /// The result content.
+        content: string,
+        /// Whether this is an error result.
+        is-error: bool,
+    }
+}
+
+interface skill {
+    use types.{skill-input, skill-output};
+
+    /// Execute the skill with the given input.
+    execute: func(input: skill-input) -> skill-output;
+
+    /// Return the skill's name.
+    name: func() -> string;
+
+    /// Return the skill's description.
+    description: func() -> string;
+}
+
+world skill-world {
+    export skill;
+}

@@ -32,7 +32,7 @@ async-trait = "0.1"
 # Web
 axum = { version = "0.8", features = ["ws"] }
 tower = { version = "0.5", features = ["full"] }
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
 
 # WASM
 wasmtime = "28"

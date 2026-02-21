@@ -11,3 +11,5 @@ tracing.workspace = true
 tokio.workspace = true
 chrono.workspace = true
 uuid.workspace = true
+tokio-rustls = "0.26"
+rustls-pemfile = "2"
