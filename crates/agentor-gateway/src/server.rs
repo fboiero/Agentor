@@ -1,7 +1,5 @@
 use crate::connection::{Connection, ConnectionManager};
-use crate::middleware::{
-    auth_middleware, rate_limit_middleware, AuthConfig, MiddlewareState,
-};
+use crate::middleware::{auth_middleware, rate_limit_middleware, AuthConfig, MiddlewareState};
 use crate::router::{InboundMessage, MessageRouter};
 use agentor_agent::AgentRunner;
 use agentor_security::RateLimiter;
@@ -32,10 +30,7 @@ pub struct GatewayServer;
 
 impl GatewayServer {
     /// Build the gateway without auth or rate limiting (backwards compatible).
-    pub fn build(
-        agent: Arc<AgentRunner>,
-        sessions: Arc<dyn SessionStore>,
-    ) -> Router {
+    pub fn build(agent: Arc<AgentRunner>, sessions: Arc<dyn SessionStore>) -> Router {
         Self::build_with_middleware(agent, sessions, None, AuthConfig::new(vec![]))
     }
 
@@ -47,11 +42,7 @@ impl GatewayServer {
         auth_config: AuthConfig,
     ) -> Router {
         let connections = ConnectionManager::new();
-        let router = Arc::new(MessageRouter::new(
-            agent,
-            sessions,
-            connections.clone(),
-        ));
+        let router = Arc::new(MessageRouter::new(agent, sessions, connections.clone()));
 
         let state = Arc::new(AppState {
             router,
@@ -86,10 +77,7 @@ async fn health_handler() -> impl IntoResponse {
     serde_json::json!({"status": "ok", "service": "agentor"}).to_string()
 }
 
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+async fn ws_handler(ws: WebSocketUpgrade, State(state): State<Arc<AppState>>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| handle_socket(socket, state))
 }
 

@@ -1,6 +1,6 @@
-use agentor_core::{AgentorError, AgentorResult, Message, Role, ToolCall};
 use crate::config::{LlmProvider, ModelConfig};
 use crate::stream::StreamEvent;
+use agentor_core::{AgentorError, AgentorResult, Message, Role, ToolCall};
 use agentor_skills::SkillDescriptor;
 use futures_util::StreamExt;
 use serde::Serialize;
@@ -205,10 +205,19 @@ impl LlmClient {
         system_prompt: Option<&str>,
         messages: &[Message],
         tools: &[SkillDescriptor],
-    ) -> AgentorResult<(mpsc::Receiver<StreamEvent>, tokio::task::JoinHandle<AgentorResult<LlmResponse>>)> {
+    ) -> AgentorResult<(
+        mpsc::Receiver<StreamEvent>,
+        tokio::task::JoinHandle<AgentorResult<LlmResponse>>,
+    )> {
         match self.config.provider {
-            LlmProvider::Claude => self.chat_stream_claude(system_prompt, messages, tools).await,
-            LlmProvider::OpenAi => self.chat_stream_openai(system_prompt, messages, tools).await,
+            LlmProvider::Claude => {
+                self.chat_stream_claude(system_prompt, messages, tools)
+                    .await
+            }
+            LlmProvider::OpenAi => {
+                self.chat_stream_openai(system_prompt, messages, tools)
+                    .await
+            }
         }
     }
 
@@ -225,7 +234,10 @@ impl LlmClient {
         system_prompt: Option<&str>,
         messages: &[Message],
         tools: &[SkillDescriptor],
-    ) -> AgentorResult<(mpsc::Receiver<StreamEvent>, tokio::task::JoinHandle<AgentorResult<LlmResponse>>)> {
+    ) -> AgentorResult<(
+        mpsc::Receiver<StreamEvent>,
+        tokio::task::JoinHandle<AgentorResult<LlmResponse>>,
+    )> {
         let url = format!("{}/v1/messages", self.config.base_url());
 
         let api_messages: Vec<ClaudeMessage> = messages
@@ -346,24 +358,12 @@ impl LlmClient {
                                 let index = event["index"].as_u64().unwrap_or(0);
                                 let block = &event["content_block"];
                                 if block["type"].as_str() == Some("tool_use") {
-                                    let id = block["id"]
-                                        .as_str()
-                                        .unwrap_or_default()
-                                        .to_string();
-                                    let name = block["name"]
-                                        .as_str()
-                                        .unwrap_or_default()
-                                        .to_string();
-                                    active_tool_blocks.insert(
-                                        index,
-                                        (id.clone(), name.clone(), String::new()),
-                                    );
-                                    let _ = tx
-                                        .send(StreamEvent::ToolCallStart {
-                                            id,
-                                            name,
-                                        })
-                                        .await;
+                                    let id = block["id"].as_str().unwrap_or_default().to_string();
+                                    let name =
+                                        block["name"].as_str().unwrap_or_default().to_string();
+                                    active_tool_blocks
+                                        .insert(index, (id.clone(), name.clone(), String::new()));
+                                    let _ = tx.send(StreamEvent::ToolCallStart { id, name }).await;
                                 }
                             }
 
@@ -384,11 +384,8 @@ impl LlmClient {
                                         }
                                     }
                                     "input_json_delta" => {
-                                        if let Some(partial) =
-                                            delta["partial_json"].as_str()
-                                        {
-                                            if let Some(block) =
-                                                active_tool_blocks.get_mut(&index)
+                                        if let Some(partial) = delta["partial_json"].as_str() {
+                                            if let Some(block) = active_tool_blocks.get_mut(&index)
                                             {
                                                 block.2.push_str(partial);
                                                 let _ = tx
@@ -409,26 +406,21 @@ impl LlmClient {
                                 if let Some((id, name, args_json)) =
                                     active_tool_blocks.remove(&index)
                                 {
-                                    let arguments: serde_json::Value =
-                                        serde_json::from_str(&args_json)
-                                            .unwrap_or(serde_json::Value::Object(
-                                                serde_json::Map::new(),
-                                            ));
+                                    let arguments: serde_json::Value = serde_json::from_str(
+                                        &args_json,
+                                    )
+                                    .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
                                     tool_calls.push(ToolCall {
                                         id: id.clone(),
                                         name,
                                         arguments,
                                     });
-                                    let _ = tx
-                                        .send(StreamEvent::ToolCallEnd { id })
-                                        .await;
+                                    let _ = tx.send(StreamEvent::ToolCallEnd { id }).await;
                                 }
                             }
 
                             "message_delta" => {
-                                if let Some(sr) =
-                                    event["delta"]["stop_reason"].as_str()
-                                {
+                                if let Some(sr) = event["delta"]["stop_reason"].as_str() {
                                     stop_reason = sr.to_string();
                                 }
                             }
@@ -473,7 +465,10 @@ impl LlmClient {
         system_prompt: Option<&str>,
         messages: &[Message],
         tools: &[SkillDescriptor],
-    ) -> AgentorResult<(mpsc::Receiver<StreamEvent>, tokio::task::JoinHandle<AgentorResult<LlmResponse>>)> {
+    ) -> AgentorResult<(
+        mpsc::Receiver<StreamEvent>,
+        tokio::task::JoinHandle<AgentorResult<LlmResponse>>,
+    )> {
         let url = format!("{}/v1/chat/completions", self.config.base_url());
 
         let mut api_messages: Vec<serde_json::Value> = Vec::new();
@@ -600,10 +595,9 @@ impl LlmClient {
 
                             // When done, emit ToolCallEnd for any open tool calls
                             if fr == "tool_calls" {
-                                for (_idx, (id, _name, _args)) in &tool_call_map {
-                                    let _ = tx
-                                        .send(StreamEvent::ToolCallEnd { id: id.clone() })
-                                        .await;
+                                for (id, _name, _args) in tool_call_map.values() {
+                                    let _ =
+                                        tx.send(StreamEvent::ToolCallEnd { id: id.clone() }).await;
                                 }
                             }
 
@@ -636,10 +630,8 @@ impl LlmClient {
                                         .as_str()
                                         .unwrap_or_default()
                                         .to_string();
-                                    tool_call_map.insert(
-                                        idx,
-                                        (id.to_string(), name.clone(), String::new()),
-                                    );
+                                    tool_call_map
+                                        .insert(idx, (id.to_string(), name.clone(), String::new()));
                                     let _ = tx
                                         .send(StreamEvent::ToolCallStart {
                                             id: id.to_string(),
@@ -649,9 +641,7 @@ impl LlmClient {
                                 }
 
                                 // Accumulate argument fragments
-                                if let Some(args_delta) =
-                                    tc["function"]["arguments"].as_str()
-                                {
+                                if let Some(args_delta) = tc["function"]["arguments"].as_str() {
                                     if !args_delta.is_empty() {
                                         if let Some(entry) = tool_call_map.get_mut(&idx) {
                                             entry.2.push_str(args_delta);
@@ -735,14 +725,8 @@ fn parse_claude_response(body: &serde_json::Value) -> AgentorResult<LlmResponse>
                 }
             }
             Some("tool_use") => {
-                let id = block["id"]
-                    .as_str()
-                    .unwrap_or_default()
-                    .to_string();
-                let name = block["name"]
-                    .as_str()
-                    .unwrap_or_default()
-                    .to_string();
+                let id = block["id"].as_str().unwrap_or_default().to_string();
+                let name = block["name"].as_str().unwrap_or_default().to_string();
                 let arguments = block["input"].clone();
                 tool_calls.push(ToolCall {
                     id,
@@ -786,8 +770,7 @@ fn parse_openai_response(body: &serde_json::Value) -> AgentorResult<LlmResponse>
                 let id = tc["id"].as_str()?.to_string();
                 let name = tc["function"]["name"].as_str()?.to_string();
                 let arguments: serde_json::Value =
-                    serde_json::from_str(tc["function"]["arguments"].as_str()?)
-                        .unwrap_or_default();
+                    serde_json::from_str(tc["function"]["arguments"].as_str()?).unwrap_or_default();
                 Some(ToolCall {
                     id,
                     name,

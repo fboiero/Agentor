@@ -1,8 +1,8 @@
+use crate::connection::ConnectionManager;
 use agentor_agent::{AgentRunner, StreamEvent};
 use agentor_core::AgentorResult;
 use agentor_security::Sanitizer;
 use agentor_session::{Session, SessionStore};
-use crate::connection::ConnectionManager;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -54,7 +54,10 @@ impl MessageRouter {
         let content = match self.sanitizer.sanitize(&msg.content).into_string() {
             Some(clean) => clean,
             None => {
-                warn!("Rejected message from connection {}: failed sanitization", connection_id);
+                warn!(
+                    "Rejected message from connection {}: failed sanitization",
+                    connection_id
+                );
                 let error = OutboundMessage {
                     session_id: msg.session_id.unwrap_or_default(),
                     content: "Message rejected: invalid content".to_string(),
@@ -187,7 +190,11 @@ impl MessageRouter {
         });
 
         // Run the streaming agent
-        match self.agent.run_streaming(&mut session, &content, event_tx).await {
+        match self
+            .agent
+            .run_streaming(&mut session, &content, event_tx)
+            .await
+        {
             Ok(final_response) => {
                 // Save session
                 self.sessions.update(&session).await?;

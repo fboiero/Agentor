@@ -1,0 +1,6 @@
+target/
+skills/*/target/
+data/
+.git/
+.github/
+*.md

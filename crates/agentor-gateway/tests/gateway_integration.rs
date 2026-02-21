@@ -50,9 +50,7 @@ async fn start_test_server() -> (String, tempfile::TempDir) {
 async fn connect_ws(
     addr: &str,
 ) -> (
-    tokio_tungstenite::WebSocketStream<
-        tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
-    >,
+    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
     String,
 ) {
     let url = format!("ws://{}/ws", addr);
@@ -235,12 +233,9 @@ async fn test_auth_accepts_valid_header() {
 #[tokio::test]
 async fn test_auth_accepts_query_param() {
     let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
-    let resp = reqwest::get(&format!(
-        "http://{}/health?api_key=secret-key-123",
-        addr
-    ))
-    .await
-    .unwrap();
+    let resp = reqwest::get(&format!("http://{}/health?api_key=secret-key-123", addr))
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 200);
 }
 

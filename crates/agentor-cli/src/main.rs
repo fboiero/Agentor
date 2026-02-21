@@ -1,8 +1,7 @@
 use agentor_agent::{AgentRunner, ModelConfig};
-use agentor_builtins;
 use agentor_gateway::{AuthConfig, GatewayServer};
-use agentor_security::{AuditLog, Capability, PermissionSet, RateLimiter};
 use agentor_security::tls;
+use agentor_security::{AuditLog, Capability, PermissionSet, RateLimiter};
 use agentor_session::FileSessionStore;
 use agentor_skills::{SkillConfig, SkillLoader, SkillRegistry};
 use clap::{Parser, Subcommand};
@@ -93,6 +92,7 @@ struct TlsConfig {
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct SecurityConfig {
     #[serde(default = "default_rps")]
     max_requests_per_second: f64,
@@ -134,6 +134,57 @@ fn default_max_msg_len() -> usize {
     100_000
 }
 
+/// Expand `${VAR_NAME}` patterns in a string with environment variable values.
+/// Unknown variables are replaced with empty strings.
+fn expand_env_vars(input: &str) -> String {
+    let mut result = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '$' && chars.peek() == Some(&'{') {
+            chars.next(); // consume '{'
+            let mut var_name = String::new();
+            for c in chars.by_ref() {
+                if c == '}' {
+                    break;
+                }
+                var_name.push(c);
+            }
+            if let Ok(val) = std::env::var(&var_name) {
+                result.push_str(&val);
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+    result
+}
+
+/// Wait for a shutdown signal (Ctrl+C or SIGTERM).
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("Failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => info!("Received Ctrl+C, shutting down..."),
+        _ = terminate => info!("Received SIGTERM, shutting down..."),
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
@@ -145,7 +196,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    // Load config
+    // Load config with environment variable expansion
     let config_str = tokio::fs::read_to_string(&cli.config).await.map_err(|e| {
         anyhow::anyhow!(
             "Failed to read config file '{}': {}",
@@ -153,6 +204,7 @@ async fn main() -> anyhow::Result<()> {
             e
         )
     })?;
+    let config_str = expand_env_vars(&config_str);
     let config: AgentorConfig = toml::from_str(&config_str)?;
 
     // Resolve config base directory (for relative skill paths)
@@ -177,13 +229,14 @@ async fn main() -> anyhow::Result<()> {
             ));
             let auth_config = AuthConfig::new(config.security.api_keys.clone());
             if auth_config.is_enabled() {
-                info!(keys = config.security.api_keys.len(), "API key auth enabled");
+                info!(
+                    keys = config.security.api_keys.len(),
+                    "API key auth enabled"
+                );
             }
 
             // Initialize sessions
-            let sessions = Arc::new(
-                FileSessionStore::new(config.data_dir.join("sessions")).await?,
-            );
+            let sessions = Arc::new(FileSessionStore::new(config.data_dir.join("sessions")).await?);
 
             // Load skills: builtins first, then WASM skills from config
             let mut registry = SkillRegistry::new();
@@ -235,43 +288,57 @@ async fn main() -> anyhow::Result<()> {
                 let acceptor = tls::build_tls_acceptor(&tls_config).await?;
 
                 info!("Agentor gateway listening on {} (TLS enabled)", addr);
+
+                // Graceful shutdown for TLS mode
+                let shutdown = shutdown_signal();
+                tokio::pin!(shutdown);
+
                 loop {
-                    let (stream, peer_addr) = listener.accept().await?;
-                    let acceptor = acceptor.clone();
-                    let app = app.clone();
-                    tokio::spawn(async move {
-                        match acceptor.accept(stream).await {
-                            Ok(tls_stream) => {
-                                let io = hyper_util::rt::TokioIo::new(tls_stream);
-                                let svc = hyper_util::service::TowerToHyperService::new(app);
-                                let conn = hyper_util::server::conn::auto::Builder::new(
-                                    hyper_util::rt::TokioExecutor::new(),
-                                );
-                                if let Err(e) = conn
-                                    .serve_connection(io, svc)
-                                    .await
-                                {
-                                    tracing::error!(
-                                        peer = %peer_addr,
-                                        error = %e,
-                                        "TLS connection error"
-                                    );
+                    tokio::select! {
+                        result = listener.accept() => {
+                            let (stream, peer_addr) = result?;
+                            let acceptor = acceptor.clone();
+                            let app = app.clone();
+                            tokio::spawn(async move {
+                                match acceptor.accept(stream).await {
+                                    Ok(tls_stream) => {
+                                        let io = hyper_util::rt::TokioIo::new(tls_stream);
+                                        let svc = hyper_util::service::TowerToHyperService::new(app);
+                                        let conn = hyper_util::server::conn::auto::Builder::new(
+                                            hyper_util::rt::TokioExecutor::new(),
+                                        );
+                                        if let Err(e) = conn.serve_connection(io, svc).await {
+                                            tracing::error!(
+                                                peer = %peer_addr,
+                                                error = %e,
+                                                "TLS connection error"
+                                            );
+                                        }
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            peer = %peer_addr,
+                                            error = %e,
+                                            "TLS handshake failed"
+                                        );
+                                    }
                                 }
-                            }
-                            Err(e) => {
-                                tracing::warn!(
-                                    peer = %peer_addr,
-                                    error = %e,
-                                    "TLS handshake failed"
-                                );
-                            }
+                            });
                         }
-                    });
+                        _ = &mut shutdown => {
+                            info!("Shutting down TLS server");
+                            break;
+                        }
+                    }
                 }
             } else {
                 info!("Agentor gateway listening on {}", addr);
-                axum::serve(listener, app).await?;
+                axum::serve(listener, app)
+                    .with_graceful_shutdown(shutdown_signal())
+                    .await?;
             }
+
+            info!("Agentor gateway stopped");
         }
         Commands::Skill { action } => match action {
             SkillAction::List => {
@@ -321,4 +388,39 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_expand_env_vars_known() {
+        std::env::set_var("AGENTOR_TEST_VAR", "hello123");
+        let result = expand_env_vars("key = \"${AGENTOR_TEST_VAR}\"");
+        assert_eq!(result, "key = \"hello123\"");
+        std::env::remove_var("AGENTOR_TEST_VAR");
+    }
+
+    #[test]
+    fn test_expand_env_vars_unknown() {
+        let result = expand_env_vars("key = \"${AGENTOR_NONEXISTENT_12345}\"");
+        assert_eq!(result, "key = \"\"");
+    }
+
+    #[test]
+    fn test_expand_env_vars_no_vars() {
+        let result = expand_env_vars("plain text without vars");
+        assert_eq!(result, "plain text without vars");
+    }
+
+    #[test]
+    fn test_expand_env_vars_multiple() {
+        std::env::set_var("AGENTOR_A", "foo");
+        std::env::set_var("AGENTOR_B", "bar");
+        let result = expand_env_vars("${AGENTOR_A} and ${AGENTOR_B}");
+        assert_eq!(result, "foo and bar");
+        std::env::remove_var("AGENTOR_A");
+        std::env::remove_var("AGENTOR_B");
+    }
 }

@@ -17,8 +17,9 @@ impl FileReadSkill {
         Self {
             descriptor: SkillDescriptor {
                 name: "file_read".to_string(),
-                description: "Read the contents of a file. Path must be within allowed directories."
-                    .to_string(),
+                description:
+                    "Read the contents of a file. Path must be within allowed directories."
+                        .to_string(),
                 parameters_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -58,9 +59,7 @@ impl Skill for FileReadSkill {
     }
 
     async fn execute(&self, call: ToolCall) -> AgentorResult<ToolResult> {
-        let path_str = call.arguments["path"]
-            .as_str()
-            .unwrap_or_default();
+        let path_str = call.arguments["path"].as_str().unwrap_or_default();
 
         if path_str.is_empty() {
             return Ok(ToolResult::error(&call.id, "Empty path"));

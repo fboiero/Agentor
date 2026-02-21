@@ -207,7 +207,7 @@ impl Skill for HttpFetchSkill {
             "size": body_bytes.len(),
         });
 
-        if status >= 200 && status < 400 {
+        if (200..400).contains(&status) {
             Ok(ToolResult::success(&call.id, result.to_string()))
         } else {
             Ok(ToolResult::error(&call.id, result.to_string()))

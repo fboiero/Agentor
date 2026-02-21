@@ -10,7 +10,7 @@ use tokio_rustls::rustls::{
 use tokio_rustls::TlsAcceptor;
 use tracing::info;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct TlsConfig {
     pub enabled: bool,
     pub cert_path: String,
@@ -18,17 +18,6 @@ pub struct TlsConfig {
     /// If set, enables mTLS — clients must present a certificate signed by this CA.
     #[serde(default)]
     pub client_ca_path: String,
-}
-
-impl Default for TlsConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            cert_path: String::new(),
-            key_path: String::new(),
-            client_ca_path: String::new(),
-        }
-    }
 }
 
 /// Build a TLS acceptor from the given config.
@@ -105,9 +94,7 @@ async fn load_private_key(path: &str) -> AgentorResult<PrivateKeyDer<'static>> {
     // Try PKCS8 first, then RSA, then EC
     let key = rustls_pemfile::private_key(&mut reader)
         .map_err(|e| AgentorError::Config(format!("Failed to parse private key: {}", e)))?
-        .ok_or_else(|| {
-            AgentorError::Config(format!("No private key found in '{}'", path))
-        })?;
+        .ok_or_else(|| AgentorError::Config(format!("No private key found in '{}'", path)))?;
 
     Ok(key)
 }
