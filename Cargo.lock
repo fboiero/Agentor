@@ -15,6 +15,7 @@ dependencies = [
 name = "agentor-agent"
 version = "0.1.0"
 dependencies = [
+ "agentor-builtins",
  "agentor-core",
  "agentor-security",
  "agentor-session",
@@ -24,9 +25,11 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
+ "toml",
  "tracing",
  "uuid",
 ]
@@ -36,15 +39,18 @@ name = "agentor-builtins"
 version = "0.1.0"
 dependencies = [
  "agentor-core",
+ "agentor-memory",
  "agentor-security",
  "agentor-skills",
  "async-trait",
+ "chrono",
  "reqwest",
  "serde",
  "serde_json",
  "tempfile",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -68,8 +74,11 @@ dependencies = [
  "agentor-agent",
  "agentor-builtins",
  "agentor-channels",
+ "agentor-compliance",
  "agentor-core",
  "agentor-gateway",
+ "agentor-mcp",
+ "agentor-memory",
  "agentor-security",
  "agentor-session",
  "agentor-skills",
@@ -84,6 +93,20 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "agentor-compliance"
+version = "0.1.0"
+dependencies = [
+ "agentor-core",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -102,6 +125,7 @@ name = "agentor-gateway"
 version = "0.1.0"
 dependencies = [
  "agentor-agent",
+ "agentor-builtins",
  "agentor-channels",
  "agentor-core",
  "agentor-security",
@@ -122,6 +146,56 @@ dependencies = [
 ]
 
 [[package]]
+name = "agentor-mcp"
+version = "0.1.0"
+dependencies = [
+ "agentor-core",
+ "agentor-security",
+ "agentor-skills",
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "agentor-memory"
+version = "0.1.0"
+dependencies = [
+ "agentor-core",
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "agentor-orchestrator"
+version = "0.1.0"
+dependencies = [
+ "agentor-agent",
+ "agentor-core",
+ "agentor-security",
+ "agentor-session",
+ "agentor-skills",
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "agentor-security"
 version = "0.1.0"
 dependencies = [
@@ -130,6 +204,7 @@ dependencies = [
  "rustls-pemfile",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tokio-rustls",
  "tracing",
@@ -1171,9 +1246,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c0b69cfcb4e1b9f1bf2f53f95f766e4661169728ec61cd3fe5a0166f2d1386"
+checksum = "2f44da3a8150a6703ed5d34e164b875fd14c2cdab9af1252a9a1020bde2bdc54"
 dependencies = [
  "atomic-waker",
  "bytes",
