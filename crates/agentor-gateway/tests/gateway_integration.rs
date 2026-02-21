@@ -1,6 +1,6 @@
 use agentor_agent::{AgentRunner, LlmProvider, ModelConfig};
-use agentor_gateway::GatewayServer;
-use agentor_security::{AuditLog, PermissionSet};
+use agentor_gateway::{AuthConfig, GatewayServer};
+use agentor_security::{AuditLog, PermissionSet, RateLimiter};
 use agentor_session::FileSessionStore;
 use agentor_skills::SkillRegistry;
 use futures_util::{SinkExt, StreamExt};
@@ -161,4 +161,149 @@ async fn test_websocket_plain_text_handled() {
     assert!(response["session_id"].is_string());
     // Error because no real LLM — but the message was routed correctly
     assert_eq!(response["type"], "error");
+}
+
+// --- Auth middleware tests ---
+
+fn test_model_config() -> ModelConfig {
+    ModelConfig {
+        provider: LlmProvider::Claude,
+        model_id: "test-model".to_string(),
+        api_key: "test-key".to_string(),
+        api_base_url: Some("http://127.0.0.1:1".to_string()),
+        temperature: 0.7,
+        max_tokens: 100,
+        max_turns: 3,
+    }
+}
+
+async fn start_auth_server(api_keys: Vec<String>) -> (String, tempfile::TempDir) {
+    let tmp = tempfile::tempdir().unwrap();
+    let audit = Arc::new(AuditLog::new(tmp.path().join("audit")));
+    let sessions = Arc::new(
+        FileSessionStore::new(tmp.path().join("sessions"))
+            .await
+            .unwrap(),
+    );
+    let skills = Arc::new(SkillRegistry::new());
+    let permissions = PermissionSet::new();
+    let agent = Arc::new(AgentRunner::new(
+        test_model_config(),
+        skills,
+        permissions,
+        audit,
+    ));
+
+    let auth = AuthConfig::new(api_keys);
+    let rate_limiter = Arc::new(RateLimiter::new(100.0, 100.0));
+    let app = GatewayServer::build_with_middleware(agent, sessions, Some(rate_limiter), auth);
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let addr_str = format!("127.0.0.1:{}", addr.port());
+
+    tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    (addr_str, tmp)
+}
+
+#[tokio::test]
+async fn test_auth_rejects_without_key() {
+    let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
+    let resp = reqwest::get(&format!("http://{}/health", addr))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 401);
+}
+
+#[tokio::test]
+async fn test_auth_accepts_valid_header() {
+    let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&format!("http://{}/health", addr))
+        .header("Authorization", "Bearer secret-key-123")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+}
+
+#[tokio::test]
+async fn test_auth_accepts_query_param() {
+    let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
+    let resp = reqwest::get(&format!(
+        "http://{}/health?api_key=secret-key-123",
+        addr
+    ))
+    .await
+    .unwrap();
+    assert_eq!(resp.status(), 200);
+}
+
+#[tokio::test]
+async fn test_auth_rejects_invalid_key() {
+    let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&format!("http://{}/health", addr))
+        .header("Authorization", "Bearer wrong-key")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 401);
+}
+
+// --- Rate limiting tests ---
+
+#[tokio::test]
+async fn test_rate_limiting_enforced() {
+    let tmp = tempfile::tempdir().unwrap();
+    let audit = Arc::new(AuditLog::new(tmp.path().join("audit")));
+    let sessions = Arc::new(
+        FileSessionStore::new(tmp.path().join("sessions"))
+            .await
+            .unwrap(),
+    );
+    let skills = Arc::new(SkillRegistry::new());
+    let permissions = PermissionSet::new();
+    let agent = Arc::new(AgentRunner::new(
+        test_model_config(),
+        skills,
+        permissions,
+        audit,
+    ));
+
+    // Very tight rate limit: 2 burst, 0.1 refill/s
+    let rate_limiter = Arc::new(RateLimiter::new(2.0, 0.1));
+    let auth = AuthConfig::new(vec![]);
+    let app = GatewayServer::build_with_middleware(agent, sessions, Some(rate_limiter), auth);
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = format!("127.0.0.1:{}", listener.local_addr().unwrap().port());
+
+    tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    // First 2 should succeed (burst)
+    let r1 = reqwest::get(&format!("http://{}/health", addr))
+        .await
+        .unwrap();
+    assert_eq!(r1.status(), 200);
+
+    let r2 = reqwest::get(&format!("http://{}/health", addr))
+        .await
+        .unwrap();
+    assert_eq!(r2.status(), 200);
+
+    // Third should be rate limited
+    let r3 = reqwest::get(&format!("http://{}/health", addr))
+        .await
+        .unwrap();
+    assert_eq!(r3.status(), 429);
 }

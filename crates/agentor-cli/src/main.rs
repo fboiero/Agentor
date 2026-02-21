@@ -1,6 +1,6 @@
 use agentor_agent::{AgentRunner, ModelConfig};
 use agentor_builtins;
-use agentor_gateway::GatewayServer;
+use agentor_gateway::{AuthConfig, GatewayServer};
 use agentor_security::{AuditLog, Capability, PermissionSet, RateLimiter};
 use agentor_security::tls;
 use agentor_session::FileSessionStore;
@@ -100,6 +100,8 @@ struct SecurityConfig {
     max_burst: f64,
     #[serde(default = "default_max_msg_len")]
     max_message_length: usize,
+    #[serde(default)]
+    api_keys: Vec<String>,
 }
 
 impl Default for SecurityConfig {
@@ -108,6 +110,7 @@ impl Default for SecurityConfig {
             max_requests_per_second: default_rps(),
             max_burst: default_burst(),
             max_message_length: default_max_msg_len(),
+            api_keys: vec![],
         }
     }
 }
@@ -168,10 +171,14 @@ async fn main() -> anyhow::Result<()> {
 
             // Initialize security
             let audit = Arc::new(AuditLog::new(config.data_dir.join("audit")));
-            let _rate_limiter = Arc::new(RateLimiter::new(
+            let rate_limiter = Arc::new(RateLimiter::new(
                 config.security.max_burst,
                 config.security.max_requests_per_second,
             ));
+            let auth_config = AuthConfig::new(config.security.api_keys.clone());
+            if auth_config.is_enabled() {
+                info!(keys = config.security.api_keys.len(), "API key auth enabled");
+            }
 
             // Initialize sessions
             let sessions = Arc::new(
@@ -206,7 +213,12 @@ async fn main() -> anyhow::Result<()> {
                 audit,
             ));
 
-            let app = GatewayServer::build(agent, sessions);
+            let app = GatewayServer::build_with_middleware(
+                agent,
+                sessions,
+                Some(rate_limiter),
+                auth_config,
+            );
 
             let addr = format!("{}:{}", host, port);
             let listener = tokio::net::TcpListener::bind(&addr).await?;

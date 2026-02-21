@@ -1,12 +1,17 @@
 use crate::connection::{Connection, ConnectionManager};
+use crate::middleware::{
+    auth_middleware, rate_limit_middleware, AuthConfig, MiddlewareState,
+};
 use crate::router::{InboundMessage, MessageRouter};
 use agentor_agent::AgentRunner;
+use agentor_security::RateLimiter;
 use agentor_session::SessionStore;
 use axum::{
     extract::{
         ws::{Message, WebSocket},
         State, WebSocketUpgrade,
     },
+    middleware as axum_mw,
     response::IntoResponse,
     routing::get,
     Router,
@@ -26,9 +31,20 @@ pub struct AppState {
 pub struct GatewayServer;
 
 impl GatewayServer {
+    /// Build the gateway without auth or rate limiting (backwards compatible).
     pub fn build(
         agent: Arc<AgentRunner>,
         sessions: Arc<dyn SessionStore>,
+    ) -> Router {
+        Self::build_with_middleware(agent, sessions, None, AuthConfig::new(vec![]))
+    }
+
+    /// Build the gateway with optional rate limiting and auth middleware.
+    pub fn build_with_middleware(
+        agent: Arc<AgentRunner>,
+        sessions: Arc<dyn SessionStore>,
+        rate_limiter: Option<Arc<RateLimiter>>,
+        auth_config: AuthConfig,
     ) -> Router {
         let connections = ConnectionManager::new();
         let router = Arc::new(MessageRouter::new(
@@ -42,10 +58,27 @@ impl GatewayServer {
             connections,
         });
 
-        Router::new()
+        let app = Router::new()
             .route("/ws", get(ws_handler))
             .route("/health", get(health_handler))
-            .with_state(state)
+            .with_state(state);
+
+        // Apply middleware if configured
+        if rate_limiter.is_some() || auth_config.is_enabled() {
+            let mw_state = Arc::new(MiddlewareState {
+                rate_limiter: rate_limiter
+                    .unwrap_or_else(|| Arc::new(RateLimiter::new(1000.0, 1000.0))),
+                auth: auth_config,
+            });
+
+            app.layer(axum_mw::from_fn_with_state(
+                mw_state.clone(),
+                rate_limit_middleware,
+            ))
+            .layer(axum_mw::from_fn_with_state(mw_state, auth_middleware))
+        } else {
+            app
+        }
     }
 }
 
