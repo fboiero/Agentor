@@ -124,11 +124,22 @@ impl TaskQueue {
         self.tasks.len()
     }
 
-    /// Check if all tasks are completed.
+    /// Check if all tasks are in a terminal state (completed, failed, or awaiting review).
     pub fn is_done(&self) -> bool {
+        self.tasks.values().all(|t| {
+            matches!(
+                t.status,
+                TaskStatus::Completed | TaskStatus::Failed { .. } | TaskStatus::NeedsHumanReview
+            )
+        })
+    }
+
+    /// Count of tasks awaiting human review.
+    pub fn needs_review_count(&self) -> usize {
         self.tasks
             .values()
-            .all(|t| t.status == TaskStatus::Completed)
+            .filter(|t| t.status == TaskStatus::NeedsHumanReview)
+            .count()
     }
 
     /// Check for cycles in the dependency graph.
@@ -363,5 +374,50 @@ mod tests {
         assert!(!queue.is_done());
         queue.mark_completed(id);
         assert!(queue.is_done());
+    }
+
+    #[test]
+    fn test_is_done_with_needs_review() {
+        let mut queue = TaskQueue::new();
+        let t1 = Task::new("Task 1", AgentRole::Coder);
+        let t1_id = t1.id;
+        let t2 = Task::new("Task 2", AgentRole::Reviewer);
+        let t2_id = t2.id;
+        queue.add(t1);
+        queue.add(t2);
+
+        queue.mark_completed(t1_id);
+        assert!(!queue.is_done());
+
+        queue.mark_needs_review(t2_id);
+        assert!(queue.is_done());
+    }
+
+    #[test]
+    fn test_is_done_with_failed() {
+        let mut queue = TaskQueue::new();
+        let task = Task::new("Failing task", AgentRole::Tester);
+        let id = task.id;
+        queue.add(task);
+
+        queue.mark_failed(id, "error".into());
+        assert!(queue.is_done());
+    }
+
+    #[test]
+    fn test_needs_review_count() {
+        let mut queue = TaskQueue::new();
+        let t1 = Task::new("Task 1", AgentRole::Coder);
+        let t1_id = t1.id;
+        let t2 = Task::new("Task 2", AgentRole::Reviewer);
+        let t2_id = t2.id;
+        queue.add(t1);
+        queue.add(t2);
+
+        assert_eq!(queue.needs_review_count(), 0);
+        queue.mark_needs_review(t1_id);
+        assert_eq!(queue.needs_review_count(), 1);
+        queue.mark_needs_review(t2_id);
+        assert_eq!(queue.needs_review_count(), 2);
     }
 }

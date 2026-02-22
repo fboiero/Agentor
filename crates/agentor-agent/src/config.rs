@@ -6,6 +6,11 @@ pub enum LlmProvider {
     Claude,
     OpenAi,
     OpenRouter,
+    /// Groq cloud inference — OpenAI-compatible API, free tier with rate limits.
+    Groq,
+    /// Use the local `claude` CLI in headless mode (-p --output-format json).
+    /// No API key needed — uses the user's existing Claude Code session/subscription.
+    ClaudeCode,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,6 +48,8 @@ impl ModelConfig {
                 LlmProvider::Claude => "https://api.anthropic.com",
                 LlmProvider::OpenAi => "https://api.openai.com",
                 LlmProvider::OpenRouter => "https://openrouter.ai/api",
+                LlmProvider::Groq => "https://api.groq.com/openai",
+                LlmProvider::ClaudeCode => "local://claude-cli",
             }
         }
     }

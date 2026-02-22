@@ -11,6 +11,15 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 
+/// Default system prompt used when none is provided.
+const DEFAULT_SYSTEM_PROMPT: &str =
+    "You are Agentor, a secure AI assistant. You have access to tools (skills) \
+     that you can use to help the user. Each tool runs in a sandboxed environment \
+     with specific permissions. Always explain what you're doing before using a tool.";
+
+/// Optional MCP proxy for centralized tool call logging and metrics.
+type OptionalProxy = Option<(Arc<agentor_mcp::McpProxy>, String)>;
+
 /// The Agent Runner: orchestrates the agentic loop.
 /// Prompt -> LLM -> ToolCall -> Execute Skill -> Backfill -> Repeat.
 pub struct AgentRunner {
@@ -19,6 +28,9 @@ pub struct AgentRunner {
     permissions: PermissionSet,
     audit: Arc<AuditLog>,
     max_turns: u32,
+    system_prompt: String,
+    /// Optional (proxy, agent_id) — when set, tool calls route through MCP proxy.
+    proxy: OptionalProxy,
 }
 
 impl AgentRunner {
@@ -35,7 +47,40 @@ impl AgentRunner {
             permissions,
             audit,
             max_turns,
+            system_prompt: DEFAULT_SYSTEM_PROMPT.to_string(),
+            proxy: None,
         }
+    }
+
+    /// Create from a custom LLM backend (for testing or custom providers).
+    pub fn from_backend(
+        backend: Box<dyn crate::backends::LlmBackend>,
+        skills: Arc<SkillRegistry>,
+        permissions: PermissionSet,
+        audit: Arc<AuditLog>,
+        max_turns: u32,
+    ) -> Self {
+        Self {
+            llm: LlmClient::from_backend(backend),
+            skills,
+            permissions,
+            audit,
+            max_turns,
+            system_prompt: DEFAULT_SYSTEM_PROMPT.to_string(),
+            proxy: None,
+        }
+    }
+
+    /// Create with a custom system prompt (used by orchestrator for specialized workers).
+    pub fn with_system_prompt(mut self, prompt: impl Into<String>) -> Self {
+        self.system_prompt = prompt.into();
+        self
+    }
+
+    /// Route tool calls through the MCP proxy for centralized logging and metrics.
+    pub fn with_proxy(mut self, proxy: Arc<agentor_mcp::McpProxy>, agent_id: impl Into<String>) -> Self {
+        self.proxy = Some((proxy, agent_id.into()));
+        self
     }
 
     /// Run the agentic loop for a session. Returns the final assistant response.
@@ -47,11 +92,7 @@ impl AgentRunner {
         session.add_message(user_msg);
 
         let mut context = ContextWindow::new(100);
-        context.set_system_prompt(
-            "You are Agentor, a secure AI assistant. You have access to tools (skills) \
-             that you can use to help the user. Each tool runs in a sandboxed environment \
-             with specific permissions. Always explain what you're doing before using a tool.",
-        );
+        context.set_system_prompt(&self.system_prompt);
 
         for msg in &session.messages {
             context.push(msg.clone());
@@ -133,7 +174,7 @@ impl AgentRunner {
                             AuditOutcome::Success,
                         );
 
-                        let result = self.skills.execute(call.clone(), &self.permissions).await;
+                        let result = self.execute_tool(call.clone()).await;
 
                         match result {
                             Ok(tool_result) => {
@@ -205,6 +246,15 @@ impl AgentRunner {
         )))
     }
 
+    /// Execute a tool call — routes through MCP proxy if configured.
+    async fn execute_tool(&self, call: agentor_core::ToolCall) -> AgentorResult<agentor_core::ToolResult> {
+        if let Some((proxy, agent_id)) = &self.proxy {
+            proxy.execute(call, agent_id).await
+        } else {
+            self.skills.execute(call, &self.permissions).await
+        }
+    }
+
     /// Run the agentic loop with streaming.
     ///
     /// Works like `run()` but uses `chat_stream()` to send partial LLM output to
@@ -224,11 +274,7 @@ impl AgentRunner {
         session.add_message(user_msg);
 
         let mut context = ContextWindow::new(100);
-        context.set_system_prompt(
-            "You are Agentor, a secure AI assistant. You have access to tools (skills) \
-             that you can use to help the user. Each tool runs in a sandboxed environment \
-             with specific permissions. Always explain what you're doing before using a tool.",
-        );
+        context.set_system_prompt(&self.system_prompt);
 
         for msg in &session.messages {
             context.push(msg.clone());
@@ -327,7 +373,7 @@ impl AgentRunner {
                             AuditOutcome::Success,
                         );
 
-                        let result = self.skills.execute(call.clone(), &self.permissions).await;
+                        let result = self.execute_tool(call.clone()).await;
 
                         match result {
                             Ok(tool_result) => {

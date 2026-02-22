@@ -1,15 +1,54 @@
 # Agentor Configuration
+#
+# Supported providers: "claude", "openai", "openrouter", "groq", "claudecode"
+#
+# ┌─────────────┬──────────────────────────────┬──────────────┬───────────────┐
+# │ Provider    │ model_id                     │ Cost         │ api_base_url  │
+# ├─────────────┼──────────────────────────────┼──────────────┼───────────────┤
+# │ claudecode  │ sonnet                       │ Free (sub)   │ (not needed)  │
+# │ openai      │ qwen2.5:7b                   │ Free (local) │ localhost:11434│
+# │ openai      │ mistral:latest               │ Free (local) │ localhost:11434│
+# │ groq        │ llama-3.3-70b-versatile      │ Free (limit) │ (default)     │
+# │ openrouter  │ meta-llama/llama-3.3-70b-instruct:free │ Free (limit) │ (default) │
+# │ claude      │ claude-sonnet-4-6            │ Paid         │ (default)     │
+# └─────────────┴──────────────────────────────┴──────────────┴───────────────┘
+#
+# --- Presets (uncomment one) ---
+#
+# Ollama local - qwen2.5:7b (free, no API key, requires `ollama run qwen2.5:7b`)
+# [model]
+# provider = "openai"
+# model_id = "qwen2.5:7b"
+# api_key = "not-needed"
+# api_base_url = "http://localhost:11434"
+#
+# Ollama local - mistral:latest (free, no API key, requires `ollama run mistral`)
+# [model]
+# provider = "openai"
+# model_id = "mistral:latest"
+# api_key = "not-needed"
+# api_base_url = "http://localhost:11434"
+#
+# Groq cloud - llama-3.3-70b-versatile (free with rate limit, needs GROQ_API_KEY)
+# [model]
+# provider = "groq"
+# model_id = "llama-3.3-70b-versatile"
+# api_key = "${GROQ_API_KEY}"
+#
+# Claude Code session (free with subscription, uses local `claude` CLI)
+# [model]
+# provider = "claudecode"
+# model_id = "sonnet"
+# api_key = "not-needed"
 
-# Supported providers: "claude", "openai", "openrouter"
-# OpenRouter gives access to 200+ models via a single API key.
-# Example: provider = "openrouter", model_id = "anthropic/claude-sonnet-4", api_key = "${OPENROUTER_API_KEY}"
+# Active configuration:
 [model]
-provider = "claude"
-model_id = "claude-sonnet-4-20250514"
-api_key = "${ANTHROPIC_API_KEY}"
+provider = "groq"
+model_id = "llama-3.3-70b-versatile"
+api_key = "${GROQ_API_KEY}"
 temperature = 0.7
 max_tokens = 4096
-max_turns = 20
+max_turns = 5
 
 data_dir = "./data"
 
@@ -62,6 +101,19 @@ required = ["message"]
 # path = "skills/file-reader/target/wasm32-wasip1/release/file-reader.wasm"
 # [skills.capabilities]
 # file_read = ["/tmp", "/home/user/documents"]
+
+# Markdown skills directory — .md files with YAML frontmatter
+# Skills with `prompt_injection: true` are injected into the system prompt.
+# Skills without it are available as callable tools.
+markdown_skills_dir = "skills/markdown"
+
+# Tool Groups — named sets of skills for progressive disclosure
+# Default groups: minimal, coding, web, full
+# You can define custom groups here:
+# [[tool_groups]]
+# name = "devops"
+# description = "DevOps tools for CI/CD and deployment"
+# skills = ["shell", "file_read", "file_write", "http_fetch"]
 
 # MCP Server configuration
 # Connect to MCP-compatible tool servers (e.g., filesystem, GitHub, database tools)

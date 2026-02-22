@@ -29,6 +29,7 @@ fn orchestrator_profile(base: &ModelConfig) -> AgentProfile {
             "artifact_store".to_string(),
             "memory_search".to_string(),
         ],
+        tool_group: Some("orchestration".to_string()),
         max_turns: 30,
     }
 }
@@ -45,8 +46,8 @@ fn spec_profile(base: &ModelConfig) -> AgentProfile {
         allowed_skills: vec![
             "memory_search".to_string(),
             "memory_store".to_string(),
-            "artifact_store".to_string(),
         ],
+        tool_group: Some("minimal".to_string()),
         max_turns: 15,
     }
 }
@@ -60,7 +61,8 @@ fn coder_profile(base: &ModelConfig) -> AgentProfile {
         role: AgentRole::Coder,
         model,
         system_prompt: CODER_PROMPT.to_string(),
-        allowed_skills: vec!["memory_search".to_string(), "artifact_store".to_string()],
+        allowed_skills: vec!["memory_search".to_string()],
+        tool_group: Some("minimal".to_string()),
         max_turns: 20,
     }
 }
@@ -74,7 +76,8 @@ fn tester_profile(base: &ModelConfig) -> AgentProfile {
         role: AgentRole::Tester,
         model,
         system_prompt: TESTER_PROMPT.to_string(),
-        allowed_skills: vec!["memory_search".to_string(), "artifact_store".to_string()],
+        allowed_skills: vec!["memory_search".to_string()],
+        tool_group: Some("minimal".to_string()),
         max_turns: 15,
     }
 }
@@ -91,8 +94,8 @@ fn reviewer_profile(base: &ModelConfig) -> AgentProfile {
         allowed_skills: vec![
             "memory_search".to_string(),
             "human_approval".to_string(),
-            "artifact_store".to_string(),
         ],
+        tool_group: Some("minimal".to_string()),
         max_turns: 10,
     }
 }
@@ -118,17 +121,23 @@ const SPEC_PROMPT: &str = "\
 You are the Spec agent in Agentor. Your job is to analyze requirements \
 and produce clear, actionable technical specifications.
 
+IMPORTANT: Respond with your specification as plain text. Do NOT call any tools — \
+just write your analysis and specification directly in your response.
+
 Rules:
 1. Break requirements into concrete implementation tasks.
 2. Define interfaces, data types, and contracts.
 3. Identify edge cases, security considerations, and constraints.
 4. Reference existing code patterns and utilities when applicable.
-5. Output structured specs as artifacts.
+5. Output your specification directly as text.
 ";
 
 const CODER_PROMPT: &str = "\
 You are the Coder agent in Agentor. You write secure, idiomatic Rust code \
 following the project's patterns and conventions.
+
+IMPORTANT: Respond with your code as plain text. Do NOT call any tools — \
+just write the code directly in your response. Use markdown code blocks.
 
 Rules:
 1. Follow the specification provided by the Spec agent.
@@ -136,24 +145,30 @@ Rules:
 3. Use existing project patterns (traits, error handling, async).
 4. Keep code simple — no over-engineering or premature abstractions.
 5. Include inline comments only where logic is non-obvious.
-6. Output code as artifacts with file paths.
+6. Output code directly in your response with file paths as comments.
 ";
 
 const TESTER_PROMPT: &str = "\
 You are the Tester agent in Agentor. You write comprehensive tests \
 for Rust code.
 
+IMPORTANT: Respond with your test code as plain text. Do NOT call any tools — \
+just write the tests directly in your response. Use markdown code blocks.
+
 Rules:
 1. Write unit tests covering happy paths, edge cases, and error conditions.
 2. Follow existing test patterns in the project (tokio::test for async).
 3. Test security boundaries and permission checks.
 4. Use descriptive test names (test_<function>_<scenario>).
-5. Output test code as artifacts.
+5. Output test code directly in your response.
 ";
 
 const REVIEWER_PROMPT: &str = "\
 You are the Reviewer agent in Agentor. You review code for quality, \
 security, and compliance.
+
+IMPORTANT: Respond with your review as plain text. Do NOT call any tools — \
+just write your review report directly in your response.
 
 Rules:
 1. Check for OWASP Top 10 vulnerabilities.
@@ -161,7 +176,7 @@ Rules:
 3. Ensure proper error handling (no unwrap in prod paths).
 4. Check for compliance with GDPR, ISO 27001, ISO 42001 requirements.
 5. Flag any issues that require human review.
-6. Output a review report as an artifact.
+6. Output your review report directly in your response.
 ";
 
 #[cfg(test)]

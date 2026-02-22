@@ -17,6 +17,7 @@ version = "0.1.0"
 dependencies = [
  "agentor-builtins",
  "agentor-core",
+ "agentor-mcp",
  "agentor-security",
  "agentor-session",
  "agentor-skills",
@@ -79,12 +80,14 @@ dependencies = [
  "agentor-gateway",
  "agentor-mcp",
  "agentor-memory",
+ "agentor-orchestrator",
  "agentor-security",
  "agentor-session",
  "agentor-skills",
  "anyhow",
  "axum",
  "clap",
+ "dotenvy",
  "hyper-util",
  "serde",
  "serde_json",
@@ -181,7 +184,9 @@ name = "agentor-orchestrator"
 version = "0.1.0"
 dependencies = [
  "agentor-agent",
+ "agentor-builtins",
  "agentor-core",
+ "agentor-mcp",
  "agentor-security",
  "agentor-session",
  "agentor-skills",
@@ -235,6 +240,8 @@ dependencies = [
  "async-trait",
  "serde",
  "serde_json",
+ "serde_yaml_ng",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -954,6 +961,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "dotenvy"
+version = "0.15.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "dunce"
@@ -2535,6 +2548,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml_ng"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b4db627b98b36d4203a7b458cf3573730f2bb591b28871d916dfa9efabfd41f"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3135,6 +3161,12 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "untrusted"

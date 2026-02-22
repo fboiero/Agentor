@@ -280,8 +280,8 @@ async fn test_agent_runner_with_builtins() {
     let mut registry = SkillRegistry::new();
     agentor_builtins::register_builtins(&mut registry);
 
-    // Verify all 5 builtins registered (shell, file_read, file_write, http_fetch, browser)
-    assert_eq!(registry.skill_count(), 5);
+    // Verify all 6 builtins registered (shell, file_read, file_write, http_fetch, browser, human_approval)
+    assert_eq!(registry.skill_count(), 6);
 
     let skills = Arc::new(registry);
     let permissions = PermissionSet::new();

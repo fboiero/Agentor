@@ -9,6 +9,7 @@ agentor-agent.workspace = true
 agentor-security.workspace = true
 agentor-session.workspace = true
 agentor-skills.workspace = true
+agentor-mcp.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
@@ -19,3 +20,4 @@ chrono.workspace = true
 
 [dev-dependencies]
 tempfile = "3"
+agentor-builtins.workspace = true

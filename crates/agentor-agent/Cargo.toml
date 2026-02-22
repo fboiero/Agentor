@@ -8,6 +8,7 @@ agentor-core.workspace = true
 agentor-security.workspace = true
 agentor-session.workspace = true
 agentor-skills.workspace = true
+agentor-mcp.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 reqwest.workspace = true

@@ -37,7 +37,12 @@ pub struct AgentProfile {
     pub role: AgentRole,
     pub model: ModelConfig,
     pub system_prompt: String,
+    /// Individual skill names this agent may use (legacy / fine-grained control).
     pub allowed_skills: Vec<String>,
+    /// Tool group name — when set, the agent receives all skills in this group
+    /// instead of the individual `allowed_skills` list.
+    /// Takes precedence over `allowed_skills`.
+    pub tool_group: Option<String>,
     pub max_turns: u32,
 }
 

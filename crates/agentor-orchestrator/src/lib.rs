@@ -4,7 +4,7 @@ pub mod profiles;
 pub mod task_queue;
 pub mod types;
 
-pub use engine::{Orchestrator, OrchestratorResult};
+pub use engine::{BackendFactory, Orchestrator, OrchestratorResult};
 pub use monitor::AgentMonitor;
 pub use profiles::default_profiles;
 pub use task_queue::TaskQueue;

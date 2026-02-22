@@ -3,11 +3,12 @@ use agentor_gateway::{AuthConfig, GatewayServer};
 use agentor_security::tls;
 use agentor_security::{AuditLog, Capability, PermissionSet, RateLimiter};
 use agentor_session::FileSessionStore;
-use agentor_skills::{SkillConfig, SkillLoader, SkillRegistry};
+use agentor_skills::{MarkdownSkillLoader, SkillConfig, SkillLoader, SkillRegistry, ToolGroup};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -43,6 +44,14 @@ enum Commands {
         #[command(subcommand)]
         action: ComplianceAction,
     },
+    /// Run multi-agent orchestration on a task
+    Orchestrate {
+        /// The task description for the orchestrator to decompose and execute
+        task: String,
+        /// Directory to write output artifacts (code, tests, spec, review)
+        #[arg(short, long)]
+        output_dir: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -70,6 +79,12 @@ struct AgentorConfig {
     skills: Vec<SkillConfig>,
     #[serde(default)]
     mcp_servers: Vec<McpServerConfig>,
+    /// Directory containing markdown skill files (.md with YAML frontmatter).
+    #[serde(default)]
+    markdown_skills_dir: Option<PathBuf>,
+    /// Custom tool groups for progressive skill disclosure.
+    #[serde(default)]
+    tool_groups: Vec<ToolGroup>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -182,6 +197,58 @@ fn expand_env_vars(input: &str) -> String {
     result
 }
 
+/// Load markdown skills from the configured directory into the registry.
+/// Returns the prompt injection text to append to system prompts.
+async fn load_markdown_skills(
+    config: &AgentorConfig,
+    config_dir: &std::path::Path,
+    registry: &mut SkillRegistry,
+) -> String {
+    let dir = match &config.markdown_skills_dir {
+        Some(d) => {
+            if d.is_absolute() {
+                d.clone()
+            } else {
+                config_dir.join(d)
+            }
+        }
+        None => return String::new(),
+    };
+
+    let loader = MarkdownSkillLoader::new(dir);
+    match loader.load_all().await {
+        Ok(loaded) => {
+            let prompt_text = loaded.build_prompt_injection();
+
+            // Register callable markdown skills
+            for skill in loaded.callable {
+                registry.register(skill);
+            }
+
+            info!(
+                prompt_skills = loaded.prompts.len(),
+                "Markdown skills loaded"
+            );
+            prompt_text
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "Failed to load markdown skills");
+            String::new()
+        }
+    }
+}
+
+/// Register custom tool groups from config.
+fn load_tool_groups(config: &AgentorConfig, registry: &mut SkillRegistry) {
+    if !config.tool_groups.is_empty() {
+        registry.register_groups(config.tool_groups.clone());
+        info!(
+            count = config.tool_groups.len(),
+            "Custom tool groups registered"
+        );
+    }
+}
+
 /// Wait for a shutdown signal (Ctrl+C or SIGTERM).
 async fn shutdown_signal() {
     let ctrl_c = async {
@@ -209,14 +276,27 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-        )
-        .json()
-        .init();
+    // Load .env file if present (API keys, tokens)
+    dotenvy::dotenv().ok();
 
     let cli = Cli::parse();
+
+    // For orchestrate command, suppress JSON logs to stderr unless RUST_LOG is explicitly set.
+    // This keeps the output clean for piping.
+    let is_orchestrate = matches!(cli.command, Commands::Orchestrate { .. });
+    let default_level = if is_orchestrate && std::env::var("RUST_LOG").is_err() {
+        "warn"
+    } else {
+        "info"
+    };
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_level)),
+        )
+        .json()
+        .with_writer(std::io::stderr)
+        .init();
 
     // Load config with environment variable expansion
     let config_str = tokio::fs::read_to_string(&cli.config).await.map_err(|e| {
@@ -238,7 +318,7 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Serve { host, port } => {
-            let host = host.unwrap_or(config.server.host);
+            let host = host.unwrap_or_else(|| config.server.host.clone());
             let port = port.unwrap_or(config.server.port);
 
             info!("Starting Agentor gateway on {}:{}", host, port);
@@ -281,6 +361,10 @@ async fn main() -> anyhow::Result<()> {
                 let loaded = loader.load_all(&config.skills, &config_dir, &mut registry)?;
                 info!(count = loaded, "WASM skills loaded from config");
             }
+
+            // Load markdown skills and tool groups
+            let _prompt_injection = load_markdown_skills(&config, &config_dir, &mut registry).await;
+            load_tool_groups(&config, &mut registry);
 
             // Connect to MCP servers and register their tools as skills
             for mcp_config in &config.mcp_servers {
@@ -408,13 +492,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Skill { action } => match action {
             SkillAction::List => {
-                // Load all skills: builtins + config
+                // Load all skills: builtins + config + markdown
                 let mut registry = SkillRegistry::new();
                 agentor_builtins::register_builtins(&mut registry);
                 if !config.skills.is_empty() {
                     let loader = SkillLoader::new()?;
                     let _ = loader.load_all(&config.skills, &config_dir, &mut registry);
                 }
+                let _ = load_markdown_skills(&config, &config_dir, &mut registry).await;
+                load_tool_groups(&config, &mut registry);
 
                 let skills = registry.list_descriptors();
                 if skills.is_empty() {
@@ -449,8 +535,107 @@ async fn main() -> anyhow::Result<()> {
                     }
                     println!("\nTotal: {} skill(s)", skills.len());
                 }
+
+                // Show tool groups
+                let groups = registry.list_groups();
+                if !groups.is_empty() {
+                    println!("\nTool Groups:");
+                    for group in &groups {
+                        let available = registry.skills_in_group(&group.name);
+                        if group.skills.is_empty() {
+                            println!("  {} — {} [all skills]", group.name, group.description);
+                        } else {
+                            println!(
+                                "  {} — {} [{}/{}]",
+                                group.name,
+                                group.description,
+                                available.len(),
+                                group.skills.len()
+                            );
+                        }
+                    }
+                }
             }
         },
+        Commands::Orchestrate { task, output_dir } => {
+            // Initialize security
+            let audit = Arc::new(AuditLog::new(config.data_dir.join("audit")));
+
+            // Load skills: builtins + config + markdown
+            let mut registry = SkillRegistry::new();
+            agentor_builtins::register_builtins(&mut registry);
+            if !config.skills.is_empty() {
+                let loader = SkillLoader::new()?;
+                let _ = loader.load_all(&config.skills, &config_dir, &mut registry);
+            }
+            let _prompt_injection = load_markdown_skills(&config, &config_dir, &mut registry).await;
+            load_tool_groups(&config, &mut registry);
+
+            // Build permissions
+            let mut permissions = PermissionSet::new();
+            for desc in registry.list_descriptors() {
+                for cap in &desc.required_capabilities {
+                    permissions.grant(cap.clone());
+                }
+            }
+
+            let skills = Arc::new(registry);
+
+            // Create orchestrator with progress callback and optional output dir
+            let mut orchestrator =
+                agentor_orchestrator::Orchestrator::new(&config.model, skills, permissions, audit);
+            orchestrator = orchestrator.with_progress(|role, msg| {
+                eprintln!("  [{:>10}] {}", role, msg);
+            });
+            if let Some(dir) = output_dir {
+                orchestrator = orchestrator.with_output_dir(dir);
+            }
+
+            eprintln!("Agentor Multi-Agent Orchestrator");
+            eprintln!("================================");
+            eprintln!("Task: {}", task);
+            eprintln!();
+
+            let start = Instant::now();
+
+            // Run pipeline
+            match orchestrator.run(&task).await {
+                Ok(result) => {
+                    let duration = start.elapsed();
+                    eprintln!();
+                    eprintln!("{} ({:.1}s)", result.summary, duration.as_secs_f64());
+
+                    // Show written files
+                    if !result.written_files.is_empty() {
+                        eprintln!();
+                        eprintln!("Files written:");
+                        for f in &result.written_files {
+                            eprintln!("  {}", f);
+                        }
+                    }
+
+                    eprintln!();
+
+                    // Print artifacts to stdout (pipeable)
+                    for artifact in &result.artifacts {
+                        let label = match artifact.kind {
+                            agentor_orchestrator::ArtifactKind::Spec => "SPEC",
+                            agentor_orchestrator::ArtifactKind::Code => "CODE",
+                            agentor_orchestrator::ArtifactKind::Test => "TEST",
+                            agentor_orchestrator::ArtifactKind::Review => "REVIEW",
+                            agentor_orchestrator::ArtifactKind::Report => "REPORT",
+                        };
+                        println!("=== {} ===", label);
+                        println!("{}", artifact.content);
+                        println!();
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Orchestration failed: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
         Commands::Compliance { action } => match action {
             ComplianceAction::Report => {
                 use agentor_compliance::{
