@@ -1,55 +1,13 @@
+// Re-export approval types from core for backward compatibility.
+pub use agentor_core::approval::{
+    ApprovalChannel, ApprovalDecision, ApprovalRequest, RiskLevel,
+};
+
 use agentor_core::{AgentorResult, ToolCall, ToolResult};
 use agentor_skills::skill::{Skill, SkillDescriptor};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::info;
-
-/// Risk level for a human-in-the-loop approval request.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum RiskLevel {
-    Low,
-    Medium,
-    High,
-    Critical,
-}
-
-impl RiskLevel {
-    fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "low" => RiskLevel::Low,
-            "medium" => RiskLevel::Medium,
-            "high" => RiskLevel::High,
-            "critical" => RiskLevel::Critical,
-            _ => RiskLevel::Medium,
-        }
-    }
-}
-
-/// A request sent to a human reviewer for approval.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApprovalRequest {
-    pub task_id: String,
-    pub description: String,
-    pub risk_level: RiskLevel,
-    pub context: String,
-}
-
-/// The decision made by a human reviewer.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApprovalDecision {
-    pub approved: bool,
-    pub reason: Option<String>,
-    pub reviewer: String,
-}
-
-/// Channel through which approval requests are sent and decisions are received.
-/// Implementations can be CLI prompts, WebSocket handlers, Slack bots, etc.
-#[async_trait]
-pub trait ApprovalChannel: Send + Sync {
-    async fn request_approval(&self, request: ApprovalRequest) -> AgentorResult<ApprovalDecision>;
-}
 
 /// Auto-approve channel for testing and non-interactive environments.
 /// Always approves with a system reviewer tag.
@@ -171,7 +129,7 @@ impl Skill for HumanApprovalSkill {
             .as_str()
             .unwrap_or("")
             .to_string();
-        let risk_level = RiskLevel::from_str(
+        let risk_level = RiskLevel::parse_level(
             call.arguments["risk_level"].as_str().unwrap_or("medium"),
         );
         let context = call.arguments["context"]
@@ -323,10 +281,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_risk_level_parsing() {
-        assert_eq!(RiskLevel::from_str("low"), RiskLevel::Low);
-        assert_eq!(RiskLevel::from_str("HIGH"), RiskLevel::High);
-        assert_eq!(RiskLevel::from_str("Critical"), RiskLevel::Critical);
-        assert_eq!(RiskLevel::from_str("unknown"), RiskLevel::Medium);
+        assert_eq!(RiskLevel::parse_level("low"), RiskLevel::Low);
+        assert_eq!(RiskLevel::parse_level("HIGH"), RiskLevel::High);
+        assert_eq!(RiskLevel::parse_level("Critical"), RiskLevel::Critical);
+        assert_eq!(RiskLevel::parse_level("unknown"), RiskLevel::Medium);
     }
 
     #[tokio::test]

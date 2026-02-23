@@ -51,6 +51,12 @@ enum Commands {
         /// Directory to write output artifacts (code, tests, spec, review)
         #[arg(short, long)]
         output_dir: Option<PathBuf>,
+        /// Enable interactive stdin-based human approval for high-risk operations
+        #[arg(long)]
+        interactive_approval: bool,
+        /// Timeout in seconds for interactive approval prompts (default: 300)
+        #[arg(long, default_value = "300")]
+        approval_timeout: u64,
     },
 }
 
@@ -87,14 +93,8 @@ struct AgentorConfig {
     tool_groups: Vec<ToolGroup>,
 }
 
-#[derive(Deserialize, Clone)]
-struct McpServerConfig {
-    command: String,
-    #[serde(default)]
-    args: Vec<String>,
-    #[serde(default)]
-    env: std::collections::HashMap<String, String>,
-}
+/// MCP server config — delegates to the manager's type.
+type McpServerConfig = agentor_mcp::McpServerConfig;
 
 #[derive(Deserialize)]
 struct ServerConfig {
@@ -367,36 +367,20 @@ async fn main() -> anyhow::Result<()> {
             load_tool_groups(&config, &mut registry);
 
             // Connect to MCP servers and register their tools as skills
-            for mcp_config in &config.mcp_servers {
-                let args: Vec<&str> = mcp_config.args.iter().map(|s| s.as_str()).collect();
-                let env: Vec<(&str, &str)> = mcp_config
-                    .env
-                    .iter()
-                    .map(|(k, v)| (k.as_str(), v.as_str()))
-                    .collect();
-
-                match agentor_mcp::McpClient::connect(&mcp_config.command, &args, &env).await {
-                    Ok((client, tools)) => {
-                        let client = Arc::new(client);
-                        let tool_count = tools.len();
-                        for tool in &tools {
-                            let skill = agentor_mcp::McpSkill::new(tool, client.clone());
-                            registry.register(Arc::new(skill));
-                        }
-                        info!(
-                            server = %mcp_config.command,
-                            tools = tool_count,
-                            "MCP server connected"
-                        );
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            server = %mcp_config.command,
-                            error = %e,
-                            "Failed to connect to MCP server (skipping)"
-                        );
-                    }
+            let mcp_manager = Arc::new(agentor_mcp::McpServerManager::new());
+            if !config.mcp_servers.is_empty() {
+                let errors = mcp_manager
+                    .connect_all(&config.mcp_servers, &mut registry)
+                    .await;
+                if !errors.is_empty() {
+                    tracing::warn!(
+                        failed = errors.len(),
+                        "Some MCP servers failed to connect"
+                    );
                 }
+                // Start background health check loop (60s default)
+                let mgr = mcp_manager.clone();
+                mgr.start_health_loop(std::time::Duration::from_secs(60));
             }
 
             // Build permissions from all loaded skills' required capabilities
@@ -557,13 +541,26 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         },
-        Commands::Orchestrate { task, output_dir } => {
+        Commands::Orchestrate {
+            task,
+            output_dir,
+            interactive_approval,
+            approval_timeout,
+        } => {
             // Initialize security
             let audit = Arc::new(AuditLog::new(config.data_dir.join("audit")));
 
             // Load skills: builtins + config + markdown
             let mut registry = SkillRegistry::new();
-            agentor_builtins::register_builtins(&mut registry);
+            if interactive_approval {
+                let channel = Arc::new(agentor_builtins::StdinApprovalChannel::new(
+                    std::time::Duration::from_secs(approval_timeout),
+                ));
+                agentor_builtins::register_builtins_with_approval(&mut registry, channel);
+                info!("Interactive approval enabled (timeout: {}s)", approval_timeout);
+            } else {
+                agentor_builtins::register_builtins(&mut registry);
+            }
             if !config.skills.is_empty() {
                 let loader = SkillLoader::new()?;
                 let _ = loader.load_all(&config.skills, &config_dir, &mut registry);
@@ -581,12 +578,30 @@ async fn main() -> anyhow::Result<()> {
 
             let skills = Arc::new(registry);
 
-            // Create orchestrator with progress callback and optional output dir
+            // Build compliance hooks for automated event tracking
+            let iso27001_module = Arc::new(agentor_compliance::Iso27001Module::new());
+            let iso42001_module = Arc::new(agentor_compliance::Iso42001Module::new());
+            let system_id = uuid::Uuid::new_v4();
+
+            let iso27001_hook = Arc::new(agentor_compliance::Iso27001Hook::new(iso27001_module.clone()));
+            let iso42001_hook = Arc::new(agentor_compliance::Iso42001Hook::new(
+                iso42001_module.clone(),
+                system_id,
+            ));
+
+            let mut compliance_chain = agentor_compliance::ComplianceHookChain::new();
+            compliance_chain.add(iso27001_hook);
+            compliance_chain.add(iso42001_hook);
+            let compliance_chain = Arc::new(compliance_chain);
+
+            // Create orchestrator with progress callback, compliance hooks, and optional output dir
             let mut orchestrator =
                 agentor_orchestrator::Orchestrator::new(&config.model, skills, permissions, audit);
-            orchestrator = orchestrator.with_progress(|role, msg| {
-                eprintln!("  [{:>10}] {}", role, msg);
-            });
+            orchestrator = orchestrator
+                .with_progress(|role, msg| {
+                    eprintln!("  [{:>10}] {}", role, msg);
+                })
+                .with_compliance(compliance_chain.clone());
             if let Some(dir) = output_dir {
                 orchestrator = orchestrator.with_output_dir(dir);
             }
@@ -634,6 +649,16 @@ async fn main() -> anyhow::Result<()> {
                     eprintln!("Orchestration failed: {}", e);
                     std::process::exit(1);
                 }
+            }
+
+            // Persist compliance event counts as a summary
+            let access_events = iso27001_module.access_event_count().await;
+            let transparency_logs = iso42001_module.transparency_log_count().await;
+            if access_events > 0 || transparency_logs > 0 {
+                eprintln!(
+                    "Compliance: {} ISO 27001 access events, {} ISO 42001 transparency logs",
+                    access_events, transparency_logs
+                );
             }
         }
         Commands::Compliance { action } => match action {
@@ -717,6 +742,30 @@ async fn main() -> anyhow::Result<()> {
                 }
 
                 println!("\n{}", dpga_report.summary);
+
+                // Persist all reports to disk
+                let report_dir = config.data_dir.join("compliance_reports");
+                let store = agentor_compliance::JsonReportStore::new(&report_dir);
+                let reports = [&gdpr_report, &iso_report, &ai_report, &dpga_report];
+                let mut saved = 0;
+                for report in &reports {
+                    match store.save_report(report).await {
+                        Ok(path) => {
+                            saved += 1;
+                            println!("  Saved: {}", path.display());
+                        }
+                        Err(e) => {
+                            eprintln!("  Failed to save {} report: {}", report.framework, e);
+                        }
+                    }
+                }
+                if saved > 0 {
+                    println!(
+                        "\n{} report(s) saved to {}",
+                        saved,
+                        report_dir.display()
+                    );
+                }
             }
         },
     }

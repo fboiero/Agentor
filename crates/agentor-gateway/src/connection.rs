@@ -46,6 +46,14 @@ impl ConnectionManager {
     pub async fn connection_count(&self) -> usize {
         self.connections.read().await.len()
     }
+
+    /// Broadcast a message to all connected clients.
+    pub async fn broadcast(&self, message: &str) {
+        let conns = self.connections.read().await;
+        for conn in conns.values() {
+            let _ = conn.tx.send(message.to_string());
+        }
+    }
 }
 
 impl Default for ConnectionManager {

@@ -3,6 +3,7 @@ use crate::profiles::default_profiles;
 use crate::task_queue::TaskQueue;
 use crate::types::{AgentProfile, AgentRole, Artifact, ArtifactKind, Task, TaskStatus};
 use agentor_agent::{AgentRunner, ModelConfig};
+use agentor_compliance::{ComplianceEvent, ComplianceHookChain};
 use agentor_core::{AgentorError, AgentorResult};
 use agentor_mcp::{McpProxy, ToolDiscovery};
 use agentor_security::{AuditLog, PermissionSet};
@@ -34,6 +35,7 @@ struct WorkerContext {
     proxy: Arc<McpProxy>,
     on_progress: Option<ProgressCallback>,
     backend_factory: Option<BackendFactory>,
+    compliance_hooks: Option<Arc<ComplianceHookChain>>,
 }
 
 /// The multi-agent orchestrator engine.
@@ -50,6 +52,7 @@ pub struct Orchestrator {
     output_dir: Option<PathBuf>,
     on_progress: Option<ProgressCallback>,
     backend_factory: Option<BackendFactory>,
+    compliance_hooks: Option<Arc<ComplianceHookChain>>,
 }
 
 impl Orchestrator {
@@ -78,6 +81,7 @@ impl Orchestrator {
             output_dir: None,
             on_progress: None,
             backend_factory: None,
+            compliance_hooks: None,
         }
     }
 
@@ -104,6 +108,7 @@ impl Orchestrator {
             output_dir: None,
             on_progress: None,
             backend_factory: None,
+            compliance_hooks: None,
         }
     }
 
@@ -125,6 +130,12 @@ impl Orchestrator {
     /// Set a custom LLM backend factory (for testing with mock backends).
     pub fn with_backend_factory(mut self, factory: BackendFactory) -> Self {
         self.backend_factory = Some(factory);
+        self
+    }
+
+    /// Set compliance hooks for automated compliance event tracking.
+    pub fn with_compliance(mut self, hooks: Arc<ComplianceHookChain>) -> Self {
+        self.compliance_hooks = Some(hooks);
         self
     }
 
@@ -372,6 +383,7 @@ impl Orchestrator {
             proxy: self.proxy.clone(),
             on_progress: self.on_progress.clone(),
             backend_factory: self.backend_factory.clone(),
+            compliance_hooks: self.compliance_hooks.clone(),
         }
     }
 
@@ -404,6 +416,18 @@ impl Orchestrator {
             q.mark_running(task_id);
         }
         ctx.monitor.start_task(role, task_id).await;
+
+        // Emit compliance event: task started
+        if let Some(hooks) = &ctx.compliance_hooks {
+            hooks
+                .emit(ComplianceEvent::TaskStarted {
+                    task_id,
+                    role: role.to_string(),
+                    description: description.to_string(),
+                    timestamp: chrono::Utc::now(),
+                })
+                .await;
+        }
 
         let start = Instant::now();
 
@@ -527,6 +551,19 @@ impl Orchestrator {
 
                 ctx.monitor.finish_task(role).await;
                 ctx.monitor.record_turn(role, 1, 0).await;
+
+                // Emit compliance event: task completed
+                if let Some(hooks) = &ctx.compliance_hooks {
+                    hooks
+                        .emit(ComplianceEvent::TaskCompleted {
+                            task_id,
+                            role: role.to_string(),
+                            duration_ms: duration.as_millis() as u64,
+                            artifacts_count: 1,
+                            timestamp: chrono::Utc::now(),
+                        })
+                        .await;
+                }
 
                 if let Some(cb) = &ctx.on_progress {
                     if !needs_review {

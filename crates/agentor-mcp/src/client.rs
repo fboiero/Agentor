@@ -264,6 +264,12 @@ impl McpClient {
     pub fn server_name(&self) -> &str {
         &self.server_name
     }
+
+    /// Health check — verify the server is responsive by calling list_tools.
+    pub async fn health_check(&self) -> AgentorResult<()> {
+        let _tools = self.list_tools().await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

@@ -63,7 +63,6 @@ impl ToolDiscovery {
 mod tests {
     use super::*;
     use agentor_core::{AgentorResult, ToolCall, ToolResult};
-    use agentor_security::Capability;
     use agentor_skills::skill::{Skill, SkillDescriptor};
     use async_trait::async_trait;
     use std::sync::Arc;

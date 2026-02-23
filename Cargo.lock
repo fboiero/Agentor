@@ -60,11 +60,14 @@ version = "0.1.0"
 dependencies = [
  "agentor-core",
  "async-trait",
+ "futures-util",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-tungstenite 0.24.0",
+ "tracing",
  "uuid",
 ]
 
@@ -96,6 +99,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
@@ -103,6 +107,7 @@ name = "agentor-compliance"
 version = "0.1.0"
 dependencies = [
  "agentor-core",
+ "async-trait",
  "chrono",
  "serde",
  "serde_json",
@@ -116,6 +121,7 @@ dependencies = [
 name = "agentor-core"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "serde",
  "serde_json",
@@ -134,6 +140,7 @@ dependencies = [
  "agentor-security",
  "agentor-session",
  "agentor-skills",
+ "async-trait",
  "axum",
  "futures-util",
  "reqwest",
@@ -185,6 +192,7 @@ version = "0.1.0"
 dependencies = [
  "agentor-agent",
  "agentor-builtins",
+ "agentor-compliance",
  "agentor-core",
  "agentor-mcp",
  "agentor-security",
@@ -2902,7 +2910,9 @@ checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
 dependencies = [
  "futures-util",
  "log",
+ "native-tls",
  "tokio",
+ "tokio-native-tls",
  "tungstenite 0.24.0",
 ]
 
@@ -3115,6 +3125,7 @@ dependencies = [
  "http",
  "httparse",
  "log",
+ "native-tls",
  "rand 0.8.5",
  "sha1",
  "thiserror 1.0.69",

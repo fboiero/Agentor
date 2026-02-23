@@ -32,3 +32,4 @@ anyhow = "1"
 dotenvy = "0.15"
 hyper-util = { version = "0.1", features = ["tokio", "server-auto"] }
 tower.workspace = true
+uuid.workspace = true

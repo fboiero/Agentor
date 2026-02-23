@@ -147,6 +147,11 @@ impl Iso42001Module {
             .collect()
     }
 
+    /// Get the total number of transparency log entries.
+    pub async fn transparency_log_count(&self) -> usize {
+        self.transparency_logs.read().await.len()
+    }
+
     /// Generate an ISO 42001 compliance assessment.
     pub fn assess(
         &self,

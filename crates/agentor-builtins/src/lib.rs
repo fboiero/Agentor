@@ -1,3 +1,5 @@
+pub mod agent_delegate;
+pub mod artifact_store;
 pub mod browser;
 pub mod file_read;
 pub mod file_write;
@@ -5,7 +7,11 @@ pub mod http_fetch;
 pub mod human_approval;
 pub mod memory;
 pub mod shell;
+pub mod stdin_approval;
+pub mod task_status;
 
+pub use agent_delegate::{AgentDelegateSkill, TaskInfo, TaskQueueHandle, TaskSummary};
+pub use artifact_store::{ArtifactBackend, ArtifactStoreSkill, InMemoryArtifactBackend};
 pub use browser::BrowserSkill;
 pub use file_read::FileReadSkill;
 pub use file_write::FileWriteSkill;
@@ -16,6 +22,8 @@ pub use human_approval::{
 };
 pub use memory::{MemorySearchSkill, MemoryStoreSkill};
 pub use shell::ShellSkill;
+pub use stdin_approval::StdinApprovalChannel;
+pub use task_status::TaskStatusSkill;
 
 use agentor_memory::{EmbeddingProvider, VectorStore};
 use agentor_skills::SkillRegistry;
@@ -82,4 +90,16 @@ pub fn register_all(
     )));
     registry.register(Arc::new(MemorySearchSkill::new(store, embedder)));
     registry.register(Arc::new(HumanApprovalSkill::new(approval_channel)));
+}
+
+/// Register orchestration-specific skills (artifact_store, agent_delegate, task_status).
+/// These require a TaskQueueHandle and ArtifactBackend from the orchestrator.
+pub fn register_orchestration_builtins(
+    registry: &mut SkillRegistry,
+    queue: Arc<dyn TaskQueueHandle>,
+    artifact_backend: Arc<dyn ArtifactBackend>,
+) {
+    registry.register(Arc::new(ArtifactStoreSkill::new(artifact_backend)));
+    registry.register(Arc::new(AgentDelegateSkill::new(queue.clone())));
+    registry.register(Arc::new(TaskStatusSkill::new(queue)));
 }

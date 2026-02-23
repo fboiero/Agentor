@@ -10,6 +10,7 @@ agentor-security.workspace = true
 agentor-session.workspace = true
 agentor-skills.workspace = true
 agentor-mcp.workspace = true
+agentor-compliance.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

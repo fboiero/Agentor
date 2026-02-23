@@ -126,6 +126,11 @@ impl Iso27001Module {
             .count()
     }
 
+    /// Get the total number of recorded access control events.
+    pub async fn access_event_count(&self) -> usize {
+        self.access_events.read().await.len()
+    }
+
     /// Generate an ISO 27001 compliance assessment.
     pub fn assess(
         &self,
