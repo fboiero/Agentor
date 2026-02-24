@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Regression tests for agentor-agent: ContextWindow, ModelConfig, LlmProvider, AgentRunner.
 
 use agentor_agent::{AgentRunner, ContextWindow, LlmProvider, ModelConfig, StreamEvent};

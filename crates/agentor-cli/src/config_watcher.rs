@@ -68,13 +68,13 @@ impl ConfigWatcher {
             },
         )
         .map_err(|e| {
-            AgentorError::Config(format!("Failed to create file watcher: {}", e))
+            AgentorError::Config(format!("Failed to create file watcher: {e}"))
         })?;
 
         watcher
             .watch(config_path.as_ref(), RecursiveMode::NonRecursive)
             .map_err(|e| {
-                AgentorError::Config(format!("Failed to watch config file: {}", e))
+                AgentorError::Config(format!("Failed to watch config file: {e}"))
             })?;
 
         let path = config_path.clone();
@@ -129,6 +129,7 @@ pub fn parse_config(path: &Path) -> AgentorResult<ReloadableConfig> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::io::Write;
@@ -166,7 +167,7 @@ name = "custom"
     fn test_parse_empty_config_all_none() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         // Write an empty (but valid) TOML document.
-        writeln!(tmp.as_file_mut(), "").unwrap();
+        writeln!(tmp.as_file_mut()).unwrap();
 
         let config = parse_config(tmp.path()).unwrap();
         assert!(config.security.is_none());
@@ -185,8 +186,7 @@ name = "custom"
         let err_msg = format!("{}", result.unwrap_err());
         assert!(
             err_msg.contains("Failed to parse config"),
-            "unexpected error: {}",
-            err_msg
+            "unexpected error: {err_msg}"
         );
     }
 
@@ -197,8 +197,7 @@ name = "custom"
         let err_msg = format!("{}", result.unwrap_err());
         assert!(
             err_msg.contains("Failed to read config"),
-            "unexpected error: {}",
-            err_msg
+            "unexpected error: {err_msg}"
         );
     }
 }

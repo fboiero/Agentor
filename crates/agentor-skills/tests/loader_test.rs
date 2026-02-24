@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for the SkillLoader.
 //!
 //! These tests exercise the SkillLoader's ability to load WASM skills from

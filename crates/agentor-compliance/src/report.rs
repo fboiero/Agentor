@@ -77,8 +77,7 @@ impl ComplianceReport {
         };
 
         let summary = format!(
-            "{}: {}/{} controls compliant",
-            framework, compliant_count, total
+            "{framework}: {compliant_count}/{total} controls compliant"
         );
 
         Self {
@@ -99,6 +98,7 @@ impl ComplianceReport {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

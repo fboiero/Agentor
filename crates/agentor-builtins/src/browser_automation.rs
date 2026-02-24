@@ -388,8 +388,7 @@ pub fn parse_action(args: &serde_json::Value) -> AgentorResult<BrowserAction> {
         }
         "get_page_source" => Ok(BrowserAction::GetPageSource),
         unknown => Err(AgentorError::Skill(format!(
-            "Unknown browser action: '{}'. Valid actions: navigate, screenshot, extract_text, fill_form, click, get_page_source",
-            unknown
+            "Unknown browser action: '{unknown}'. Valid actions: navigate, screenshot, extract_text, fill_form, click, get_page_source"
         ))),
     }
 }
@@ -510,7 +509,14 @@ impl Skill for BrowserAutomationSkill {
             use fantoccini::Locator;
 
             let guard = self.ensure_client().await?;
-            let client = guard.as_ref().unwrap();
+            // Safety: ensure_client() guarantees the Option is Some when it
+            // returns Ok. If the invariant is somehow broken, surface a clear
+            // error instead of panicking.
+            let client = guard.as_ref().ok_or_else(|| {
+                AgentorError::Skill(
+                    "BrowserAutomationSkill: client missing after ensure_client".to_string(),
+                )
+            })?;
 
             let result: BrowserResult = match action {
                 BrowserAction::Navigate { url } => {
@@ -642,6 +648,7 @@ impl Skill for BrowserAutomationSkill {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

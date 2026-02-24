@@ -15,7 +15,7 @@ impl ToolDiscovery {
         registry: &SkillRegistry,
         allowed_skills: &[String],
     ) -> Vec<SkillDescriptor> {
-        let allowed_set: HashSet<&str> = allowed_skills.iter().map(|s| s.as_str()).collect();
+        let allowed_set: HashSet<&str> = allowed_skills.iter().map(std::string::String::as_str).collect();
 
         registry
             .list_descriptors()
@@ -60,6 +60,7 @@ impl ToolDiscovery {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use agentor_core::{AgentorResult, ToolCall, ToolResult};

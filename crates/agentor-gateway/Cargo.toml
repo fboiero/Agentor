@@ -3,6 +3,9 @@ name = "agentor-gateway"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 agentor-core.workspace = true
 agentor-security.workspace = true

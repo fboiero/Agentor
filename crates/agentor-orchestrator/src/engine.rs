@@ -198,7 +198,7 @@ impl Orchestrator {
         if let Some(dir) = &self.output_dir {
             tokio::fs::create_dir_all(dir)
                 .await
-                .map_err(|e| AgentorError::Agent(format!("Failed to create output dir: {}", e)))?;
+                .map_err(|e| AgentorError::Agent(format!("Failed to create output dir: {e}")))?;
         }
 
         // Phase 2: Execute — process tasks respecting dependencies
@@ -232,23 +232,23 @@ impl Orchestrator {
 
         // Create a spec task first, then code, test, review chain
         let spec_task = Task::new(
-            format!("Analyze and specify: {}", task_description),
+            format!("Analyze and specify: {task_description}"),
             AgentRole::Spec,
         );
         let spec_id = spec_task.id;
 
-        let code_task = Task::new(format!("Implement: {}", task_description), AgentRole::Coder)
+        let code_task = Task::new(format!("Implement: {task_description}"), AgentRole::Coder)
             .with_dependencies(vec![spec_id]);
         let code_id = code_task.id;
 
         let test_task = Task::new(
-            format!("Write tests for: {}", task_description),
+            format!("Write tests for: {task_description}"),
             AgentRole::Tester,
         )
         .with_dependencies(vec![code_id]);
         let test_id = test_task.id;
 
-        let review_task = Task::new(format!("Review: {}", task_description), AgentRole::Reviewer)
+        let review_task = Task::new(format!("Review: {task_description}"), AgentRole::Reviewer)
             .with_dependencies(vec![code_id, test_id]);
 
         self.monitor.finish_task(AgentRole::Orchestrator).await;
@@ -318,7 +318,7 @@ impl Orchestrator {
                         }
                         Err(e) => {
                             error!(task_id = %task_id, role = %role, "Task panicked: {}", e);
-                            return Err(AgentorError::Agent(format!("Task panicked: {}", e)));
+                            return Err(AgentorError::Agent(format!("Task panicked: {e}")));
                         }
                     }
                 }
@@ -433,7 +433,7 @@ impl Orchestrator {
 
         // Get the profile for this role
         let profile = ctx.profiles.get(&role).ok_or_else(|| {
-            AgentorError::Agent(format!("No profile configured for role: {}", role))
+            AgentorError::Agent(format!("No profile configured for role: {role}"))
         })?;
 
         // Progressive tool disclosure — workers only see skills they need.
@@ -463,7 +463,7 @@ impl Orchestrator {
 
         // Create a dedicated agent runner for this worker with specialized system prompt.
         // Route tool calls through the MCP proxy for centralized logging.
-        let agent_id = format!("{}:{}", role, task_id);
+        let agent_id = format!("{role}:{task_id}");
         let runner = if let Some(factory) = &ctx.backend_factory {
             let backend = factory(&role);
             AgentRunner::from_backend(
@@ -490,7 +490,7 @@ impl Orchestrator {
         let enriched_prompt = if dependency_context.is_empty() {
             description.to_string()
         } else {
-            format!("{}\n{}", description, dependency_context)
+            format!("{description}\n{dependency_context}")
         };
 
         if let Some(cb) = &ctx.on_progress {
@@ -575,7 +575,7 @@ impl Orchestrator {
             }
             Err(e) => {
                 if let Some(cb) = &ctx.on_progress {
-                    cb(role, &format!("FAILED: {}", e));
+                    cb(role, &format!("FAILED: {e}"));
                 }
                 error!(task_id = %task_id, role = %role, error = %e, "Task failed");
                 {
@@ -645,7 +645,7 @@ impl Orchestrator {
         }
 
         let review_suffix = if needs_review > 0 {
-            format!(", {} awaiting human review", needs_review)
+            format!(", {needs_review} awaiting human review")
         } else {
             String::new()
         };
@@ -666,7 +666,9 @@ impl Orchestrator {
                 all_tasks.len(),
                 failed,
                 written_files.len(),
-                self.output_dir.as_ref().unwrap().display(),
+                // Safe: this branch is only entered when written_files is non-empty,
+                // which requires output_dir to be Some (see the write loop above).
+                self.output_dir.as_ref().map(|d| d.display().to_string()).unwrap_or_default(),
                 review_suffix
             )
         };
@@ -709,7 +711,7 @@ impl Orchestrator {
         let filename = if let Some(path) = &artifact.file_path {
             path.clone()
         } else {
-            format!("{}.{}", default_name, ext)
+            format!("{default_name}.{ext}")
         };
 
         // Extract code from markdown code blocks if present
@@ -720,7 +722,7 @@ impl Orchestrator {
     /// Extract the first code block from markdown, or return content as-is.
     fn extract_code_block(content: &str, expected_lang: &str) -> String {
         // Look for ```rust or ``` blocks
-        let markers = [format!("```{}", expected_lang), "```".to_string()];
+        let markers = [format!("```{expected_lang}"), "```".to_string()];
 
         for marker in &markers {
             if let Some(start) = content.find(marker.as_str()) {
@@ -757,6 +759,7 @@ pub struct OrchestratorResult {
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::task_queue::TaskQueue;

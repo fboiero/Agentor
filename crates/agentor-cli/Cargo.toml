@@ -3,6 +3,9 @@ name = "agentor-cli"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [[bin]]
 name = "agentor"
 path = "src/main.rs"

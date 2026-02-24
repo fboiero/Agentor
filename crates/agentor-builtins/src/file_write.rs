@@ -90,7 +90,7 @@ impl Skill for FileWriteSkill {
         if !path.is_absolute() {
             return Ok(ToolResult::error(
                 &call.id,
-                format!("Path must be absolute: '{}'", path_str),
+                format!("Path must be absolute: '{path_str}'"),
             ));
         }
 
@@ -119,7 +119,7 @@ impl Skill for FileWriteSkill {
             if path_lower.contains(pattern) {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Access denied: '{}' matches blocked pattern", path_str),
+                    format!("Access denied: '{path_str}' matches blocked pattern"),
                 ));
             }
         }
@@ -132,8 +132,7 @@ impl Skill for FileWriteSkill {
                 return Ok(ToolResult::error(
                     &call.id,
                     format!(
-                        "Access denied: writing executable files ({}) is not allowed",
-                        ext_lower
+                        "Access denied: writing executable files ({ext_lower}) is not allowed"
                     ),
                 ));
             }
@@ -145,7 +144,7 @@ impl Skill for FileWriteSkill {
                 if let Err(e) = tokio::fs::create_dir_all(parent).await {
                     return Ok(ToolResult::error(
                         &call.id,
-                        format!("Failed to create directories for '{}': {}", path_str, e),
+                        format!("Failed to create directories for '{path_str}': {e}"),
                     ));
                 }
             }
@@ -164,7 +163,7 @@ impl Skill for FileWriteSkill {
                 Err(e) => {
                     return Ok(ToolResult::error(
                         &call.id,
-                        format!("Failed to open '{}' for append: {}", path_str, e),
+                        format!("Failed to open '{path_str}' for append: {e}"),
                     ));
                 }
             };
@@ -185,13 +184,14 @@ impl Skill for FileWriteSkill {
             }
             Err(e) => Ok(ToolResult::error(
                 &call.id,
-                format!("Failed to write '{}': {}", path_str, e),
+                format!("Failed to write '{path_str}': {e}"),
             )),
         }
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

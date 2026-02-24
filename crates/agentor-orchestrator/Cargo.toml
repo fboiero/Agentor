@@ -3,6 +3,9 @@ name = "agentor-orchestrator"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 agentor-core.workspace = true
 agentor-agent.workspace = true

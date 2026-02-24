@@ -180,6 +180,9 @@ impl SkillLoader {
 }
 
 impl Default for SkillLoader {
+    // Safety: SkillLoader::new() delegates to WasmSkillRuntime::new() which creates
+    // a default wasmtime::Engine — an operation that is infallible in practice.
+    #[allow(clippy::expect_used)]
     fn default() -> Self {
         Self::new().expect("Failed to create SkillLoader")
     }

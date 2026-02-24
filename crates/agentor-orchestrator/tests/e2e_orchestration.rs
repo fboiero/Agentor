@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-end orchestration test.
 //!
 //! Verifies the full Spec → Code → Test → Review pipeline using mock LLM backends.
@@ -302,7 +303,7 @@ async fn test_e2e_monitor_tracking() {
     let agg = orchestrator.monitor().aggregate_metrics().await;
     assert!(agg.total_turns > 0);
     // Note: with mock backends, execution can be sub-millisecond (0ms).
-    assert!(agg.total_turns > 0 || agg.duration_ms >= 0);
+    assert!(agg.total_turns > 0);
 }
 
 // ---------------------------------------------------------------------------

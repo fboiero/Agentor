@@ -1,15 +1,43 @@
+//! Built-in skills for the Agentor framework.
+//!
+//! Provides ready-to-use skills covering shell execution, file I/O, HTTP fetching,
+//! semantic memory, artifact storage, browser automation, Docker sandboxing,
+//! human-in-the-loop approval, and agent delegation.
+//!
+//! # Main entry points
+//!
+//! - [`register_builtins()`] — Register the standard set of built-in skills.
+//! - [`register_builtins_with_memory()`] — Register builtins including memory skills.
+//! - [`register_builtins_with_approval()`] — Register builtins with a custom approval channel.
+//! - [`register_all()`] — Register builtins with memory and approval.
+//! - [`register_orchestration_builtins()`] — Register orchestration-specific skills.
+//! - [`register_builtins_with_browser()`] — Register builtins with browser automation.
+
+/// Agent delegation skill for sub-agent spawning.
 pub mod agent_delegate;
+/// Artifact storage skill and backends.
 pub mod artifact_store;
+/// Simple browser skill (URL fetching).
 pub mod browser;
+/// WebDriver-based browser automation skill.
 pub mod browser_automation;
+/// Docker-sandboxed shell execution.
 pub mod docker_sandbox;
+/// File read skill.
 pub mod file_read;
+/// File write skill.
 pub mod file_write;
+/// HTTP fetch skill.
 pub mod http_fetch;
+/// Human-in-the-loop approval skill and channels.
 pub mod human_approval;
+/// Semantic memory store and search skills.
 pub mod memory;
+/// Shell command execution skill.
 pub mod shell;
+/// Stdin-based interactive approval channel.
 pub mod stdin_approval;
+/// Task status reporting skill.
 pub mod task_status;
 
 pub use agent_delegate::{AgentDelegateSkill, TaskInfo, TaskQueueHandle, TaskSummary};

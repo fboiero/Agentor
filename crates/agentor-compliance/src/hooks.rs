@@ -165,10 +165,9 @@ impl ComplianceHook for Iso42001Hook {
                     .log_transparency(
                         self.system_id,
                         "task_execution",
-                        &format!("Worker: {}", role),
+                        &format!("Worker: {role}"),
                         &format!(
-                            "Completed in {}ms, {} artifacts",
-                            duration_ms, artifacts_count
+                            "Completed in {duration_ms}ms, {artifacts_count} artifacts"
                         ),
                         None,
                     )
@@ -183,7 +182,7 @@ impl ComplianceHook for Iso42001Hook {
                     .log_transparency(
                         self.system_id,
                         "hitl_approval_requested",
-                        &format!("Task: {} (risk: {})", task_id, risk_level),
+                        &format!("Task: {task_id} (risk: {risk_level})"),
                         "Awaiting human decision",
                         None,
                     )
@@ -200,9 +199,9 @@ impl ComplianceHook for Iso42001Hook {
                     .log_transparency(
                         self.system_id,
                         "hitl_approval_decided",
-                        &format!("Task: {}", task_id),
-                        &format!("{} by {}", decision, reviewer),
-                        Some(&format!("Human oversight: {}", reviewer)),
+                        &format!("Task: {task_id}"),
+                        &format!("{decision} by {reviewer}"),
+                        Some(&format!("Human oversight: {reviewer}")),
                     )
                     .await;
             }
@@ -212,6 +211,7 @@ impl ComplianceHook for Iso42001Hook {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

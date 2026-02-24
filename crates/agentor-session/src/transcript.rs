@@ -74,7 +74,7 @@ impl FileTranscriptStore {
     }
 
     fn transcript_path(&self, session_id: Uuid) -> PathBuf {
-        self.dir.join(format!("{}.transcript.jsonl", session_id))
+        self.dir.join(format!("{session_id}.transcript.jsonl"))
     }
 }
 
@@ -115,6 +115,7 @@ impl TranscriptStore for FileTranscriptStore {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use tempfile::TempDir;

@@ -39,24 +39,24 @@ pub async fn build_tls_acceptor(config: &TlsConfig) -> AgentorResult<TlsAcceptor
         for cert in client_ca_certs {
             root_store
                 .add(cert)
-                .map_err(|e| AgentorError::Config(format!("Invalid client CA cert: {}", e)))?;
+                .map_err(|e| AgentorError::Config(format!("Invalid client CA cert: {e}")))?;
         }
 
         let client_verifier = WebPkiClientVerifier::builder(Arc::new(root_store))
             .build()
-            .map_err(|e| AgentorError::Config(format!("Failed to build client verifier: {}", e)))?;
+            .map_err(|e| AgentorError::Config(format!("Failed to build client verifier: {e}")))?;
 
         ServerConfig::builder()
             .with_client_cert_verifier(client_verifier)
             .with_single_cert(certs, key)
-            .map_err(|e| AgentorError::Config(format!("TLS config error: {}", e)))?
+            .map_err(|e| AgentorError::Config(format!("TLS config error: {e}")))?
     } else {
         // Standard TLS (no client cert required)
         info!("TLS enabled (no mTLS)");
         ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(certs, key)
-            .map_err(|e| AgentorError::Config(format!("TLS config error: {}", e)))?
+            .map_err(|e| AgentorError::Config(format!("TLS config error: {e}")))?
     };
 
     server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
@@ -67,17 +67,16 @@ pub async fn build_tls_acceptor(config: &TlsConfig) -> AgentorResult<TlsAcceptor
 async fn load_certs(path: &str) -> AgentorResult<Vec<CertificateDer<'static>>> {
     let data = tokio::fs::read(path)
         .await
-        .map_err(|e| AgentorError::Config(format!("Failed to read cert '{}': {}", path, e)))?;
+        .map_err(|e| AgentorError::Config(format!("Failed to read cert '{path}': {e}")))?;
 
     let mut reader = std::io::BufReader::new(data.as_slice());
     let certs: Vec<CertificateDer<'static>> = rustls_pemfile::certs(&mut reader)
-        .filter_map(|r| r.ok())
+        .filter_map(std::result::Result::ok)
         .collect();
 
     if certs.is_empty() {
         return Err(AgentorError::Config(format!(
-            "No certificates found in '{}'",
-            path
+            "No certificates found in '{path}'"
         )));
     }
 
@@ -87,14 +86,14 @@ async fn load_certs(path: &str) -> AgentorResult<Vec<CertificateDer<'static>>> {
 async fn load_private_key(path: &str) -> AgentorResult<PrivateKeyDer<'static>> {
     let data = tokio::fs::read(path)
         .await
-        .map_err(|e| AgentorError::Config(format!("Failed to read key '{}': {}", path, e)))?;
+        .map_err(|e| AgentorError::Config(format!("Failed to read key '{path}': {e}")))?;
 
     let mut reader = std::io::BufReader::new(data.as_slice());
 
     // Try PKCS8 first, then RSA, then EC
     let key = rustls_pemfile::private_key(&mut reader)
-        .map_err(|e| AgentorError::Config(format!("Failed to parse private key: {}", e)))?
-        .ok_or_else(|| AgentorError::Config(format!("No private key found in '{}'", path)))?;
+        .map_err(|e| AgentorError::Config(format!("Failed to parse private key: {e}")))?
+        .ok_or_else(|| AgentorError::Config(format!("No private key found in '{path}'")))?;
 
     Ok(key)
 }

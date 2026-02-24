@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for the WASM skill system.
 //!
 //! These tests load a real WASM binary (the echo-skill) and exercise the full

@@ -38,8 +38,7 @@ pub fn format_approval_prompt(request: &ApprovalRequest) -> String {
         request.task_id
     ));
     prompt.push_str(&format!(
-        "  Risk:  \x1b[{}m{}\x1b[0m\n",
-        color, label
+        "  Risk:  \x1b[{color}m{label}\x1b[0m\n"
     ));
     prompt.push_str(&format!(
         "  Desc:  {}\n",
@@ -83,7 +82,7 @@ impl ApprovalChannel for StdinApprovalChannel {
         let timeout = self.timeout;
 
         // Print prompt to stderr (preserving stdout for piped output)
-        eprint!("{}", prompt);
+        eprint!("{prompt}");
 
         // Read from stdin in a blocking task with timeout
         let result = tokio::time::timeout(timeout, tokio::task::spawn_blocking(|| {
@@ -101,7 +100,7 @@ impl ApprovalChannel for StdinApprovalChannel {
             Ok(Ok(input)) => {
                 let (approved, reason) = parse_approval_input(&input);
                 let decision_text = if approved { "APPROVED" } else { "DENIED" };
-                eprintln!("  → {}\n", decision_text);
+                eprintln!("  → {decision_text}\n");
                 Ok(ApprovalDecision {
                     approved,
                     reason,
@@ -129,6 +128,7 @@ impl ApprovalChannel for StdinApprovalChannel {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

@@ -38,7 +38,7 @@ impl Scheduler {
     /// Uses the 7-field cron format: sec min hour day-of-month month day-of-week year.
     pub fn parse_cron(cron_expr: &str) -> AgentorResult<Schedule> {
         Schedule::from_str(cron_expr).map_err(|e| {
-            AgentorError::Config(format!("Invalid cron expression '{}': {}", cron_expr, e))
+            AgentorError::Config(format!("Invalid cron expression '{cron_expr}': {e}"))
         })
     }
 
@@ -50,8 +50,7 @@ impl Scheduler {
         let schedule = Self::parse_cron(cron_expr)?;
         schedule.upcoming(Utc).next().ok_or_else(|| {
             AgentorError::Config(format!(
-                "Cron expression '{}' has no upcoming fire times",
-                cron_expr
+                "Cron expression '{cron_expr}' has no upcoming fire times"
             ))
         })
     }
@@ -150,6 +149,7 @@ impl Scheduler {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

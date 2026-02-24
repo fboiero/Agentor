@@ -94,6 +94,7 @@ impl Default for PluginRegistry {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::skill::{Skill, SkillDescriptor};
@@ -115,7 +116,7 @@ mod tests {
                 manifest: PluginManifest {
                     name: name.to_string(),
                     version: "0.1.0".to_string(),
-                    description: format!("Mock plugin {}", name),
+                    description: format!("Mock plugin {name}"),
                     author: "test".to_string(),
                 },
                 event_count: Arc::new(AtomicUsize::new(0)),

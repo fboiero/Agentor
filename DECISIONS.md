@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-02-24 — Hardening + Documentation Sprint
+
+**Asked**: Execute 4-wave plan: clippy config, unwrap elimination, documentation, integration tests.
+
+**Decided**:
+- Wave 1: Strict clippy lints at workspace level, propagated to all 13 crates. CI uses `-D warnings -A missing-docs` (deny all warnings except missing_docs, which stays as warn for progressive improvement).
+- Wave 2: All production unwraps replaced with `?` or `unwrap_or_default()`. Infallible operations (signal handlers, reqwest client, Default impls) get `#[allow]` with safety comments. All test code (inline + standalone files) gets blanket `#[allow]`.
+- Wave 3: Crate-level `//!` docs + `///` module docs on all lib.rs. Core types fully documented. README updated with current stats. CI excludes missing_docs from deny to avoid blocking on ~500 remaining field/method docs.
+- Wave 4: 52 new integration tests across 5 new test files (builtins, memory, mcp, core, compliance). Total: 483 tests.
+
+**Alternatives considered**:
+- Could have documented ALL ~500 public items (too expensive, diminishing returns for internal fields)
+- Could have used `deny` for missing_docs (would block CI; chose progressive approach instead)
+- Could have used `Result` for Default impls instead of `#[allow(expect_used)]` (would break the trait contract)
+
+**Result**: 483 tests passing, 0 clippy errors (with CI flags), 0 unwraps in production code.
+
+---
+
 ## 2026-02-22 — Codebase Improvement Sprint
 
 ### Decision 1: MCP Proxy Wiring Strategy

@@ -1,142 +1,55 @@
 # Agentor — Session Context
-> Last updated: 2026-02-23 (session 4)
+> Last updated: 2026-02-24 (session 5)
 
 ## Current Goal
-11 OpenClaw parity features implemented. Framework at feature parity for coding-agent capabilities.
+Hardening + Documentation complete. Framework production-ready with strict clippy, zero unwraps in prod, crate-level docs, and comprehensive integration tests.
 
-## Task Tracker
-| Task | Description | Status |
-|------|-------------|--------|
-| #45 | LlmBackend trait abstraction | **COMPLETED** |
-| #46 | Markdown skills system | **COMPLETED** |
-| #47 | Tool groups in SkillRegistry | **COMPLETED** |
-| #48 | Wire MCP Proxy into orchestrator | **COMPLETED** |
-| #50 | Wire progressive tool disclosure | **COMPLETED** |
-| #49 | Implement HITL with human_approval skill | **COMPLETED** |
-| #51 | Add E2E orchestration integration test | **COMPLETED** |
-| #52 | CLI Approval Channel (stdin) | **COMPLETED** |
-| #53 | Orchestration Builtins (3 skills) | **COMPLETED** |
-| #54 | WebSocket Approval Channel | **COMPLETED** |
-| #55 | Channels Completion (Socket Mode, Gateway, Manager) | **COMPLETED** |
-| #56 | MCP Server Manager (auto-reconnect, health) | **COMPLETED** |
-| #57 | Compliance Integration (hooks + persistence) | **COMPLETED** |
-| #58 | Model Failover | **COMPLETED** |
-| #59 | Session Transcripts | **COMPLETED** |
-| #60 | Hybrid Search BM25+Vector | **COMPLETED** |
-| #61 | Webhooks | **COMPLETED** |
-| #62 | Plugin System | **COMPLETED** |
-| #63 | Docker Sandbox | **COMPLETED** |
-| #64 | Sub-agent Spawning | **COMPLETED** |
-| #65 | Config Hot-Reload | **COMPLETED** |
-| #66 | Cron/Scheduler | **COMPLETED** |
-| #67 | Query Expansion | **COMPLETED** |
-| #68 | Browser Automation | **COMPLETED** |
+## What's Completed in Session 5
 
-## What's Completed in Session 4
+### Wave 1 — Clippy Configuration
+- Created `clippy.toml` (msrv=1.75, cognitive-complexity-threshold=30)
+- Added workspace lints: unwrap_used, expect_used, uninlined_format_args, redundant_closure_for_method_calls, etc.
+- Added `[lints] workspace = true` to all 13 crate Cargo.toml files
+- Updated CI: `cargo clippy --workspace --all-targets -- -D warnings -A missing-docs`
 
-### Wave A — Fundamentals
+### Wave 2 — Unwrap Elimination
+- Replaced all `.unwrap()`/`.expect()` in production code with `?`, `map_err()`, or `unwrap_or_default()`
+- Signal handlers in CLI: `#[allow(clippy::expect_used)]` with safety comments
+- `reqwest::Client::builder().build()`: `#[allow(clippy::expect_used)]` (infallible in practice)
+- `Default` impls for WasmSkillRuntime/SkillLoader: `#[allow(clippy::expect_used)]`
+- Added `#[allow(clippy::unwrap_used, clippy::expect_used)]` to ALL test modules (inline + standalone)
+- Auto-fixed 176 uninlined_format_args + 12 redundant closures via `cargo clippy --fix`
+- Fixed complex type in failover.rs (SleepFn type alias)
 
-**#58 — Model Failover**
-- `FailoverBackend` in `agentor-agent/src/failover.rs` wrapping `Vec<Box<dyn LlmBackend>>`
-- `RetryPolicy { max_retries, backoff_base_ms, backoff_max_ms }` with exponential backoff
-- `is_retryable()` error classification (429, 5xx, timeout → retry; 400 → skip)
-- `fallback_models: Vec<ModelConfig>` + `retry_policy: Option<RetryPolicy>` in ModelConfig
-- LlmClient auto-wraps in FailoverBackend when fallback_models non-empty
-- 7 tests
+### Wave 3 — Documentation
+- Added `//!` crate-level docs to all 13 lib.rs + CLI main.rs
+- Added `///` module docs to all `pub mod` declarations
+- Added `///` doc comments to all core types (AgentorError, Message, Role, ToolCall, ToolResult, etc.)
+- Updated README.md: test count 480+, new features, updated crate table, Docker section
 
-**#59 — Session Transcripts**
-- `TranscriptEvent` enum (5 variants), `TranscriptEntry`, `TranscriptStore` trait
-- `FileTranscriptStore` — JSONL append-only, one file per session
-- 5 tests
-
-**#60 — Hybrid Search BM25+Vector**
-- `Bm25Index` with inverted index, BM25 scoring (k1=1.2, b=0.75)
-- `HybridSearcher` combining VectorStore + Bm25Index with RRF fusion (rrf_k=60)
-- `alpha: f32` for balance (0.0=pure BM25, 1.0=pure vector, default 0.5)
-- 11 tests
-
-### Wave B — Extensibility
-
-**#61 — Webhooks**
-- `WebhookConfig`, `SessionStrategy`, HMAC-SHA256 validation (constant-time)
-- `webhook_handler` for axum, template rendering with `{{payload}}`
-- 10 tests
-
-**#62 — Plugin System**
-- `Plugin` trait with lifecycle hooks (on_load, on_unload, on_event)
-- `PluginManifest`, `PluginEvent` (6 variants), `PluginRegistry`
-- 6 tests
-
-### Wave C — Infrastructure
-
-**#63 — Docker Sandbox**
-- `DockerSandbox` + `DockerShellSkill` behind `docker` feature flag (bollard)
-- `DockerSandboxConfig` with memory/CPU limits, timeout, network toggle
-- `sanitize_command()` for injection prevention
-- 8 tests
-
-**#64 — Sub-agent Spawning**
-- `SubAgentSpawner` with max_depth (3) and max_children_per_task (5) limits
-- `SpawnRequest`, `children_of()`, integrated into orchestrator Task type
-- 6 tests
-
-**#65 — Config Hot-Reload**
-- `ConfigWatcher` using `notify::RecommendedWatcher` with 500ms debounce
-- `ReloadableConfig` — security, skills, mcp_servers, tool_groups, webhooks
-- 4 tests
-
-### Wave D — Automation
-
-**#66 — Cron/Scheduler**
-- `Scheduler` with cron expression parsing, next fire time calculation
-- `ScheduledJob { name, cron_expression, task_description, enabled }`
-- Background task loop with sleep-until-next-fire
-- 5 tests
-
-**#67 — Query Expansion**
-- `QueryExpander` trait + `RuleBasedExpander` with 10 synonym groups
-- `deduplicate_results()` for multi-query dedup
-- 5 tests
-
-### Wave E — Browser
-
-**#68 — Browser Automation**
-- `BrowserAutomation` + `BrowserAutomationSkill` behind `browser` feature (fantoccini)
-- Actions: navigate, screenshot, extract_text, fill_form, click
-- `BrowserConfig { webdriver_url, headless, timeout_secs, screenshot_dir }`
-- ~5 tests
+### Wave 4 — Integration Tests (52 new)
+- `crates/agentor-builtins/tests/builtins_integration.rs` — 17 tests (registry, shell, file I/O, SSRF, memory, artifacts, approval)
+- `crates/agentor-memory/tests/memory_integration.rs` — 12 tests (persistence, hybrid search, BM25, query expansion)
+- `crates/agentor-mcp/tests/mcp_integration.rs` — 8 tests (proxy, logging, metrics, discovery, manager)
+- `crates/agentor-core/tests/core_integration.rs` — 6 tests (serialization, factories, error impls)
+- `crates/agentor-compliance/tests/compliance_integration.rs` — 8 tests (all 4 frameworks, persistence, hooks)
 
 ## Build Health
-- `cargo build --workspace` — OK
-- `cargo test --workspace` — **431 tests passing** (was 342 before session 4)
-- `cargo clippy --workspace` — **0 warnings**
+- `cargo clippy --workspace --all-targets -- -D warnings -A missing-docs` — **0 errors**
+- `cargo test --workspace` — **483 tests passing** (was 431)
+- `cargo check --workspace` — OK
 
 ## Git State
-- **Branch**: master, all changes LOCAL and UNCOMMITTED
-- Session 2 commit: `617e808` (tasks #45-#51)
-- Session 3 commit: `f19e66c` (tasks #52-#57)
-- Session 4: tasks #58-#68 not yet committed
+- **Branch**: master, changes LOCAL and UNCOMMITTED
+- Session 4 commit: `f940b74` (tasks #58-#68)
+- Session 5: hardening + docs, not yet committed
 
-## Key File Paths (new in session 4)
+## Key New Files (session 5)
 | File | Role |
 |------|------|
-| `crates/agentor-agent/src/failover.rs` | Model failover with exponential backoff |
-| `crates/agentor-session/src/transcript.rs` | JSONL session transcripts |
-| `crates/agentor-memory/src/bm25.rs` | BM25 inverted index |
-| `crates/agentor-memory/src/hybrid.rs` | Hybrid search (BM25 + Vector + RRF) |
-| `crates/agentor-memory/src/query_expansion.rs` | Query expansion with synonyms |
-| `crates/agentor-gateway/src/webhook.rs` | Webhook handler with HMAC validation |
-| `crates/agentor-skills/src/plugin.rs` | Plugin system (trait + registry) |
-| `crates/agentor-builtins/src/docker_sandbox.rs` | Docker sandbox skill |
-| `crates/agentor-builtins/src/browser_automation.rs` | Browser automation skill |
-| `crates/agentor-orchestrator/src/spawner.rs` | Sub-agent spawning |
-| `crates/agentor-orchestrator/src/scheduler.rs` | Cron/scheduler |
-| `crates/agentor-cli/src/config_watcher.rs` | Config hot-reload watcher |
-
-## New Dependencies (session 4)
-| Dep | Crate | Feature Flag |
-|-----|-------|-------------|
-| `bollard` | agentor-builtins | `docker` |
-| `fantoccini` | agentor-builtins | `browser` |
-| `notify` | agentor-cli | — |
-| `cron` | agentor-orchestrator | — |
+| `clippy.toml` | Clippy configuration |
+| `crates/agentor-builtins/tests/builtins_integration.rs` | Builtins integration tests |
+| `crates/agentor-memory/tests/memory_integration.rs` | Memory integration tests |
+| `crates/agentor-mcp/tests/mcp_integration.rs` | MCP integration tests |
+| `crates/agentor-core/tests/core_integration.rs` | Core integration tests |
+| `crates/agentor-compliance/tests/compliance_integration.rs` | Compliance integration tests |

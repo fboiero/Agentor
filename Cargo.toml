@@ -71,3 +71,16 @@ agentor-memory = { path = "crates/agentor-memory" }
 agentor-mcp = { path = "crates/agentor-mcp" }
 agentor-orchestrator = { path = "crates/agentor-orchestrator" }
 agentor-compliance = { path = "crates/agentor-compliance" }
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+cloned_instead_of_copied = "warn"
+explicit_iter_loop = "warn"
+implicit_clone = "warn"
+semicolon_if_nothing_returned = "warn"
+uninlined_format_args = "warn"
+redundant_closure_for_method_calls = "warn"
+
+[workspace.lints.rust]
+missing_docs = "warn"

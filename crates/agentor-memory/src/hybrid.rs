@@ -196,6 +196,7 @@ impl HybridSearcher {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::embedding::LocalEmbedding;
@@ -282,9 +283,7 @@ mod tests {
             let python_score = results[pos_python].score;
             assert!(
                 rust_score > python_score * 5.0,
-                "matching doc score ({}) should be significantly higher than non-matching ({})",
-                rust_score,
-                python_score,
+                "matching doc score ({rust_score}) should be significantly higher than non-matching ({python_score})",
             );
         }
     }

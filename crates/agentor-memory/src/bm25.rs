@@ -8,7 +8,7 @@ const B: f32 = 0.75;
 /// Tokenize text into lowercase words, filtering tokens with length <= 1.
 fn tokenize(text: &str) -> Vec<String> {
     text.split(|c: char| !c.is_alphanumeric())
-        .map(|w| w.to_lowercase())
+        .map(str::to_lowercase)
         .filter(|w| w.len() > 1)
         .collect()
 }
@@ -84,7 +84,7 @@ impl Bm25Index {
 
         // Remove from inverted index
         let mut empty_terms = Vec::new();
-        for (term, postings) in self.inverted_index.iter_mut() {
+        for (term, postings) in &mut self.inverted_index {
             postings.remove(&id);
             if postings.is_empty() {
                 empty_terms.push(term.clone());
@@ -185,6 +185,7 @@ impl Default for Bm25Index {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

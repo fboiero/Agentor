@@ -9,6 +9,12 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tracing::{info, warn};
 
+/// Type alias for the injectable sleep function used in tests.
+#[cfg(test)]
+type SleepFn = Box<
+    dyn Fn(u64) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> + Send + Sync,
+>;
+
 /// Configures retry behaviour for failover across LLM backends.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetryPolicy {
@@ -75,7 +81,7 @@ pub struct FailoverBackend {
     policy: RetryPolicy,
     /// Injectable sleep function for testing (allows skipping real delays).
     #[cfg(test)]
-    sleep_fn: Option<Box<dyn Fn(u64) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> + Send + Sync>>,
+    sleep_fn: Option<SleepFn>,
 }
 
 impl FailoverBackend {
@@ -205,6 +211,7 @@ impl LlmBackend for FailoverBackend {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
@@ -306,7 +313,7 @@ mod tests {
         assert!(result.is_ok());
         match result.unwrap() {
             LlmResponse::Text(t) => assert_eq!(t, "ok"),
-            other => panic!("Expected Text, got {:?}", other),
+            other => panic!("Expected Text, got {other:?}"),
         }
         let _ = backend;
     }
@@ -368,7 +375,7 @@ mod tests {
         assert!(result.is_ok());
         match result.unwrap() {
             LlmResponse::Text(t) => assert_eq!(t, "fallback ok"),
-            other => panic!("Expected Text, got {:?}", other),
+            other => panic!("Expected Text, got {other:?}"),
         }
         let _ = b1;
     }
@@ -434,7 +441,7 @@ mod tests {
         assert!(result.is_ok());
         match result.unwrap() {
             LlmResponse::Text(t) => assert_eq!(t, "second backend"),
-            other => panic!("Expected Text, got {:?}", other),
+            other => panic!("Expected Text, got {other:?}"),
         }
     }
 
@@ -457,7 +464,7 @@ mod tests {
         let final_resp = handle.await.unwrap().unwrap();
         match final_resp {
             LlmResponse::Text(t) => assert_eq!(t, "stream ok"),
-            other => panic!("Expected Text, got {:?}", other),
+            other => panic!("Expected Text, got {other:?}"),
         }
     }
 }

@@ -176,13 +176,14 @@ impl Skill for HumanApprovalSkill {
             }
             Err(e) => Ok(ToolResult::error(
                 &call.id,
-                format!("Approval channel error: {}", e),
+                format!("Approval channel error: {e}"),
             )),
         }
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

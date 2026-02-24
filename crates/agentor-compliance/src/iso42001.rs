@@ -127,7 +127,7 @@ impl Iso42001Module {
             action: action.to_string(),
             input_summary: input_summary.to_string(),
             output_summary: output_summary.to_string(),
-            reasoning: reasoning.map(|s| s.to_string()),
+            reasoning: reasoning.map(std::string::ToString::to_string),
             timestamp: Utc::now(),
         };
         self.transparency_logs.write().await.push(log.clone());
@@ -244,6 +244,7 @@ impl Default for Iso42001Module {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

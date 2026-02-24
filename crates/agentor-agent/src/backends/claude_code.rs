@@ -65,8 +65,7 @@ impl LlmBackend for ClaudeCodeBackend {
 
         let output = cmd.output().await.map_err(|e| {
             AgentorError::Agent(format!(
-                "Failed to run 'claude' CLI. Is Claude Code installed? Error: {}",
-                e
+                "Failed to run 'claude' CLI. Is Claude Code installed? Error: {e}"
             ))
         })?;
 
@@ -100,8 +99,7 @@ impl LlmBackend for ClaudeCodeBackend {
 
         if is_error {
             return Err(AgentorError::Agent(format!(
-                "Claude Code error: {}",
-                result_text
+                "Claude Code error: {result_text}"
             )));
         }
 

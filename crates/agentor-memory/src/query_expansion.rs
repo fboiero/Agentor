@@ -201,6 +201,7 @@ pub fn deduplicate_results(results: Vec<(Uuid, f32)>) -> Vec<(Uuid, f32)> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -212,7 +213,7 @@ mod tests {
         assert_eq!(results[0], "fix the error in auth"); // original first
         // Should contain variations with synonyms
         let has_bug = results.iter().any(|r| r.contains("bug"));
-        assert!(has_bug, "Should expand 'error' to 'bug': {:?}", results);
+        assert!(has_bug, "Should expand 'error' to 'bug': {results:?}");
     }
 
     #[test]

@@ -46,7 +46,7 @@ impl AuditLog {
                         .await
                         .map(|file| {
                             use tokio::io::AsyncWriteExt;
-                            let line = format!("{}\n", line);
+                            let line = format!("{line}\n");
                             tokio::spawn(async move {
                                 let mut f = file;
                                 let _ = f.write_all(line.as_bytes()).await;

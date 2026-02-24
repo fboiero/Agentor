@@ -107,7 +107,7 @@ impl MessageRouter {
                 warn!(error = %e, "Agent error");
                 let outbound = OutboundMessage {
                     session_id,
-                    content: format!("Error: {}", e),
+                    content: format!("Error: {e}"),
                     msg_type: "error".to_string(),
                 };
                 let json = serde_json::to_string(&outbound)?;
@@ -212,7 +212,7 @@ impl MessageRouter {
                 warn!(error = %e, "Agent streaming error");
                 let outbound = OutboundMessage {
                     session_id,
-                    content: format!("Error: {}", e),
+                    content: format!("Error: {e}"),
                     msg_type: "error".to_string(),
                 };
                 let json = serde_json::to_string(&outbound)?;

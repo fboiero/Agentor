@@ -233,7 +233,12 @@ impl DockerSandbox {
         let command = sanitize_command(command)?;
         self.ensure_container().await?;
 
-        let container_id = self.container_id.as_ref().unwrap();
+        // Safety: ensure_container() was just called above and succeeded,
+        // which guarantees container_id is Some. If the invariant is somehow
+        // broken we surface a clear error instead of panicking.
+        let container_id = self.container_id.as_ref().ok_or_else(|| {
+            AgentorError::Skill("Docker sandbox: container_id missing after ensure_container".to_string())
+        })?;
 
         let exec_opts = CreateExecOptions {
             attach_stdout: Some(true),
@@ -442,6 +447,7 @@ impl Skill for DockerShellSkill {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
