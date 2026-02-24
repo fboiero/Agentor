@@ -16,6 +16,13 @@ reqwest.workspace = true
 tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true
+fantoccini = { version = "0.21", optional = true }
+bollard = { version = "0.17", optional = true }
+
+[features]
+default = []
+browser = ["fantoccini"]
+docker = ["bollard"]
 
 [dev-dependencies]
 tempfile = "3"

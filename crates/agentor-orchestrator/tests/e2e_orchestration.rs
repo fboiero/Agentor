@@ -132,6 +132,8 @@ fn test_config() -> ModelConfig {
         temperature: 0.0,
         max_tokens: 1024,
         max_turns: 5,
+        fallback_models: Vec::new(),
+        retry_policy: None,
     }
 }
 

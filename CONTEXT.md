@@ -1,8 +1,8 @@
 # Agentor — Session Context
-> Last updated: 2026-02-23 (session 3)
+> Last updated: 2026-02-23 (session 4)
 
 ## Current Goal
-All identified gaps from codebase audit are now CLOSED. Framework is production-ready for core features.
+11 OpenClaw parity features implemented. Framework at feature parity for coding-agent capabilities.
 
 ## Task Tracker
 | Task | Description | Status |
@@ -20,77 +20,123 @@ All identified gaps from codebase audit are now CLOSED. Framework is production-
 | #55 | Channels Completion (Socket Mode, Gateway, Manager) | **COMPLETED** |
 | #56 | MCP Server Manager (auto-reconnect, health) | **COMPLETED** |
 | #57 | Compliance Integration (hooks + persistence) | **COMPLETED** |
+| #58 | Model Failover | **COMPLETED** |
+| #59 | Session Transcripts | **COMPLETED** |
+| #60 | Hybrid Search BM25+Vector | **COMPLETED** |
+| #61 | Webhooks | **COMPLETED** |
+| #62 | Plugin System | **COMPLETED** |
+| #63 | Docker Sandbox | **COMPLETED** |
+| #64 | Sub-agent Spawning | **COMPLETED** |
+| #65 | Config Hot-Reload | **COMPLETED** |
+| #66 | Cron/Scheduler | **COMPLETED** |
+| #67 | Query Expansion | **COMPLETED** |
+| #68 | Browser Automation | **COMPLETED** |
 
-## What's Completed in Session 3
+## What's Completed in Session 4
 
-### Task #52 — CLI Approval Channel
-- `StdinApprovalChannel` in `agentor-builtins/src/stdin_approval.rs`
-- ANSI-colored prompt to stderr, stdin reader with timeout
-- `--interactive-approval` and `--approval-timeout` flags on CLI `Orchestrate`
+### Wave A — Fundamentals
+
+**#58 — Model Failover**
+- `FailoverBackend` in `agentor-agent/src/failover.rs` wrapping `Vec<Box<dyn LlmBackend>>`
+- `RetryPolicy { max_retries, backoff_base_ms, backoff_max_ms }` with exponential backoff
+- `is_retryable()` error classification (429, 5xx, timeout → retry; 400 → skip)
+- `fallback_models: Vec<ModelConfig>` + `retry_policy: Option<RetryPolicy>` in ModelConfig
+- LlmClient auto-wraps in FailoverBackend when fallback_models non-empty
+- 7 tests
+
+**#59 — Session Transcripts**
+- `TranscriptEvent` enum (5 variants), `TranscriptEntry`, `TranscriptStore` trait
+- `FileTranscriptStore` — JSONL append-only, one file per session
 - 5 tests
 
-### Task #53 — Orchestration Builtins
-- `ArtifactStoreSkill` with `InMemoryArtifactBackend` (store/retrieve/list)
-- `AgentDelegateSkill` with `TaskQueueHandle` trait (avoid circular deps)
-- `TaskStatusSkill` (query/list/summary)
-- `register_orchestration_builtins()` function
-- 17 tests (70 total in builtins)
+**#60 — Hybrid Search BM25+Vector**
+- `Bm25Index` with inverted index, BM25 scoring (k1=1.2, b=0.75)
+- `HybridSearcher` combining VectorStore + Bm25Index with RRF fusion (rrf_k=60)
+- `alpha: f32` for balance (0.0=pure BM25, 1.0=pure vector, default 0.5)
+- 11 tests
 
-### Task #54 — WebSocket Approval Channel
-- Moved `ApprovalChannel` + types to `agentor-core::approval` (shared across crates)
-- `WsApprovalChannel` in `agentor-gateway/src/ws_approval.rs`
-- Broadcasts JSON to all connections, routes responses via oneshot channels
-- `broadcast()` method on `ConnectionManager`
-- 6 tests (25 total in gateway)
+### Wave B — Extensibility
 
-### Task #55 — Channels Completion
-- Full Slack Socket Mode in `slack.rs` (WebSocket, envelope ACK, event forwarding)
-- Full Discord Gateway in `discord.rs` (Hello, Identify, heartbeat loop, MESSAGE_CREATE)
-- `ChannelManager` in `manager.rs` (add/get/send_to/broadcast)
+**#61 — Webhooks**
+- `WebhookConfig`, `SessionStrategy`, HMAC-SHA256 validation (constant-time)
+- `webhook_handler` for axum, template rendering with `{{payload}}`
+- 10 tests
+
+**#62 — Plugin System**
+- `Plugin` trait with lifecycle hooks (on_load, on_unload, on_event)
+- `PluginManifest`, `PluginEvent` (6 variants), `PluginRegistry`
 - 6 tests
 
-### Task #56 — MCP Server Manager
-- `McpServerManager` in `agentor-mcp/src/manager.rs`
-- `connect_all()`, `health_check()`, `reconnect_with_backoff()`, `start_health_loop()`
-- Exponential backoff: 1s→2s→4s...max 60s, 5 retries
-- `health_check()` on `McpClient`
-- CLI refactored to use `McpServerManager`
-- 5 tests (27 total in MCP)
+### Wave C — Infrastructure
 
-### Task #57 — Compliance Integration
-- `ComplianceHook` trait + `ComplianceHookChain` in `hooks.rs`
-- `ComplianceEvent` enum: ToolCall, TaskStarted, TaskCompleted, ApprovalRequested, ApprovalDecided
-- `Iso27001Hook` and `Iso42001Hook` implementations
-- `JsonReportStore` persistence (save/load/list reports as JSON)
-- Orchestrator `with_compliance()` builder, emits events during task execution
-- CLI `Orchestrate` auto-creates hooks, reports event counts
-- CLI `Compliance Report` saves reports to `data_dir/compliance_reports/`
-- 9 tests in compliance (36 total)
+**#63 — Docker Sandbox**
+- `DockerSandbox` + `DockerShellSkill` behind `docker` feature flag (bollard)
+- `DockerSandboxConfig` with memory/CPU limits, timeout, network toggle
+- `sanitize_command()` for injection prevention
+- 8 tests
+
+**#64 — Sub-agent Spawning**
+- `SubAgentSpawner` with max_depth (3) and max_children_per_task (5) limits
+- `SpawnRequest`, `children_of()`, integrated into orchestrator Task type
+- 6 tests
+
+**#65 — Config Hot-Reload**
+- `ConfigWatcher` using `notify::RecommendedWatcher` with 500ms debounce
+- `ReloadableConfig` — security, skills, mcp_servers, tool_groups, webhooks
+- 4 tests
+
+### Wave D — Automation
+
+**#66 — Cron/Scheduler**
+- `Scheduler` with cron expression parsing, next fire time calculation
+- `ScheduledJob { name, cron_expression, task_description, enabled }`
+- Background task loop with sleep-until-next-fire
+- 5 tests
+
+**#67 — Query Expansion**
+- `QueryExpander` trait + `RuleBasedExpander` with 10 synonym groups
+- `deduplicate_results()` for multi-query dedup
+- 5 tests
+
+### Wave E — Browser
+
+**#68 — Browser Automation**
+- `BrowserAutomation` + `BrowserAutomationSkill` behind `browser` feature (fantoccini)
+- Actions: navigate, screenshot, extract_text, fill_form, click
+- `BrowserConfig { webdriver_url, headless, timeout_secs, screenshot_dir }`
+- ~5 tests
 
 ## Build Health
 - `cargo build --workspace` — OK
-- `cargo test --workspace` — **330 tests passing**
+- `cargo test --workspace` — **431 tests passing** (was 342 before session 4)
 - `cargo clippy --workspace` — **0 warnings**
 
 ## Git State
 - **Branch**: master, all changes LOCAL and UNCOMMITTED
 - Session 2 commit: `617e808` (tasks #45-#51)
-- Session 3: tasks #52-#57 not yet committed
+- Session 3 commit: `f19e66c` (tasks #52-#57)
+- Session 4: tasks #58-#68 not yet committed
 
-## Key File Paths (new/modified in session 3)
+## Key File Paths (new in session 4)
 | File | Role |
 |------|------|
-| `crates/agentor-core/src/approval.rs` | ApprovalChannel trait + types (shared) |
-| `crates/agentor-builtins/src/stdin_approval.rs` | CLI stdin approval channel |
-| `crates/agentor-builtins/src/artifact_store.rs` | Artifact store skill + backend |
-| `crates/agentor-builtins/src/agent_delegate.rs` | Task delegation skill |
-| `crates/agentor-builtins/src/task_status.rs` | Task status query skill |
-| `crates/agentor-gateway/src/ws_approval.rs` | WebSocket approval channel |
-| `crates/agentor-channels/src/slack.rs` | Slack Socket Mode (rewritten) |
-| `crates/agentor-channels/src/discord.rs` | Discord Gateway (rewritten) |
-| `crates/agentor-channels/src/manager.rs` | ChannelManager |
-| `crates/agentor-mcp/src/manager.rs` | McpServerManager |
-| `crates/agentor-compliance/src/hooks.rs` | Compliance hooks |
-| `crates/agentor-compliance/src/persistence.rs` | JSON report persistence |
-| `crates/agentor-orchestrator/src/engine.rs` | Compliance hook wiring |
-| `crates/agentor-cli/src/main.rs` | CLI compliance integration |
+| `crates/agentor-agent/src/failover.rs` | Model failover with exponential backoff |
+| `crates/agentor-session/src/transcript.rs` | JSONL session transcripts |
+| `crates/agentor-memory/src/bm25.rs` | BM25 inverted index |
+| `crates/agentor-memory/src/hybrid.rs` | Hybrid search (BM25 + Vector + RRF) |
+| `crates/agentor-memory/src/query_expansion.rs` | Query expansion with synonyms |
+| `crates/agentor-gateway/src/webhook.rs` | Webhook handler with HMAC validation |
+| `crates/agentor-skills/src/plugin.rs` | Plugin system (trait + registry) |
+| `crates/agentor-builtins/src/docker_sandbox.rs` | Docker sandbox skill |
+| `crates/agentor-builtins/src/browser_automation.rs` | Browser automation skill |
+| `crates/agentor-orchestrator/src/spawner.rs` | Sub-agent spawning |
+| `crates/agentor-orchestrator/src/scheduler.rs` | Cron/scheduler |
+| `crates/agentor-cli/src/config_watcher.rs` | Config hot-reload watcher |
+
+## New Dependencies (session 4)
+| Dep | Crate | Feature Flag |
+|-----|-------|-------------|
+| `bollard` | agentor-builtins | `docker` |
+| `fantoccini` | agentor-builtins | `browser` |
+| `notify` | agentor-cli | — |
+| `cron` | agentor-orchestrator | — |

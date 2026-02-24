@@ -1,3 +1,5 @@
+mod config_watcher;
+
 use agentor_agent::{AgentRunner, ModelConfig};
 use agentor_gateway::{AuthConfig, GatewayServer};
 use agentor_security::tls;

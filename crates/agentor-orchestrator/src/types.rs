@@ -104,6 +104,12 @@ pub struct Task {
     pub artifacts: Vec<Artifact>,
     pub created_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
+    /// Parent task ID if this is a sub-task spawned by another task.
+    #[serde(default)]
+    pub parent_task: Option<Uuid>,
+    /// Depth in the task hierarchy (0 = root task).
+    #[serde(default)]
+    pub depth: u32,
 }
 
 impl Task {
@@ -117,6 +123,8 @@ impl Task {
             artifacts: Vec::new(),
             created_at: Utc::now(),
             completed_at: None,
+            parent_task: None,
+            depth: 0,
         }
     }
 

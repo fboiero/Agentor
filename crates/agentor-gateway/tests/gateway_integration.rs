@@ -28,6 +28,8 @@ async fn start_test_server() -> (String, tempfile::TempDir) {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     };
     let agent = Arc::new(AgentRunner::new(config, skills, permissions, audit));
     let app = GatewayServer::build(agent, sessions);
@@ -172,6 +174,8 @@ fn test_model_config() -> ModelConfig {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     }
 }
 
