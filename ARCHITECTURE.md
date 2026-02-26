@@ -23,9 +23,9 @@ Agentor es un framework de agentes AI autónomos y seguros, escrito en Rust. Ins
 
 ### Fase 2: Features Avanzados (3 crates)
 
-9. **agentor-memory** — Vector memory: `VectorStore` trait, `InMemoryVectorStore`, `FileVectorStore` (JSONL), `LocalEmbedding` (bag-of-words FNV 256 dims)
-10. **agentor-mcp** — MCP Client: JSON-RPC 2.0 sobre stdio, `McpSkill` convierte MCP tools a skills automáticamente
-11. **agentor-builtins** — Skills built-in: echo, time, help, memory_store, memory_search
+9. **agentor-memory** — Vector memory: `VectorStore` trait, `InMemoryVectorStore`, `FileVectorStore` (JSONL), `LocalEmbedding` (bag-of-words FNV 256 dims), `HybridSearcher` (BM25 + embedding), `QueryExpander`
+10. **agentor-mcp** — MCP Client: JSON-RPC 2.0 sobre stdio, `McpSkill`, `McpProxy` (control plane centralizado), `McpServerManager` (auto-reconnect, health checks), `ToolDiscovery`
+11. **agentor-builtins** — Skills built-in: shell, file_read, file_write, http_fetch, browser, memory_store, memory_search, human_approval, artifact_store, agent_delegate, task_status, docker_sandbox, browser_automation
 
 ### Fase 3: Multi-Agent + Compliance (2 crates)
 
@@ -137,11 +137,65 @@ Siguiendo las recomendaciones de Anthropic (2025-2026):
 
 ---
 
+## Features Avanzados (Session 4-5)
+
+### Model Failover
+- `FailoverBackend` wrapping múltiples LLM backends con retry automático
+- `RetryPolicy` con exponential backoff (configurable base/max)
+- Clasificación de errores: 429/5xx → retry, 400 → skip al siguiente backend
+
+### Session Transcripts
+- `TranscriptEvent` (5 variantes), `TranscriptEntry`, `TranscriptStore` trait
+- `FileTranscriptStore` — JSONL append-only, un archivo por sesión
+
+### Hybrid Search (BM25 + Vector)
+- `Bm25Index` con inverted index y scoring BM25 (k1=1.2, b=0.75)
+- `HybridSearcher` con Reciprocal Rank Fusion (rrf_k=60)
+- `alpha: f32` para balance (0.0=pure BM25, 1.0=pure vector)
+- `QueryExpander` trait + `RuleBasedExpander` con 10 grupos de sinónimos
+
+### Webhooks
+- `WebhookConfig`, `SessionStrategy`, validación HMAC-SHA256 (constant-time)
+- Template rendering con `{{payload}}`
+
+### Plugin System
+- `Plugin` trait con lifecycle hooks (on_load, on_unload, on_event)
+- `PluginManifest`, `PluginEvent` (6 variantes), `PluginRegistry`
+
+### Docker Sandbox
+- `DockerSandbox` + `DockerShellSkill` (feature flag `docker`, bollard)
+- `DockerSandboxConfig` con límites de memoria/CPU, timeout, network toggle
+- `sanitize_command()` para prevención de inyección
+
+### Sub-agent Spawning
+- `SubAgentSpawner` con max_depth (3) y max_children_per_task (5)
+- `SpawnRequest`, integrado en orchestrator Task type
+
+### Config Hot-Reload
+- `ConfigWatcher` usando `notify::RecommendedWatcher` con debounce 500ms
+- `ReloadableConfig`: security, skills, mcp_servers, tool_groups, webhooks
+
+### Scheduler
+- `Scheduler` con parsing de expresiones cron y cálculo de next fire time
+- `ScheduledJob { name, cron_expression, task_description, enabled }`
+
+### Browser Automation
+- `BrowserAutomation` + `BrowserAutomationSkill` (feature flag `browser`, fantoccini)
+- Acciones: navigate, screenshot, extract_text, fill_form, click
+
+### Code Hardening (Session 5)
+- Clippy estricto a nivel workspace (unwrap_used, expect_used, uninlined_format_args, etc.)
+- 0 unwraps en código de producción
+- `//!` crate docs + `///` module/item docs en todos los crates
+- 52 tests de integración nuevos (builtins, memory, mcp, core, compliance)
+
+---
+
 ## Verificación
 
 ```bash
 cargo build --workspace          # Compila 13 crates
-cargo test --workspace           # 239+ tests
-cargo clippy --workspace         # 0 warnings
+cargo test --workspace           # 483 tests
+cargo clippy --workspace         # 0 warnings (strict lints enabled)
 cargo fmt --all -- --check       # 0 diffs
 ```

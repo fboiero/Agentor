@@ -4,7 +4,7 @@
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-480%2B-green.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-483-green.svg)]()
 
 ---
 
@@ -141,7 +141,7 @@ cargo run --bin agentor -- compliance report
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 480+ tests
+cargo test --workspace           # Run all 483 tests
 cargo clippy --workspace         # 0 warnings
 cargo fmt --all -- --check       # Check formatting
 ```
