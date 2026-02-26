@@ -89,7 +89,7 @@ impl DiscordChannel {
     pub async fn start_gateway(&self) -> AgentorResult<()> {
         // Step 1: Get gateway URL
         let gateway_url = self.get_gateway_url().await?;
-        let ws_url = format!("{}/?v=10&encoding=json", gateway_url);
+        let ws_url = format!("{gateway_url}/?v=10&encoding=json");
         info!(url = %ws_url, "Discord Gateway: connecting");
 
         // Step 2: Connect WebSocket
@@ -222,7 +222,7 @@ impl DiscordChannel {
     async fn get_gateway_url(&self) -> AgentorResult<String> {
         let resp = self
             .client
-            .get(format!("{}/gateway", DISCORD_API_BASE))
+            .get(format!("{DISCORD_API_BASE}/gateway"))
             .send()
             .await
             .map_err(|e| AgentorError::Channel(format!("Discord gateway URL error: {e}")))?;

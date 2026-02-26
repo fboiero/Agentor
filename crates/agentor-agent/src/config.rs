@@ -1,3 +1,4 @@
+use crate::failover::RetryPolicy;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +26,10 @@ pub struct ModelConfig {
     pub max_tokens: u32,
     #[serde(default = "default_max_turns")]
     pub max_turns: u32,
+    #[serde(default)]
+    pub fallback_models: Vec<ModelConfig>,
+    #[serde(default)]
+    pub retry_policy: Option<RetryPolicy>,
 }
 
 fn default_temperature() -> f32 {

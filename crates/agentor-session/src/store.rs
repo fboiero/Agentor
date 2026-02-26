@@ -25,7 +25,7 @@ impl FileSessionStore {
     }
 
     fn session_path(&self, id: Uuid) -> PathBuf {
-        self.dir.join(format!("{}.json", id))
+        self.dir.join(format!("{id}.json"))
     }
 }
 
@@ -45,7 +45,7 @@ impl SessionStore for FileSessionStore {
         }
         let data = tokio::fs::read_to_string(path).await?;
         let session: Session = serde_json::from_str(&data)
-            .map_err(|e| AgentorError::Session(format!("Failed to parse session: {}", e)))?;
+            .map_err(|e| AgentorError::Session(format!("Failed to parse session: {e}")))?;
         Ok(Some(session))
     }
 

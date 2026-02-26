@@ -4,7 +4,7 @@
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-227%2B-green.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-483-green.svg)]()
 
 ---
 
@@ -22,6 +22,16 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 - **Capability-based Security** — Fine-grained permissions per skill (FileRead, NetworkAccess, etc.)
 - **Vector Memory** — Local embedding-based memory with JSONL persistence
 - **Multi-Provider LLM** — Claude, OpenAI, OpenRouter (200+ models)
+- **Failover** — Automatic LLM backend failover across providers
+- **Transcripts** — Full conversation transcript capture and replay
+- **Hybrid Search** — BM25 + embedding similarity for semantic memory retrieval
+- **Webhooks** — Inbound/outbound webhook support in the gateway
+- **Docker Sandbox** — Run untrusted code in isolated Docker containers
+- **Browser Automation** — Headless browser skill for web scraping and interaction
+- **Scheduler** — Cron-like task scheduling for recurring agent jobs
+- **Query Expansion** — Automatic query rewriting for improved search recall
+- **Config Hot-Reload** — Live configuration updates without server restart
+- **Markdown Skills** — Define skills declaratively in Markdown files
 
 ---
 
@@ -59,19 +69,19 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 
 | Crate | Description |
 |-------|-------------|
-| `agentor-core` | Base types: Message, ToolCall, ToolResult, AgentorError |
-| `agentor-security` | Capabilities, permissions, rate limiting, audit log, TLS/mTLS |
-| `agentor-session` | Session management with JSON persistence |
-| `agentor-skills` | Skill trait, registry, WASM runtime (wasmtime) |
-| `agentor-agent` | AgentRunner with agentic loop and streaming |
-| `agentor-channels` | Channel adapters (Telegram, Slack, Discord, webchat) |
-| `agentor-gateway` | Axum WebSocket gateway with auth middleware |
-| `agentor-builtins` | Built-in skills: echo, time, help, memory |
-| `agentor-memory` | Vector store with local embeddings (bag-of-words FNV) |
-| `agentor-mcp` | MCP client (JSON-RPC 2.0 stdio), proxy, progressive disclosure |
-| `agentor-orchestrator` | Multi-agent engine: profiles, task queue, monitor |
-| `agentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance modules |
-| `agentor-cli` | CLI binary: serve, skill list, compliance report |
+| `agentor-core` | Core types, errors, and message definitions |
+| `agentor-security` | Capabilities, permissions, rate limiting, audit, TLS |
+| `agentor-session` | Session management and persistence |
+| `agentor-skills` | Skill system with WASM sandbox, plugins, and registry |
+| `agentor-agent` | Agent runner, LLM backends, failover, streaming |
+| `agentor-channels` | Multi-platform communication channels |
+| `agentor-gateway` | HTTP/WebSocket gateway with auth and webhooks |
+| `agentor-builtins` | Built-in skills (shell, file I/O, HTTP, memory, browser, Docker) |
+| `agentor-memory` | Semantic memory with hybrid search and query expansion |
+| `agentor-mcp` | Model Context Protocol client, proxy, and discovery |
+| `agentor-orchestrator` | Multi-agent orchestration, scheduling, monitoring |
+| `agentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance |
+| `agentor-cli` | CLI binary (serve, skill list) |
 
 ---
 
@@ -131,7 +141,7 @@ cargo run --bin agentor -- compliance report
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 227+ tests
+cargo test --workspace           # Run all 483 tests
 cargo clippy --workspace         # 0 warnings
 cargo fmt --all -- --check       # Check formatting
 ```
@@ -243,6 +253,15 @@ The MCP Proxy centralizes all tool calls with:
 - Permission validation
 - Rate limiting per agent
 - Progressive tool disclosure (~98% token reduction)
+
+---
+
+## Docker
+
+```bash
+docker build -t agentor .
+docker run -p 3000:3000 agentor serve
+```
 
 ---
 

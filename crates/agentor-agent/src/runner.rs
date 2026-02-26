@@ -222,7 +222,7 @@ impl AgentRunner {
 
                                 let error_msg = Message::new(
                                     Role::User,
-                                    format!("Tool error: {}", e),
+                                    format!("Tool error: {e}"),
                                     session_id,
                                 );
                                 session.add_message(error_msg.clone());
@@ -312,7 +312,7 @@ impl AgentRunner {
             // Wait for the aggregated response
             let response = join_handle
                 .await
-                .map_err(|e| AgentorError::Agent(format!("Stream task panicked: {}", e)))??;
+                .map_err(|e| AgentorError::Agent(format!("Stream task panicked: {e}")))??;
 
             match response {
                 LlmResponse::Done(text) => {
@@ -420,7 +420,7 @@ impl AgentRunner {
 
                                 let error_msg = Message::new(
                                     Role::User,
-                                    format!("Tool error: {}", e),
+                                    format!("Tool error: {e}"),
                                     session_id,
                                 );
                                 session.add_message(error_msg.clone());

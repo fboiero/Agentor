@@ -3,6 +3,9 @@ name = "agentor-skills"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 agentor-core.workspace = true
 agentor-security.workspace = true
@@ -14,6 +17,7 @@ wasmtime-wasi.workspace = true
 tracing.workspace = true
 tokio.workspace = true
 thiserror.workspace = true
+uuid.workspace = true
 serde_yaml_ng = "0.10"
 
 [dev-dependencies]

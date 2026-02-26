@@ -32,6 +32,7 @@ serde_json = "1"
 thiserror = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+cron = "0.15"
 
 # Async
 tokio = { version = "1", features = ["full"] }
@@ -41,6 +42,7 @@ async-trait = "0.1"
 axum = { version = "0.8", features = ["ws"] }
 tower = { version = "0.5", features = ["full"] }
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+fantoccini = "0.21"
 
 # WASM
 wasmtime = "28"
@@ -53,6 +55,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # CLI & Config
 clap = { version = "4", features = ["derive"] }
 toml = "0.8"
+notify = { version = "7", features = ["macos_fsevent"] }
+bollard = "0.17"
 
 # Internal crates
 agentor-core = { path = "crates/agentor-core" }
@@ -67,3 +71,16 @@ agentor-memory = { path = "crates/agentor-memory" }
 agentor-mcp = { path = "crates/agentor-mcp" }
 agentor-orchestrator = { path = "crates/agentor-orchestrator" }
 agentor-compliance = { path = "crates/agentor-compliance" }
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+cloned_instead_of_copied = "warn"
+explicit_iter_loop = "warn"
+implicit_clone = "warn"
+semicolon_if_nothing_returned = "warn"
+uninlined_format_args = "warn"
+redundant_closure_for_method_calls = "warn"
+
+[workspace.lints.rust]
+missing_docs = "warn"

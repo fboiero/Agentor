@@ -25,13 +25,13 @@ impl ChannelManager {
 
     /// Get a reference to a channel by name.
     pub fn get(&self, name: &str) -> Option<&dyn Channel> {
-        self.channels.get(name).map(|c| c.as_ref())
+        self.channels.get(name).map(std::convert::AsRef::as_ref)
     }
 
     /// Send a message to a specific channel.
     pub async fn send_to(&self, channel_name: &str, message: ChannelMessage) -> AgentorResult<()> {
         let channel = self.channels.get(channel_name).ok_or_else(|| {
-            AgentorError::Channel(format!("Channel '{}' not found", channel_name))
+            AgentorError::Channel(format!("Channel '{channel_name}' not found"))
         })?;
         channel.send(message).await
     }
@@ -51,7 +51,7 @@ impl ChannelManager {
 
     /// List all registered channel names.
     pub fn channel_names(&self) -> Vec<&str> {
-        self.channels.keys().map(|k| k.as_str()).collect()
+        self.channels.keys().map(std::string::String::as_str).collect()
     }
 
     /// Get the number of registered channels.
@@ -67,6 +67,7 @@ impl Default for ChannelManager {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::channel::Channel;

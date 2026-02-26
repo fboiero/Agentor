@@ -91,8 +91,7 @@ impl LlmBackend for ClaudeBackend {
 
         if !status.is_success() {
             return Err(AgentorError::Http(format!(
-                "Claude API error {}: {}",
-                status, resp_body
+                "Claude API error {status}: {resp_body}"
             )));
         }
 
@@ -166,8 +165,7 @@ impl LlmBackend for ClaudeBackend {
                 .await
                 .unwrap_or_else(|_| "unknown error".to_string());
             return Err(AgentorError::Http(format!(
-                "Claude API error {}: {}",
-                status, error_body
+                "Claude API error {status}: {error_body}"
             )));
         }
 
@@ -189,10 +187,10 @@ impl LlmBackend for ClaudeBackend {
                     Err(e) => {
                         let _ = tx
                             .send(StreamEvent::Error {
-                                message: format!("Stream read error: {}", e),
+                                message: format!("Stream read error: {e}"),
                             })
                             .await;
-                        return Err(AgentorError::Http(format!("Stream read error: {}", e)));
+                        return Err(AgentorError::Http(format!("Stream read error: {e}")));
                     }
                 };
 

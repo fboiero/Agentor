@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Regression tests for agentor-security: AuditLog, TLS config validation,
 //! PermissionSet, Sanitizer, RateLimiter.
 
@@ -43,7 +44,7 @@ async fn test_audit_log_multiple_entries() {
     for i in 0..5 {
         audit.log_action(
             session_id,
-            format!("action_{}", i),
+            format!("action_{i}"),
             None,
             serde_json::json!({"index": i}),
             AuditOutcome::Success,

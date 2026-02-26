@@ -186,6 +186,7 @@ impl McpProxy {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use agentor_core::ToolCall;
@@ -238,7 +239,7 @@ mod tests {
 
         for i in 0..5 {
             let call = ToolCall {
-                id: format!("c{}", i),
+                id: format!("c{i}"),
                 name: "tool".to_string(),
                 arguments: serde_json::json!({}),
             };
@@ -288,7 +289,7 @@ mod tests {
 
         for i in 0..10 {
             let call = ToolCall {
-                id: format!("c{}", i),
+                id: format!("c{i}"),
                 name: "t".to_string(),
                 arguments: serde_json::json!({}),
             };

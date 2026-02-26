@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use agentor_agent::{AgentRunner, LlmProvider, ModelConfig};
 use agentor_gateway::{AuthConfig, GatewayServer};
 use agentor_security::{AuditLog, PermissionSet, RateLimiter};
@@ -28,6 +30,8 @@ async fn start_test_server() -> (String, tempfile::TempDir) {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     };
     let agent = Arc::new(AgentRunner::new(config, skills, permissions, audit));
     let app = GatewayServer::build(agent, sessions);
@@ -53,7 +57,7 @@ async fn connect_ws(
     tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
     String,
 ) {
-    let url = format!("ws://{}/ws", addr);
+    let url = format!("ws://{addr}/ws");
     let (mut ws, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
 
     // Read the welcome message
@@ -67,7 +71,7 @@ async fn connect_ws(
 #[tokio::test]
 async fn test_health_endpoint() {
     let (addr, _tmp) = start_test_server().await;
-    let url = format!("http://{}/health", addr);
+    let url = format!("http://{addr}/health");
     let resp = reqwest::get(&url).await.unwrap();
     assert_eq!(resp.status(), 200);
     let body: serde_json::Value = resp.json().await.unwrap();
@@ -78,7 +82,7 @@ async fn test_health_endpoint() {
 #[tokio::test]
 async fn test_websocket_connect_and_welcome() {
     let (addr, _tmp) = start_test_server().await;
-    let url = format!("ws://{}/ws", addr);
+    let url = format!("ws://{addr}/ws");
 
     let (mut ws, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
 
@@ -121,7 +125,7 @@ async fn test_websocket_send_message_gets_error_response() {
 #[tokio::test]
 async fn test_websocket_multiple_connections() {
     let (addr, _tmp) = start_test_server().await;
-    let url = format!("ws://{}/ws", addr);
+    let url = format!("ws://{addr}/ws");
 
     let (mut ws1, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
     let (mut ws2, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
@@ -172,6 +176,8 @@ fn test_model_config() -> ModelConfig {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     }
 }
 
@@ -211,7 +217,7 @@ async fn start_auth_server(api_keys: Vec<String>) -> (String, tempfile::TempDir)
 #[tokio::test]
 async fn test_auth_rejects_without_key() {
     let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
-    let resp = reqwest::get(&format!("http://{}/health", addr))
+    let resp = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(resp.status(), 401);
@@ -222,7 +228,7 @@ async fn test_auth_accepts_valid_header() {
     let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
     let client = reqwest::Client::new();
     let resp = client
-        .get(&format!("http://{}/health", addr))
+        .get(format!("http://{addr}/health"))
         .header("Authorization", "Bearer secret-key-123")
         .send()
         .await
@@ -233,7 +239,7 @@ async fn test_auth_accepts_valid_header() {
 #[tokio::test]
 async fn test_auth_accepts_query_param() {
     let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
-    let resp = reqwest::get(&format!("http://{}/health?api_key=secret-key-123", addr))
+    let resp = reqwest::get(&format!("http://{addr}/health?api_key=secret-key-123"))
         .await
         .unwrap();
     assert_eq!(resp.status(), 200);
@@ -244,7 +250,7 @@ async fn test_auth_rejects_invalid_key() {
     let (addr, _tmp) = start_auth_server(vec!["secret-key-123".to_string()]).await;
     let client = reqwest::Client::new();
     let resp = client
-        .get(&format!("http://{}/health", addr))
+        .get(format!("http://{addr}/health"))
         .header("Authorization", "Bearer wrong-key")
         .send()
         .await
@@ -286,18 +292,18 @@ async fn test_rate_limiting_enforced() {
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
     // First 2 should succeed (burst)
-    let r1 = reqwest::get(&format!("http://{}/health", addr))
+    let r1 = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(r1.status(), 200);
 
-    let r2 = reqwest::get(&format!("http://{}/health", addr))
+    let r2 = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(r2.status(), 200);
 
     // Third should be rate limited
-    let r3 = reqwest::get(&format!("http://{}/health", addr))
+    let r3 = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(r3.status(), 429);

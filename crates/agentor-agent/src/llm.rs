@@ -3,6 +3,7 @@ use crate::backends::claude_code::ClaudeCodeBackend;
 use crate::backends::openai::OpenAiBackend;
 use crate::backends::LlmBackend;
 use crate::config::{LlmProvider, ModelConfig};
+use crate::failover::FailoverBackend;
 use crate::stream::StreamEvent;
 use agentor_core::{AgentorResult, Message, ToolCall};
 use agentor_skills::SkillDescriptor;
@@ -29,13 +30,31 @@ pub struct LlmClient {
 
 impl LlmClient {
     pub fn new(config: ModelConfig) -> Self {
-        let backend: Box<dyn LlmBackend> = match config.provider {
-            LlmProvider::Claude => Box::new(ClaudeBackend::new(config)),
-            LlmProvider::OpenAi | LlmProvider::OpenRouter | LlmProvider::Groq => {
-                Box::new(OpenAiBackend::new(config))
+        let fallback_models = config.fallback_models.clone();
+        let retry_policy = config.retry_policy.clone();
+
+        let make_backend = |cfg: ModelConfig| -> Box<dyn LlmBackend> {
+            match cfg.provider {
+                LlmProvider::Claude => Box::new(ClaudeBackend::new(cfg)),
+                LlmProvider::OpenAi | LlmProvider::OpenRouter | LlmProvider::Groq => {
+                    Box::new(OpenAiBackend::new(cfg))
+                }
+                LlmProvider::ClaudeCode => Box::new(ClaudeCodeBackend::new(cfg)),
             }
-            LlmProvider::ClaudeCode => Box::new(ClaudeCodeBackend::new(config)),
         };
+
+        let backend: Box<dyn LlmBackend> = if fallback_models.is_empty() {
+            make_backend(config)
+        } else {
+            let policy = retry_policy.unwrap_or_default();
+            let mut backends: Vec<Box<dyn LlmBackend>> = Vec::new();
+            backends.push(make_backend(config));
+            for fallback in fallback_models {
+                backends.push(make_backend(fallback));
+            }
+            Box::new(FailoverBackend::new(backends, policy))
+        };
+
         Self { backend }
     }
 

@@ -3,6 +3,9 @@ name = "agentor-mcp"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 agentor-core.workspace = true
 agentor-skills.workspace = true
@@ -14,3 +17,11 @@ async-trait.workspace = true
 tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true
+
+[dev-dependencies]
+agentor-core.workspace = true
+agentor-skills.workspace = true
+agentor-security.workspace = true
+async-trait.workspace = true
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

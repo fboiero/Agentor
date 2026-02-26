@@ -72,7 +72,7 @@ impl Skill for MemoryStoreSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Failed to compute embedding: {}", e),
+                    format!("Failed to compute embedding: {e}"),
                 ))
             }
         };
@@ -104,7 +104,7 @@ impl Skill for MemoryStoreSkill {
         if let Err(e) = self.store.insert(entry).await {
             return Ok(ToolResult::error(
                 &call.id,
-                format!("Failed to store memory: {}", e),
+                format!("Failed to store memory: {e}"),
             ));
         }
 
@@ -189,7 +189,7 @@ impl Skill for MemorySearchSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Failed to compute query embedding: {}", e),
+                    format!("Failed to compute query embedding: {e}"),
                 ))
             }
         };
@@ -201,7 +201,7 @@ impl Skill for MemorySearchSkill {
             .await
         {
             Ok(r) => r,
-            Err(e) => return Ok(ToolResult::error(&call.id, format!("Search failed: {}", e))),
+            Err(e) => return Ok(ToolResult::error(&call.id, format!("Search failed: {e}"))),
         };
 
         let results_json: Vec<serde_json::Value> = results
@@ -228,6 +228,7 @@ impl Skill for MemorySearchSkill {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use agentor_memory::{InMemoryVectorStore, LocalEmbedding};
@@ -348,7 +349,7 @@ mod tests {
 
         for i in 0..10 {
             let call = ToolCall {
-                id: format!("s{}", i),
+                id: format!("s{i}"),
                 name: "memory_store".to_string(),
                 arguments: serde_json::json!({"content": format!("Memory entry number {}", i)}),
             };

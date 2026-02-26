@@ -126,8 +126,7 @@ impl LlmBackend for OpenAiBackend {
 
         if !status.is_success() {
             return Err(AgentorError::Http(format!(
-                "OpenAI API error {}: {}",
-                status, resp_body
+                "OpenAI API error {status}: {resp_body}"
             )));
         }
 
@@ -172,8 +171,7 @@ impl LlmBackend for OpenAiBackend {
                 .await
                 .unwrap_or_else(|_| "unknown error".to_string());
             return Err(AgentorError::Http(format!(
-                "OpenAI API error {}: {}",
-                status, error_body
+                "OpenAI API error {status}: {error_body}"
             )));
         }
 
@@ -194,10 +192,10 @@ impl LlmBackend for OpenAiBackend {
                     Err(e) => {
                         let _ = tx
                             .send(StreamEvent::Error {
-                                message: format!("Stream read error: {}", e),
+                                message: format!("Stream read error: {e}"),
                             })
                             .await;
-                        return Err(AgentorError::Http(format!("Stream read error: {}", e)));
+                        return Err(AgentorError::Http(format!("Stream read error: {e}")));
                     }
                 };
 

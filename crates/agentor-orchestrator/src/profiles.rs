@@ -180,6 +180,7 @@ Rules:
 ";
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use agentor_agent::LlmProvider;
@@ -193,6 +194,8 @@ mod tests {
             temperature: 0.7,
             max_tokens: 4096,
             max_turns: 20,
+            fallback_models: Vec::new(),
+            retry_policy: None,
         }
     }
 

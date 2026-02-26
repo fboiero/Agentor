@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-02-24 — Hardening + Documentation Sprint
+
+**Asked**: Execute 4-wave plan: clippy config, unwrap elimination, documentation, integration tests.
+
+**Decided**:
+- Wave 1: Strict clippy lints at workspace level, propagated to all 13 crates. CI uses `-D warnings -A missing-docs` (deny all warnings except missing_docs, which stays as warn for progressive improvement).
+- Wave 2: All production unwraps replaced with `?` or `unwrap_or_default()`. Infallible operations (signal handlers, reqwest client, Default impls) get `#[allow]` with safety comments. All test code (inline + standalone files) gets blanket `#[allow]`.
+- Wave 3: Crate-level `//!` docs + `///` module docs on all lib.rs. Core types fully documented. README updated with current stats. CI excludes missing_docs from deny to avoid blocking on ~500 remaining field/method docs.
+- Wave 4: 52 new integration tests across 5 new test files (builtins, memory, mcp, core, compliance). Total: 483 tests.
+
+**Alternatives considered**:
+- Could have documented ALL ~500 public items (too expensive, diminishing returns for internal fields)
+- Could have used `deny` for missing_docs (would block CI; chose progressive approach instead)
+- Could have used `Result` for Default impls instead of `#[allow(expect_used)]` (would break the trait contract)
+
+**Result**: 483 tests passing, 0 clippy errors (with CI flags), 0 unwraps in production code.
+
+---
+
 ## 2026-02-22 — Codebase Improvement Sprint
 
 ### Decision 1: MCP Proxy Wiring Strategy
@@ -107,3 +126,99 @@
 - Clippy warnings: 0
 - New files: 10
 - Modified files: ~20
+
+---
+
+## 2026-02-23 — Session 4: 11 OpenClaw Parity Features
+
+### Decision 14: Model Failover with FailoverBackend Wrapper
+- **Timestamp**: 2026-02-23
+- **Asked**: Implement model failover with retry + fallback backends
+- **Decision**: `FailoverBackend` wraps `Vec<Box<dyn LlmBackend>>` and implements `LlmBackend`. Iterates backends in order on failure with exponential backoff. `is_retryable()` classifies errors (429/5xx/timeout → retry, 400 → skip). LlmClient auto-wraps when `fallback_models` is non-empty.
+- **Alternatives**: (1) Retry at HTTP layer — misses provider-specific logic. (2) Retry in each backend — duplicates logic.
+- **Notes**: `RetryPolicy` defaults: max_retries=3, backoff_base=1000ms, backoff_max=30000ms.
+
+### Decision 15: Session Transcripts as JSONL
+- **Timestamp**: 2026-02-23
+- **Asked**: Implement persistent session transcripts
+- **Decision**: `TranscriptStore` trait with `FileTranscriptStore` writing JSONL (one file per session). `TranscriptEvent` enum with 5 variants: UserMessage, AssistantMessage, ToolCallRequest, ToolCallResult, SystemEvent. Append-only, read sorts by turn+timestamp.
+- **Alternatives**: (1) SQLite — heavier dep. (2) Single JSON file — re-serialization on each append.
+- **Notes**: JSONL chosen for append-only friendliness and easy streaming reads.
+
+### Decision 16: Hybrid Search with RRF Fusion
+- **Timestamp**: 2026-02-23
+- **Asked**: Implement hybrid BM25+vector search
+- **Decision**: Separate `Bm25Index` (in-memory inverted index) and `HybridSearcher` (wraps VectorStore + Bm25Index). Fusion via Reciprocal Rank Fusion (RRF, k=60). `alpha` parameter balances BM25 vs vector (default 0.5).
+- **Alternatives**: (1) Weighted score combination — biased by score distributions. (2) External search engine (Tantivy) — too heavy for embedded use.
+- **Notes**: BM25 params: k1=1.2, b=0.75. Tokenization: split non-alphanum, lowercase, filter len>1.
+
+### Decision 17: Webhooks with HMAC-SHA256 Validation
+- **Timestamp**: 2026-02-23
+- **Asked**: Add webhook ingestion endpoints
+- **Decision**: `WebhookConfig` with optional secret for HMAC-SHA256 validation (constant-time comparison). Template rendering with `{{payload}}` substitution. `SessionStrategy::New` or `ByHeader(name)` for session routing.
+- **Alternatives**: (1) Signature in query param — less standard. (2) JWT validation — overkill for webhooks.
+- **Notes**: Route: `POST /webhook/:name`. Handler validates HMAC via `X-Webhook-Signature` header.
+
+### Decision 18: Plugin System with Lifecycle Hooks
+- **Timestamp**: 2026-02-23
+- **Asked**: Add extensible plugin system
+- **Decision**: `Plugin` trait with `manifest()`, `on_load(registry)`, `on_unload()`, `on_event(PluginEvent)`. `PluginRegistry` manages lifecycle. 6 event types: SessionCreated, SessionEnded, ToolCallBefore, ToolCallAfter, MessageReceived, Custom.
+- **Alternatives**: (1) WASM-only plugins — already have WasmSkillRuntime for that. (2) Dynamic library loading — platform-specific, unsafe.
+- **Notes**: Plugin trait is Rust-native; WASM plugins use the existing WasmSkillRuntime path.
+
+### Decision 19: Docker Sandbox Behind Feature Flag
+- **Timestamp**: 2026-02-23
+- **Asked**: Implement Docker-based command sandboxing
+- **Decision**: `DockerSandbox` and `DockerShellSkill` behind `docker` feature flag using bollard crate. `DockerSandboxConfig` with memory/CPU limits, timeout, network toggle, mount paths. `sanitize_command()` blocks injection via semicolons, pipes, backticks.
+- **Alternatives**: (1) Always include bollard — bloats binary for users without Docker. (2) gVisor/Firecracker — not available as Rust crate.
+- **Notes**: Container reused per session, cleanup on drop. `ExecResult { exit_code, stdout, stderr }`.
+
+### Decision 20: Sub-agent Spawning with Depth/Children Limits
+- **Timestamp**: 2026-02-23
+- **Asked**: Allow agents to spawn sub-agents dynamically
+- **Decision**: `SubAgentSpawner` with `max_depth=3` and `max_children_per_task=5` safety limits. `SpawnRequest` includes parent_task_id. Task struct extended with `parent_task: Option<Uuid>` and `depth: u32`. Agent delegate skill gets `spawn_subtask` action.
+- **Alternatives**: (1) No limits — runaway spawning risk. (2) Global agent count limit — less granular control.
+- **Notes**: Spawner creates tasks in the existing TaskQueue; engine picks them up naturally.
+
+### Decision 21: Config Hot-Reload via notify Crate
+- **Timestamp**: 2026-02-23
+- **Asked**: Support runtime config reloading without restart
+- **Decision**: `ConfigWatcher` using `notify::RecommendedWatcher` on agentor.toml. Debounce 500ms. `ReloadableConfig` has optional sections (security, skills, mcp_servers, tool_groups, webhooks). Non-reloadable: model config, server bind, TLS.
+- **Alternatives**: (1) Polling — higher latency, wastes CPU. (2) inotify directly — Linux-only.
+- **Notes**: `notify` is cross-platform (inotify/kqueue/ReadDirectoryChanges). Background thread with std::mpsc for event coalescing.
+
+### Decision 22: Cron Scheduler with Background Loop
+- **Timestamp**: 2026-02-23
+- **Asked**: Add scheduled task execution
+- **Decision**: `Scheduler` with `ScheduledJob` config (cron expression, task description, enabled flag). `start()` returns `JoinHandle` for background loop. Uses `cron` crate for expression parsing and next-fire-time calculation.
+- **Alternatives**: (1) tokio-cron-scheduler — heavier dep with its own runtime. (2) Simple interval — not flexible enough for real scheduling.
+- **Notes**: Each job creates a new session and runs independently. Disabled jobs are skipped.
+
+### Decision 23: Query Expansion with Rule-Based Synonyms
+- **Timestamp**: 2026-02-23
+- **Asked**: Expand search queries for better recall
+- **Decision**: `QueryExpander` trait in agentor-memory. `RuleBasedExpander` with 10 synonym groups (e.g., error↔bug↔issue, create↔make↔build). Future: LLM-based expander in builtins (avoids circular dep memory→agent).
+- **Alternatives**: (1) Word2Vec/embedding similarity — requires model loading. (2) External thesaurus API — adds latency.
+- **Notes**: `deduplicate_results()` merges results from multiple expanded queries by ID.
+
+### Decision 24: Browser Automation Behind Feature Flag
+- **Timestamp**: 2026-02-23
+- **Asked**: Add WebDriver-based browser automation
+- **Decision**: `BrowserAutomation` + `BrowserAutomationSkill` behind `browser` feature flag using fantoccini. Actions: navigate, screenshot, extract_text, fill_form, click. Requires external chromedriver/geckodriver.
+- **Alternatives**: (1) Headless Chrome via chrome-devtools-rs — Chrome-only. (2) playwright-rust — no stable crate.
+- **Notes**: Lazy connection (on first use). Screenshot saves to configurable dir.
+
+### Decision 25: Parallel Implementation Strategy
+- **Timestamp**: 2026-02-23
+- **Asked**: How to implement 11 features efficiently
+- **Decision**: Launched 10+ background agents in parallel (one per feature). Manual integration pass afterward to resolve concurrent edits to shared files (lib.rs, Cargo.toml). Required fixing 7 lib.rs files and multiple Cargo.toml files post-agent completion.
+- **Alternatives**: (1) Sequential implementation — slower but no conflicts. (2) Worktree isolation — git worktrees per feature then merge.
+- **Notes**: Concurrent editing of shared files (lib.rs) was the main challenge. Resolved by re-reading and rewriting after all agents completed. Net result: 89 new tests, 13 new files, 4 new deps.
+
+### Summary — Session 4 Stats
+- 11 tasks completed (#58-#68)
+- Tests: 342 → 431 (+89 new)
+- Clippy warnings: 0
+- New files: 13
+- New dependencies: 4 (bollard, fantoccini, notify, cron)
+- Modified files: ~25

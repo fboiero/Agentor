@@ -161,20 +161,20 @@ impl FileVectorStore {
 
         if path.exists() {
             let data = tokio::fs::read_to_string(&path).await.map_err(|e| {
-                AgentorError::Session(format!("Failed to read vector store: {}", e))
+                AgentorError::Session(format!("Failed to read vector store: {e}"))
             })?;
             for line in data.lines() {
                 if line.trim().is_empty() {
                     continue;
                 }
                 let entry: MemoryEntry = serde_json::from_str(line)
-                    .map_err(|e| AgentorError::Session(format!("Invalid JSONL entry: {}", e)))?;
+                    .map_err(|e| AgentorError::Session(format!("Invalid JSONL entry: {e}")))?;
                 inner.insert(entry).await?;
             }
         } else if let Some(parent) = path.parent() {
             tokio::fs::create_dir_all(parent)
                 .await
-                .map_err(|e| AgentorError::Session(format!("Failed to create dir: {}", e)))?;
+                .map_err(|e| AgentorError::Session(format!("Failed to create dir: {e}")))?;
         }
 
         Ok(Self { path, inner })
@@ -188,13 +188,13 @@ impl FileVectorStore {
             .append(true)
             .open(&self.path)
             .await
-            .map_err(|e| AgentorError::Session(format!("Failed to open vector store: {}", e)))?;
+            .map_err(|e| AgentorError::Session(format!("Failed to open vector store: {e}")))?;
         let mut line = serde_json::to_string(entry)
-            .map_err(|e| AgentorError::Session(format!("Failed to serialize entry: {}", e)))?;
+            .map_err(|e| AgentorError::Session(format!("Failed to serialize entry: {e}")))?;
         line.push('\n');
         file.write_all(line.as_bytes())
             .await
-            .map_err(|e| AgentorError::Session(format!("Failed to write entry: {}", e)))?;
+            .map_err(|e| AgentorError::Session(format!("Failed to write entry: {e}")))?;
         Ok(())
     }
 
@@ -204,13 +204,13 @@ impl FileVectorStore {
         let mut data = String::new();
         for entry in &entries {
             let line = serde_json::to_string(entry)
-                .map_err(|e| AgentorError::Session(format!("Failed to serialize entry: {}", e)))?;
+                .map_err(|e| AgentorError::Session(format!("Failed to serialize entry: {e}")))?;
             data.push_str(&line);
             data.push('\n');
         }
         tokio::fs::write(&self.path, data.as_bytes())
             .await
-            .map_err(|e| AgentorError::Session(format!("Failed to write vector store: {}", e)))?;
+            .map_err(|e| AgentorError::Session(format!("Failed to write vector store: {e}")))?;
         Ok(())
     }
 }
@@ -266,6 +266,7 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -320,7 +321,7 @@ mod tests {
             let mut emb = vec![0.0f32; 3];
             emb[i % 3] = 1.0;
             store
-                .insert(make_entry(&format!("entry_{}", i), emb, None))
+                .insert(make_entry(&format!("entry_{i}"), emb, None))
                 .await
                 .unwrap();
         }

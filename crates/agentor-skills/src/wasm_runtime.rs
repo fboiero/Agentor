@@ -38,7 +38,7 @@ impl WasmSkillRuntime {
         info!(path = %path.display(), name = %name, "Loading WASM skill");
 
         let module = Module::from_file(&self.engine, path)
-            .map_err(|e| AgentorError::Skill(format!("Failed to load WASM module: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to load WASM module: {e}")))?;
 
         Ok(WasmSkill {
             descriptor: SkillDescriptor {
@@ -54,6 +54,10 @@ impl WasmSkillRuntime {
 }
 
 impl Default for WasmSkillRuntime {
+    // Safety: WasmSkillRuntime::new() only creates a wasmtime::Engine with default
+    // config, which is infallible in practice. The Result wrapper exists for future
+    // proofing but the default Engine constructor cannot fail today.
+    #[allow(clippy::expect_used)]
     fn default() -> Self {
         Self::new().expect("Failed to create WASM runtime")
     }
@@ -70,12 +74,12 @@ impl Skill for WasmSkill {
         let module = self.module.clone();
         let call_id = call.id.clone();
         let input = serde_json::to_string(&call.arguments)
-            .map_err(|e| AgentorError::Skill(format!("Failed to serialize args: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to serialize args: {e}")))?;
 
         // Run WASM in a blocking task to avoid blocking the async runtime
         let result = tokio::task::spawn_blocking(move || run_wasm_skill(&engine, &module, &input))
             .await
-            .map_err(|e| AgentorError::Skill(format!("WASM task panicked: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("WASM task panicked: {e}")))?;
 
         match result {
             Ok(output) => Ok(ToolResult::success(call_id, output)),
@@ -87,7 +91,7 @@ impl Skill for WasmSkill {
 fn run_wasm_skill(engine: &Engine, module: &Module, input: &str) -> AgentorResult<String> {
     let mut linker = Linker::<WasiP1Ctx>::new(engine);
     preview1::add_to_linker_sync(&mut linker, |t| t)
-        .map_err(|e| AgentorError::Skill(format!("WASI linker error: {}", e)))?;
+        .map_err(|e| AgentorError::Skill(format!("WASI linker error: {e}")))?;
 
     let wasi = WasiCtxBuilder::new().inherit_stdio().arg(input).build_p1();
 
@@ -98,16 +102,16 @@ fn run_wasm_skill(engine: &Engine, module: &Module, input: &str) -> AgentorResul
 
     let instance = linker
         .instantiate(&mut store, module)
-        .map_err(|e| AgentorError::Skill(format!("WASM instantiation error: {}", e)))?;
+        .map_err(|e| AgentorError::Skill(format!("WASM instantiation error: {e}")))?;
 
     // Call the skill's main function using WASI _start convention
     let start = instance
         .get_typed_func::<(), ()>(&mut store, "_start")
-        .map_err(|e| AgentorError::Skill(format!("No _start export: {}", e)))?;
+        .map_err(|e| AgentorError::Skill(format!("No _start export: {e}")))?;
 
     start
         .call(&mut store, ())
-        .map_err(|e| AgentorError::Skill(format!("WASM execution error: {}", e)))?;
+        .map_err(|e| AgentorError::Skill(format!("WASM execution error: {e}")))?;
 
     Ok("WASM skill executed successfully".to_string())
 }

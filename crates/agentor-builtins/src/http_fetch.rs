@@ -15,11 +15,16 @@ pub struct HttpFetchSkill {
 
 impl HttpFetchSkill {
     pub fn new() -> Self {
+        // reqwest::Client::builder().build() only fails if TLS backend
+        // initialization fails, which indicates a fundamentally broken
+        // environment. We allow expect here because there is no meaningful
+        // recovery path at construction time.
+        #[allow(clippy::expect_used)]
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
             .redirect(reqwest::redirect::Policy::limited(5))
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client — TLS backend unavailable");
 
         Self {
             descriptor: SkillDescriptor {
@@ -85,7 +90,7 @@ impl Skill for HttpFetchSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Invalid URL '{}': {}", url, e),
+                    format!("Invalid URL '{url}': {e}"),
                 ));
             }
         };
@@ -96,8 +101,7 @@ impl Skill for HttpFetchSkill {
                 return Ok(ToolResult::error(
                     &call.id,
                     format!(
-                        "Access denied: '{}' resolves to a private/internal address",
-                        host
+                        "Access denied: '{host}' resolves to a private/internal address"
                     ),
                 ));
             }
@@ -109,7 +113,7 @@ impl Skill for HttpFetchSkill {
             scheme => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Unsupported scheme '{}'. Only http/https allowed.", scheme),
+                    format!("Unsupported scheme '{scheme}'. Only http/https allowed."),
                 ));
             }
         }
@@ -127,7 +131,7 @@ impl Skill for HttpFetchSkill {
             _ => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Unsupported method '{}'. Use GET or POST.", method),
+                    format!("Unsupported method '{method}'. Use GET or POST."),
                 ));
             }
         };
@@ -153,7 +157,7 @@ impl Skill for HttpFetchSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("HTTP request failed: {}", e),
+                    format!("HTTP request failed: {e}"),
                 ));
             }
         };
@@ -181,7 +185,7 @@ impl Skill for HttpFetchSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Failed to read response body: {}", e),
+                    format!("Failed to read response body: {e}"),
                 ));
             }
         };
@@ -252,6 +256,7 @@ fn is_private_host(host: &str) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

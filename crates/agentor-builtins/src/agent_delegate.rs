@@ -113,7 +113,7 @@ impl Skill for AgentDelegateSkill {
         if !valid_roles.contains(&role.as_str()) {
             return Ok(ToolResult::error(
                 &call.id,
-                format!("Invalid role '{}'. Must be one of: {:?}", role, valid_roles),
+                format!("Invalid role '{role}'. Must be one of: {valid_roles:?}"),
             ));
         }
 
@@ -145,6 +145,7 @@ impl Skill for AgentDelegateSkill {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
