@@ -1,40 +1,72 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+/// A fine-grained permission token describing a specific capability an agent may hold.
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Capability {
-    FileRead { allowed_paths: Vec<String> },
-    FileWrite { allowed_paths: Vec<String> },
-    NetworkAccess { allowed_hosts: Vec<String> },
-    ShellExec { allowed_commands: Vec<String> },
-    EnvRead { allowed_vars: Vec<String> },
+    /// Permission to read files under the given paths.
+    FileRead {
+        /// Allowed path prefixes for reading.
+        allowed_paths: Vec<String>,
+    },
+    /// Permission to write files under the given paths.
+    FileWrite {
+        /// Allowed path prefixes for writing.
+        allowed_paths: Vec<String>,
+    },
+    /// Permission to access network hosts.
+    NetworkAccess {
+        /// Allowed host patterns (use `"*"` for wildcard).
+        allowed_hosts: Vec<String>,
+    },
+    /// Permission to execute shell commands.
+    ShellExec {
+        /// Allowed command prefixes.
+        allowed_commands: Vec<String>,
+    },
+    /// Permission to read environment variables.
+    EnvRead {
+        /// Allowed variable names.
+        allowed_vars: Vec<String>,
+    },
+    /// Permission to perform database queries.
     DatabaseQuery,
-    BrowserAccess { allowed_domains: Vec<String> },
+    /// Permission to access browser/web domains.
+    BrowserAccess {
+        /// Allowed domain patterns.
+        allowed_domains: Vec<String>,
+    },
 }
 
+/// A set of granted capabilities that can be queried for access-control decisions.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PermissionSet {
     capabilities: HashSet<Capability>,
 }
 
 impl PermissionSet {
+    /// Create an empty permission set.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Grant a capability to this set.
     pub fn grant(&mut self, cap: Capability) {
         self.capabilities.insert(cap);
     }
 
+    /// Revoke a capability from this set.
     pub fn revoke(&mut self, cap: &Capability) {
         self.capabilities.remove(cap);
     }
 
+    /// Check whether this set contains the exact capability.
     pub fn has(&self, cap: &Capability) -> bool {
         self.capabilities.contains(cap)
     }
 
+    /// Return `true` if any `FileRead` capability allows the given path.
     pub fn check_file_read(&self, path: &str) -> bool {
         self.capabilities.iter().any(|c| match c {
             Capability::FileRead { allowed_paths } => {
@@ -44,6 +76,7 @@ impl PermissionSet {
         })
     }
 
+    /// Return `true` if any `FileWrite` capability allows the given path.
     pub fn check_file_write(&self, path: &str) -> bool {
         self.capabilities.iter().any(|c| match c {
             Capability::FileWrite { allowed_paths } => {
@@ -53,6 +86,7 @@ impl PermissionSet {
         })
     }
 
+    /// Return `true` if any `NetworkAccess` capability allows the given host.
     pub fn check_network(&self, host: &str) -> bool {
         self.capabilities.iter().any(|c| match c {
             Capability::NetworkAccess { allowed_hosts } => {
@@ -62,6 +96,7 @@ impl PermissionSet {
         })
     }
 
+    /// Return `true` if any `ShellExec` capability allows the given command.
     pub fn check_shell(&self, command: &str) -> bool {
         self.capabilities.iter().any(|c| match c {
             Capability::ShellExec { allowed_commands } => {
@@ -71,10 +106,12 @@ impl PermissionSet {
         })
     }
 
+    /// Return `true` if no capabilities have been granted.
     pub fn is_empty(&self) -> bool {
         self.capabilities.is_empty()
     }
 
+    /// Iterate over all granted capabilities.
     pub fn iter(&self) -> impl Iterator<Item = &Capability> {
         self.capabilities.iter()
     }

@@ -21,6 +21,8 @@ pub mod config;
 pub mod context;
 /// Failover and retry logic for LLM backends.
 pub mod failover;
+/// Agent identity, personality, session commands, and context compaction.
+pub mod identity;
 /// LLM client trait and HTTP transport.
 pub mod llm;
 /// Agent runner and agentic loop.
@@ -32,6 +34,7 @@ pub use backends::LlmBackend;
 pub use config::{LlmProvider, ModelConfig};
 pub use context::ContextWindow;
 pub use failover::{FailoverBackend, RetryPolicy};
+pub use identity::{AgentPersonality, ContextCompactor, SessionCommand, ThinkingLevel};
 pub use llm::LlmClient;
 pub use runner::AgentRunner;
 pub use stream::StreamEvent;

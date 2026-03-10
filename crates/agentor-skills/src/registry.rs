@@ -170,7 +170,8 @@ impl SkillRegistry {
     /// Return only skills whose names appear in the given list.
     /// Used for progressive tool disclosure in multi-agent orchestration.
     pub fn filter_by_names(&self, names: &[String]) -> Vec<&SkillDescriptor> {
-        let allowed: std::collections::HashSet<&str> = names.iter().map(std::string::String::as_str).collect();
+        let allowed: std::collections::HashSet<&str> =
+            names.iter().map(std::string::String::as_str).collect();
         self.skills
             .values()
             .filter(|s| allowed.contains(s.descriptor().name.as_str()))
@@ -181,7 +182,8 @@ impl SkillRegistry {
     /// Create a new registry containing only skills whose names appear in the given list.
     /// Used for progressive tool disclosure — each worker agent gets only the skills it needs.
     pub fn filter_to_new(&self, names: &[String]) -> Self {
-        let allowed: std::collections::HashSet<&str> = names.iter().map(std::string::String::as_str).collect();
+        let allowed: std::collections::HashSet<&str> =
+            names.iter().map(std::string::String::as_str).collect();
         let skills = self
             .skills
             .iter()

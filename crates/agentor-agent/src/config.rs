@@ -12,6 +12,27 @@ pub enum LlmProvider {
     /// Use the local `claude` CLI in headless mode (-p --output-format json).
     /// No API key needed — uses the user's existing Claude Code session/subscription.
     ClaudeCode,
+    /// Google Gemini — native REST API (not OpenAI-compatible).
+    Gemini,
+    /// Local Ollama — OpenAI-compatible API at localhost:11434.
+    Ollama,
+    /// Mistral AI — OpenAI-compatible API.
+    Mistral,
+    /// xAI (Grok) — OpenAI-compatible API.
+    #[serde(alias = "xai")]
+    XAi,
+    /// Azure OpenAI — OpenAI-compatible but with different auth and URL scheme.
+    #[serde(alias = "azure_openai", alias = "azure")]
+    AzureOpenAi,
+    /// Cerebras — OpenAI-compatible API for fast inference.
+    Cerebras,
+    /// Together AI — OpenAI-compatible API for open-source models.
+    Together,
+    /// DeepSeek — OpenAI-compatible API.
+    DeepSeek,
+    /// vLLM — OpenAI-compatible API for self-hosted inference.
+    #[serde(alias = "vllm")]
+    VLlm,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,6 +76,15 @@ impl ModelConfig {
                 LlmProvider::OpenRouter => "https://openrouter.ai/api",
                 LlmProvider::Groq => "https://api.groq.com/openai",
                 LlmProvider::ClaudeCode => "local://claude-cli",
+                LlmProvider::Gemini => "https://generativelanguage.googleapis.com",
+                LlmProvider::Ollama => "http://localhost:11434",
+                LlmProvider::Mistral => "https://api.mistral.ai",
+                LlmProvider::XAi => "https://api.x.ai",
+                LlmProvider::AzureOpenAi => "https://models.inference.ai.azure.com",
+                LlmProvider::Cerebras => "https://api.cerebras.ai",
+                LlmProvider::Together => "https://api.together.xyz",
+                LlmProvider::DeepSeek => "https://api.deepseek.com",
+                LlmProvider::VLlm => "http://localhost:8000",
             }
         }
     }

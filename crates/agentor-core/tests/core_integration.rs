@@ -59,7 +59,10 @@ fn tool_call_to_tool_result_flow() {
     let deserialized: ToolCall = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.id, "call_abc123");
     assert_eq!(deserialized.name, "web_search");
-    assert_eq!(deserialized.arguments, serde_json::json!({"query": "Rust async"}));
+    assert_eq!(
+        deserialized.arguments,
+        serde_json::json!({"query": "Rust async"})
+    );
 }
 
 // ---------------------------------------------------------------------------

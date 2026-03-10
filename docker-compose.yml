@@ -1,0 +1,42 @@
+services:
+  agentor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentor
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - agentor-data:/app/data
+      - ./agentor.toml:/app/agentor.toml:ro
+      - ./skills:/app/skills:ro
+    environment:
+      - RUST_LOG=info
+      - AGENTOR_BIND=0.0.0.0:3000
+    healthcheck:
+      test: ["CMD", "/app/agentor", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+        reservations:
+          memory: 64M
+          cpus: "0.25"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+volumes:
+  agentor-data:

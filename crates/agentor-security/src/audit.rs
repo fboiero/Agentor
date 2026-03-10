@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 use tracing::info;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEntry {
     pub timestamp: DateTime<Utc>,
     pub session_id: Uuid,
@@ -15,7 +15,7 @@ pub struct AuditEntry {
     pub outcome: AuditOutcome,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AuditOutcome {
     Success,

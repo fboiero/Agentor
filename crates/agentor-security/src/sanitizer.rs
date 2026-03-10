@@ -12,6 +12,7 @@ impl Default for Sanitizer {
 }
 
 impl Sanitizer {
+    /// Create a sanitizer with a custom maximum message length.
     pub fn new(max_message_length: usize) -> Self {
         Self { max_message_length }
     }
@@ -51,6 +52,7 @@ impl Sanitizer {
     }
 }
 
+/// Result of a sanitization pass on an input string.
 #[derive(Debug, PartialEq)]
 pub enum SanitizeResult {
     /// Input was already clean.
@@ -62,10 +64,12 @@ pub enum SanitizeResult {
 }
 
 impl SanitizeResult {
+    /// Return `true` if the input was rejected.
     pub fn is_rejected(&self) -> bool {
         matches!(self, SanitizeResult::Rejected(_))
     }
 
+    /// Consume the result, returning the sanitized string or `None` if rejected.
     pub fn into_string(self) -> Option<String> {
         match self {
             SanitizeResult::Clean(s) | SanitizeResult::Cleaned(s) => Some(s),

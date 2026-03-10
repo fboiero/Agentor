@@ -1,5 +1,6 @@
 use crate::backends::claude::ClaudeBackend;
 use crate::backends::claude_code::ClaudeCodeBackend;
+use crate::backends::gemini::GeminiBackend;
 use crate::backends::openai::OpenAiBackend;
 use crate::backends::LlmBackend;
 use crate::config::{LlmProvider, ModelConfig};
@@ -36,10 +37,20 @@ impl LlmClient {
         let make_backend = |cfg: ModelConfig| -> Box<dyn LlmBackend> {
             match cfg.provider {
                 LlmProvider::Claude => Box::new(ClaudeBackend::new(cfg)),
-                LlmProvider::OpenAi | LlmProvider::OpenRouter | LlmProvider::Groq => {
-                    Box::new(OpenAiBackend::new(cfg))
-                }
+                LlmProvider::Gemini => Box::new(GeminiBackend::new(cfg)),
                 LlmProvider::ClaudeCode => Box::new(ClaudeCodeBackend::new(cfg)),
+                // All OpenAI-compatible providers
+                LlmProvider::OpenAi
+                | LlmProvider::OpenRouter
+                | LlmProvider::Groq
+                | LlmProvider::Ollama
+                | LlmProvider::Mistral
+                | LlmProvider::XAi
+                | LlmProvider::AzureOpenAi
+                | LlmProvider::Cerebras
+                | LlmProvider::Together
+                | LlmProvider::DeepSeek
+                | LlmProvider::VLlm => Box::new(OpenAiBackend::new(cfg)),
             }
         };
 

@@ -64,7 +64,9 @@ pub fn is_retryable(err: &AgentorError) -> bool {
 /// Computes the backoff delay for a given attempt using exponential backoff
 /// capped at `backoff_max_ms`.
 fn compute_backoff(policy: &RetryPolicy, attempt: u32) -> u64 {
-    let delay = policy.backoff_base_ms.saturating_mul(2u64.saturating_pow(attempt));
+    let delay = policy
+        .backoff_base_ms
+        .saturating_mul(2u64.saturating_pow(attempt));
     delay.min(policy.backoff_max_ms)
 }
 
@@ -90,7 +92,10 @@ impl FailoverBackend {
     /// # Panics
     /// Panics if `backends` is empty.
     pub fn new(backends: Vec<Box<dyn LlmBackend>>, policy: RetryPolicy) -> Self {
-        assert!(!backends.is_empty(), "FailoverBackend requires at least one backend");
+        assert!(
+            !backends.is_empty(),
+            "FailoverBackend requires at least one backend"
+        );
         Self {
             backends,
             policy,
@@ -153,9 +158,8 @@ impl LlmBackend for FailoverBackend {
             }
         }
 
-        Err(last_err.unwrap_or_else(|| {
-            AgentorError::Agent("All failover backends exhausted".into())
-        }))
+        Err(last_err
+            .unwrap_or_else(|| AgentorError::Agent("All failover backends exhausted".into())))
     }
 
     async fn chat_stream(
@@ -344,7 +348,10 @@ mod tests {
         let result = failover.chat(None, &[], &[]).await;
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("503"), "Expected last error (503), got: {err_msg}");
+        assert!(
+            err_msg.contains("503"),
+            "Expected last error (503), got: {err_msg}"
+        );
     }
 
     // ── Test 3: non-retryable error skips retries immediately ────────────
@@ -363,9 +370,9 @@ mod tests {
                     Err(AgentorError::Http("400 Bad Request".into())),
                     Ok(LlmResponse::Text("should not reach".into())),
                 ])),
-                Box::new(MockBackend::new(vec![
-                    Ok(LlmResponse::Text("fallback ok".into())),
-                ])),
+                Box::new(MockBackend::new(vec![Ok(LlmResponse::Text(
+                    "fallback ok".into(),
+                ))])),
             ],
             policy: instant_policy(),
             sleep_fn: Some(Box::new(|_| Box::pin(async {}))),
@@ -390,11 +397,11 @@ mod tests {
             backoff_max_ms: 30_000,
         };
 
-        assert_eq!(compute_backoff(&policy, 0), 500);   // 500 * 2^0 = 500
-        assert_eq!(compute_backoff(&policy, 1), 1000);  // 500 * 2^1 = 1000
-        assert_eq!(compute_backoff(&policy, 2), 2000);  // 500 * 2^2 = 2000
-        assert_eq!(compute_backoff(&policy, 3), 4000);  // 500 * 2^3 = 4000
-        assert_eq!(compute_backoff(&policy, 4), 8000);  // 500 * 2^4 = 8000
+        assert_eq!(compute_backoff(&policy, 0), 500); // 500 * 2^0 = 500
+        assert_eq!(compute_backoff(&policy, 1), 1000); // 500 * 2^1 = 1000
+        assert_eq!(compute_backoff(&policy, 2), 2000); // 500 * 2^2 = 2000
+        assert_eq!(compute_backoff(&policy, 3), 4000); // 500 * 2^3 = 4000
+        assert_eq!(compute_backoff(&policy, 4), 8000); // 500 * 2^4 = 8000
         assert_eq!(compute_backoff(&policy, 5), 16000); // 500 * 2^5 = 16000
         assert_eq!(compute_backoff(&policy, 6), 30_000); // capped at max
     }
@@ -404,13 +411,23 @@ mod tests {
     #[test]
     fn is_retryable_classification() {
         // Retryable
-        assert!(is_retryable(&AgentorError::Http("429 Too Many Requests".into())));
+        assert!(is_retryable(&AgentorError::Http(
+            "429 Too Many Requests".into()
+        )));
         assert!(is_retryable(&AgentorError::Http("401 Unauthorized".into())));
-        assert!(is_retryable(&AgentorError::Http("timeout waiting for response".into())));
-        assert!(is_retryable(&AgentorError::Http("500 Internal Server Error".into())));
+        assert!(is_retryable(&AgentorError::Http(
+            "timeout waiting for response".into()
+        )));
+        assert!(is_retryable(&AgentorError::Http(
+            "500 Internal Server Error".into()
+        )));
         assert!(is_retryable(&AgentorError::Http("502 Bad Gateway".into())));
-        assert!(is_retryable(&AgentorError::Http("503 Service Unavailable".into())));
-        assert!(is_retryable(&AgentorError::Http("504 Gateway Timeout".into())));
+        assert!(is_retryable(&AgentorError::Http(
+            "503 Service Unavailable".into()
+        )));
+        assert!(is_retryable(&AgentorError::Http(
+            "504 Gateway Timeout".into()
+        )));
         assert!(is_retryable(&AgentorError::Agent("5xx class error".into())));
 
         // Not retryable
@@ -429,9 +446,9 @@ mod tests {
                     Err(AgentorError::Http("502 Bad Gateway".into())),
                     Err(AgentorError::Http("502 Bad Gateway".into())),
                 ])),
-                Box::new(MockBackend::new(vec![
-                    Ok(LlmResponse::Text("second backend".into())),
-                ])),
+                Box::new(MockBackend::new(vec![Ok(LlmResponse::Text(
+                    "second backend".into(),
+                ))])),
             ],
             policy: instant_policy(),
             sleep_fn: Some(Box::new(|_| Box::pin(async {}))),

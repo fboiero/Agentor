@@ -1,55 +1,80 @@
 # Agentor — Session Context
-> Last updated: 2026-02-24 (session 5)
+> Last updated: 2026-03-07 (session 7)
 
 ## Current Goal
-Hardening + Documentation complete. Framework production-ready with strict clippy, zero unwraps in prod, crate-level docs, and comprehensive integration tests.
+6-phase OpenClaw parity plan — **ALL 6 PHASES COMPLETE**.
 
-## What's Completed in Session 5
+## What's Completed
 
-### Wave 1 — Clippy Configuration
-- Created `clippy.toml` (msrv=1.75, cognitive-complexity-threshold=30)
-- Added workspace lints: unwrap_used, expect_used, uninlined_format_args, redundant_closure_for_method_calls, etc.
-- Added `[lints] workspace = true` to all 13 crate Cargo.toml files
-- Updated CI: `cargo clippy --workspace --all-targets -- -D warnings -A missing-docs`
+### Phase 1 — LLM Provider Expansion (5 → 14 providers)
+- 9 new providers: Gemini, Ollama, Mistral, XAi, AzureOpenAi, Cerebras, Together, DeepSeek, VLlm
+- `GeminiBackend` — full Google Gemini API backend (chat + streaming + tool calling)
+- Azure auth handling (api-key header)
+- 29 integration tests with wiremock mock HTTP server
 
-### Wave 2 — Unwrap Elimination
-- Replaced all `.unwrap()`/`.expect()` in production code with `?`, `map_err()`, or `unwrap_or_default()`
-- Signal handlers in CLI: `#[allow(clippy::expect_used)]` with safety comments
-- `reqwest::Client::builder().build()`: `#[allow(clippy::expect_used)]` (infallible in practice)
-- `Default` impls for WasmSkillRuntime/SkillLoader: `#[allow(clippy::expect_used)]`
-- Added `#[allow(clippy::unwrap_used, clippy::expect_used)]` to ALL test modules (inline + standalone)
-- Auto-fixed 176 uninlined_format_args + 12 redundant closures via `cargo clippy --fix`
-- Fixed complex type in failover.rs (SleepFn type alias)
+### Phase 2 — Docker + K8s Deployment
+- Improved Dockerfile with security hardening (strip, non-root, HEALTHCHECK)
+- `docker-compose.yml` with resource limits, read-only fs, cap_drop ALL
+- Helm chart at `deploy/helm/agentor/` (7 templates)
 
-### Wave 3 — Documentation
-- Added `//!` crate-level docs to all 13 lib.rs + CLI main.rs
-- Added `///` module docs to all `pub mod` declarations
-- Added `///` doc comments to all core types (AgentorError, Message, Role, ToolCall, ToolResult, etc.)
-- Updated README.md: test count 480+, new features, updated crate table, Docker section
+### Phase 3 — Skill Registry Seguro
+- `SkillManifest` — name, version, author, SHA-256 checksum, declared capabilities, ed25519 signature
+- `SkillVetter` — 5-check pipeline: checksum, size, signature, capabilities, WASM static analysis
+- `SkillIndex` — local registry with install/uninstall/upgrade, persistence as JSON
+- Ed25519 signing & verification with trusted key management
+- Constant-time checksum comparison (anti-timing-attack)
+- 15 tests covering all vetting scenarios
 
-### Wave 4 — Integration Tests (52 new)
-- `crates/agentor-builtins/tests/builtins_integration.rs` — 17 tests (registry, shell, file I/O, SSRF, memory, artifacts, approval)
-- `crates/agentor-memory/tests/memory_integration.rs` — 12 tests (persistence, hybrid search, BM25, query expansion)
-- `crates/agentor-mcp/tests/mcp_integration.rs` — 8 tests (proxy, logging, metrics, discovery, manager)
-- `crates/agentor-core/tests/core_integration.rs` — 6 tests (serialization, factories, error impls)
-- `crates/agentor-compliance/tests/compliance_integration.rs` — 8 tests (all 4 frameworks, persistence, hooks)
+### Phase 4 — Agent Identity + Session System
+- `AgentPersonality` — name, role, instructions, style, constraints, expertise, thinking level
+- `CommunicationStyle` — tone, language, use_markdown, max_response_length
+- `ThinkingLevel` — Off/Low/Medium/High chain-of-thought control
+- `SessionCommand` — slash commands (/status, /new, /reset, /compact, /think, /usage, /skills, /audit, /help)
+- `ContextCompactor` — threshold-based auto-compaction with split and summary
+- `AgentRunner::with_personality()` — wired into runner as alternative to hardcoded system prompt
+- TOML file loading for personality configuration
+- 27 tests
+
+### Phase 5 — Enterprise Security Hardening
+- `RbacPolicy` — Role-based access control with Admin/Operator/Viewer/Custom roles
+- `PolicyBinding` — per-role permissions, allowed/denied skills, rate limits
+- `RbacDecision` — evaluation result with effective permissions
+- `AuditFilter` + `query_audit_log()` — structured querying of JSONL audit logs
+- `AuditQueryResult` + `AuditStats` — query results with statistics
+- `EncryptedStore` — AES-256-GCM encrypted at-rest key-value store
+- PBKDF2-HMAC-SHA256 key derivation, per-message salts, HMAC authentication
+- Constant-time comparison, tamper detection
+- `AuditEntry` now has Deserialize (was Serialize-only)
+- 40 security tests (was 26)
+
+### Phase 6 — Benchmarks + Performance Proof
+- criterion.rs benchmarks for 3 crates:
+  - `agentor-core`: Message creation (~253ns), serialization (~253ns), batch (1000 msgs ~831µs)
+  - `agentor-security`: RBAC evaluation, permission checks, encryption, sanitizer
+  - `agentor-skills`: Registry lookup, registration, skill vetting/checksums
+- HTML reports generated in `target/criterion/`
 
 ## Build Health
-- `cargo clippy --workspace --all-targets -- -D warnings -A missing-docs` — **0 errors**
-- `cargo test --workspace` — **483 tests passing** (was 431)
-- `cargo check --workspace` — OK
+- `cargo test --workspace` — **578 tests passing** (was 527, +51 new)
+- 0 failures
+- 3 benchmark suites compiling and running
 
 ## Git State
 - **Branch**: master, changes LOCAL and UNCOMMITTED
-- Session 4 commit: `f940b74` (tasks #58-#68)
-- Session 5: hardening + docs, not yet committed
+- Last commit: `bf16029` (session 5)
 
-## Key New Files (session 5)
+## Key New Files (sessions 6-7)
 | File | Role |
 |------|------|
-| `clippy.toml` | Clippy configuration |
-| `crates/agentor-builtins/tests/builtins_integration.rs` | Builtins integration tests |
-| `crates/agentor-memory/tests/memory_integration.rs` | Memory integration tests |
-| `crates/agentor-mcp/tests/mcp_integration.rs` | MCP integration tests |
-| `crates/agentor-core/tests/core_integration.rs` | Core integration tests |
-| `crates/agentor-compliance/tests/compliance_integration.rs` | Compliance integration tests |
+| `crates/agentor-agent/src/backends/gemini.rs` | Gemini API backend |
+| `crates/agentor-agent/tests/providers_integration.rs` | 29 provider tests |
+| `crates/agentor-agent/src/identity.rs` | Agent personality + session commands |
+| `crates/agentor-skills/src/vetting.rs` | Skill vetting + signing + index |
+| `crates/agentor-security/src/rbac.rs` | RBAC policy engine |
+| `crates/agentor-security/src/audit_query.rs` | Audit log querying |
+| `crates/agentor-security/src/encrypted_store.rs` | Encrypted at-rest storage |
+| `crates/agentor-core/benches/core_benchmarks.rs` | Core benchmarks |
+| `crates/agentor-security/benches/security_benchmarks.rs` | Security benchmarks |
+| `crates/agentor-skills/benches/skills_benchmarks.rs` | Skills benchmarks |
+| `docker-compose.yml` | Docker Compose |
+| `deploy/helm/agentor/` | Helm chart (7 files) |

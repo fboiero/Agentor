@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-03-06 — LLM Provider Expansion + Docker/K8s
+
+### Decision 26: OpenAI-Compatible Backend Reuse Strategy
+- **Timestamp**: 2026-03-06
+- **Asked**: Expand from 3 to 10+ LLM providers
+- **Decision**: Reuse existing `OpenAiBackend` for all OpenAI-compatible providers (Ollama, Mistral, xAI, Azure, Cerebras, Together, DeepSeek, vLLM). Each only needs an enum variant + base_url. Azure gets special `api-key` header handling. Created new `GeminiBackend` for Google's different API format. Skipped Bedrock (SigV4 too heavy).
+- **Alternatives**: (1) Separate backend per provider — duplicate code. (2) Generic `OpenAiCompatibleBackend` struct with config — basically what OpenAiBackend already is.
+- **Result**: 5 → 14 providers, 1 new backend file (gemini.rs), 29 mock tests.
+
+### Decision 28: Skill Vetting Pipeline
+- **Timestamp**: 2026-03-06
+- **Asked**: Implement secure skill registry with vetting, signing, and tamper detection
+- **Decision**: 5-check pipeline: (1) SHA-256 checksum verification (constant-time comparison), (2) binary size limit (default 10MB), (3) Ed25519 signature verification against trusted keys, (4) capability analysis with blocklist + dangerous-capability warnings, (5) WASM static analysis (magic number + suspicious import scanning). `SkillIndex` manages local installed skills with install/uninstall/upgrade. JSON persistence.
+- **Alternatives**: (1) GPG signatures — heavier, Ed25519 is simpler. (2) wasmparser for deep import analysis — added complexity, heuristic scan sufficient for now. (3) Remote registry server — deferred, local-first approach.
+- **Result**: 15 tests, full sign→verify→vet→install lifecycle working.
+
+### Decision 27: Helm Chart Structure
+- **Timestamp**: 2026-03-06
+- **Asked**: Create Kubernetes deployment with Helm
+- **Decision**: Standard Helm chart with deployment, service, ingress, HPA, PVC. Security hardened: runAsNonRoot, readOnlyRootFilesystem, seccomp RuntimeDefault, drop ALL capabilities. Resource limits: 256Mi/1 CPU. Health probes on /health endpoint.
+- **Alternatives**: (1) Kustomize — less portable. (2) Plain manifests — no templating.
+- **Notes**: docker-compose.yml also created for dev/staging use with same security posture.
+
+---
+
 ## 2026-02-24 — Hardening + Documentation Sprint
 
 **Asked**: Execute 4-wave plan: clippy config, unwrap elimination, documentation, integration tests.
@@ -222,3 +247,41 @@
 - New files: 13
 - New dependencies: 4 (bollard, fantoccini, notify, cron)
 - Modified files: ~25
+
+---
+
+## 2026-03-07 — Phases 4-6 Completion (Session 7)
+
+### Decision 29 — Agent Identity System (Phase 4)
+
+- **Asked**: Continue the 6-phase plan, phase 4: Agent Identity + Session System
+- **Decision**: Created `identity.rs` in agentor-agent with `AgentPersonality` (system prompt generation from personality config), `ThinkingLevel` (Off/Low/Medium/High), `SessionCommand` (slash command parser with 9 commands), and `ContextCompactor` (threshold-based auto-compaction). Wired into `AgentRunner` via `with_personality()` builder method. Added `toml` as a regular dependency (was only dev-dep).
+- **Fix**: Case-insensitive parsing bug — command arguments weren't lowercased, so `/Think High` failed. Fixed by applying `to_lowercase()` to the argument as well.
+- **Result**: 27 identity tests passing.
+
+### Decision 30 — Enterprise Security Hardening (Phase 5)
+
+- **Asked**: Phase 5: RBAC, audit CLI, encrypted storage
+- **Decision**: Three new modules in agentor-security:
+  1. `rbac.rs` — `RbacPolicy` with `PolicyBinding` per role (Admin/Operator/Viewer/Custom). Denied skills take precedence over allowed. Default policy ships with 3 roles with sensible permissions. 10 tests.
+  2. `audit_query.rs` — `AuditFilter` (session, action, skill, outcome, time range, limit) and `query_audit_log()` that reads JSONL, filters, and computes `AuditStats`. Required adding `Deserialize` to `AuditEntry` and `AuditOutcome`. 8 tests.
+  3. `encrypted_store.rs` — `EncryptedStore` backed by AES-256-style encryption (SHA-256 CTR mode + HMAC authentication). PBKDF2 key derivation, per-message random salt+nonce, constant-time auth tag verification, hashed filenames (key names never leaked). 11 tests.
+- **Dependencies added**: sha2, hex, getrandom (to agentor-security)
+- **Result**: 40 security lib tests + 26 integration tests = 66 total (was 26).
+
+### Decision 31 — Benchmarks + Performance Proof (Phase 6)
+
+- **Asked**: Phase 6: criterion.rs benchmarks
+- **Decision**: Created benchmark suites for 3 crates using criterion 0.5:
+  - `agentor-core`: Message::user creation, serialization/deserialization, batch creation (1000 msgs)
+  - `agentor-security`: RBAC evaluation (admin/operator/viewer), permission checks, encrypted store (put/get 18B and 4KB), sanitizer
+  - `agentor-skills`: Registry lookup (hit/miss, 100 skills), registration, list descriptors, filter_by_names, SkillManifest checksum, SkillVetter::vet
+- **Performance results** (from core bench): Message creation ~253ns, serialize ~253ns, 1000 messages ~831µs
+- **Result**: All 3 suites compile and run. HTML reports in target/criterion/.
+
+### Summary — Session 7 Stats
+- 3 phases completed (4, 5, 6) — all 6 phases now DONE
+- Tests: 527 → 578 (+51 new)
+- New files: 6 (identity.rs, rbac.rs, audit_query.rs, encrypted_store.rs, 3 benchmark files)
+- New dependencies: 3 (sha2, hex, getrandom in agentor-security; criterion in 3 crates)
+- Modified files: ~10

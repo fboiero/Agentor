@@ -23,6 +23,8 @@ pub mod plugin;
 pub mod registry;
 /// Core skill trait and descriptor.
 pub mod skill;
+/// Skill vetting, signing, and secure registry index.
+pub mod vetting;
 /// Wasmtime-based WASM skill runtime.
 pub mod wasm_runtime;
 
@@ -31,4 +33,5 @@ pub use markdown_skill::{LoadedMarkdownSkills, MarkdownSkill, MarkdownSkillLoade
 pub use plugin::{Plugin, PluginEvent, PluginManifest, PluginRegistry};
 pub use registry::{SkillRegistry, ToolGroup};
 pub use skill::{Skill, SkillDescriptor};
+pub use vetting::{SkillIndex, SkillManifest, SkillVetter, VettingResult};
 pub use wasm_runtime::WasmSkillRuntime;

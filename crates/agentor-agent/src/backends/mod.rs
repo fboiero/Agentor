@@ -1,5 +1,6 @@
 pub mod claude;
 pub mod claude_code;
+pub mod gemini;
 pub mod openai;
 
 use crate::llm::LlmResponse;

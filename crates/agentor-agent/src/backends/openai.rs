@@ -74,9 +74,13 @@ impl OpenAiBackend {
     }
 
     fn add_provider_headers(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-        let request = request
-            .header("Authorization", format!("Bearer {}", self.config.api_key))
-            .header("Content-Type", "application/json");
+        let request = match self.config.provider {
+            // Azure uses "api-key" header instead of Bearer token
+            LlmProvider::AzureOpenAi => request.header("api-key", &self.config.api_key),
+            _ => request.header("Authorization", format!("Bearer {}", self.config.api_key)),
+        };
+
+        let request = request.header("Content-Type", "application/json");
 
         // OpenRouter requires extra headers
         if matches!(self.config.provider, LlmProvider::OpenRouter) {

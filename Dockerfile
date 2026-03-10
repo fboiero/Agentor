@@ -13,12 +13,14 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 COPY wit/ wit/
-RUN cargo build --release --bin agentor
+RUN cargo build --release --bin agentor && strip /build/target/release/agentor
 
-# Stage 3: Minimal runtime image
+# Stage 3: Minimal runtime image (~80MB)
 FROM debian:bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -s /bin/bash agentor
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -r -s /usr/sbin/nologin -d /app agentor
 
 WORKDIR /app
 
@@ -32,11 +34,15 @@ COPY --from=wasm-builder /build/skills/echo-skill/target/wasm32-wasip1/release/e
 COPY agentor.toml /app/agentor.toml
 
 # Create data directories
-RUN mkdir -p /app/data/audit /app/data/sessions && chown -R agentor:agentor /app
+RUN mkdir -p /app/data/audit /app/data/sessions /app/data/transcripts && \
+    chown -R agentor:agentor /app
 
 USER agentor
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
+    CMD ["/app/agentor", "health"]
 
 ENTRYPOINT ["/app/agentor"]
 CMD ["serve"]

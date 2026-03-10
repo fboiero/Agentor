@@ -58,6 +58,9 @@ toml = "0.8"
 notify = { version = "7", features = ["macos_fsevent"] }
 bollard = "0.17"
 
+# Testing
+wiremock = "0.6"
+
 # Internal crates
 agentor-core = { path = "crates/agentor-core" }
 agentor-security = { path = "crates/agentor-security" }

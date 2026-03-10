@@ -15,12 +15,29 @@ pub struct PluginManifest {
 /// Events emitted during the agent lifecycle that plugins can react to.
 #[derive(Debug, Clone)]
 pub enum PluginEvent {
-    SessionCreated { session_id: Uuid },
-    SessionEnded { session_id: Uuid },
-    ToolCallBefore { tool_name: String, call_id: String },
-    ToolCallAfter { tool_name: String, call_id: String, success: bool },
-    MessageReceived { session_id: Uuid, role: String },
-    Custom { name: String, data: serde_json::Value },
+    SessionCreated {
+        session_id: Uuid,
+    },
+    SessionEnded {
+        session_id: Uuid,
+    },
+    ToolCallBefore {
+        tool_name: String,
+        call_id: String,
+    },
+    ToolCallAfter {
+        tool_name: String,
+        call_id: String,
+        success: bool,
+    },
+    MessageReceived {
+        session_id: Uuid,
+        role: String,
+    },
+    Custom {
+        name: String,
+        data: serde_json::Value,
+    },
 }
 
 /// Trait that all plugins must implement.
@@ -209,7 +226,10 @@ mod tests {
 
         plugin_registry.unload_all();
         assert_eq!(plugin_registry.count(), 0);
-        assert!(flag_clone.load(Ordering::SeqCst), "on_unload should have been called");
+        assert!(
+            flag_clone.load(Ordering::SeqCst),
+            "on_unload should have been called"
+        );
         // list should be empty
         assert!(plugin_registry.list().is_empty());
     }

@@ -1,5 +1,6 @@
 use crate::config::ModelConfig;
 use crate::context::ContextWindow;
+use crate::identity::AgentPersonality;
 use crate::llm::{LlmClient, LlmResponse};
 use crate::stream::StreamEvent;
 use agentor_core::{AgentorError, AgentorResult, Message, Role};
@@ -77,8 +78,18 @@ impl AgentRunner {
         self
     }
 
+    /// Configure the agent with a personality (generates system prompt from it).
+    pub fn with_personality(mut self, personality: &AgentPersonality) -> Self {
+        self.system_prompt = personality.to_system_prompt();
+        self
+    }
+
     /// Route tool calls through the MCP proxy for centralized logging and metrics.
-    pub fn with_proxy(mut self, proxy: Arc<agentor_mcp::McpProxy>, agent_id: impl Into<String>) -> Self {
+    pub fn with_proxy(
+        mut self,
+        proxy: Arc<agentor_mcp::McpProxy>,
+        agent_id: impl Into<String>,
+    ) -> Self {
         self.proxy = Some((proxy, agent_id.into()));
         self
     }
@@ -247,7 +258,10 @@ impl AgentRunner {
     }
 
     /// Execute a tool call — routes through MCP proxy if configured.
-    async fn execute_tool(&self, call: agentor_core::ToolCall) -> AgentorResult<agentor_core::ToolResult> {
+    async fn execute_tool(
+        &self,
+        call: agentor_core::ToolCall,
+    ) -> AgentorResult<agentor_core::ToolResult> {
         if let Some((proxy, agent_id)) = &self.proxy {
             proxy.execute(call, agent_id).await
         } else {

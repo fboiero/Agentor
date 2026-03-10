@@ -10,10 +10,14 @@ use tokio_rustls::rustls::{
 use tokio_rustls::TlsAcceptor;
 use tracing::info;
 
+/// Configuration for server TLS and optional mutual-TLS (mTLS).
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct TlsConfig {
+    /// Whether TLS is enabled for this server.
     pub enabled: bool,
+    /// Path to the PEM-encoded server certificate.
     pub cert_path: String,
+    /// Path to the PEM-encoded server private key.
     pub key_path: String,
     /// If set, enables mTLS — clients must present a certificate signed by this CA.
     #[serde(default)]

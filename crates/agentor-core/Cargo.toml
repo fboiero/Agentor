@@ -13,3 +13,10 @@ thiserror.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 async-trait.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "core_benchmarks"
+harness = false
