@@ -522,8 +522,8 @@ impl Orchestrator {
                 // Check if the Reviewer flagged issues for human review.
                 // The reviewer's response or a human_approval tool call result
                 // may contain rejection signals.
-                let needs_review = role == AgentRole::Reviewer
-                    && Self::detect_review_flags(&response);
+                let needs_review =
+                    role == AgentRole::Reviewer && Self::detect_review_flags(&response);
 
                 if needs_review {
                     info!(task_id = %task_id, "Reviewer flagged task for human review");

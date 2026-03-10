@@ -36,10 +36,7 @@ pub struct HybridSearcher {
 
 impl HybridSearcher {
     /// Create a new hybrid searcher with default alpha=0.5 and rrf_k=60.0.
-    pub fn new(
-        vector_store: Arc<dyn VectorStore>,
-        embedder: Arc<dyn EmbeddingProvider>,
-    ) -> Self {
+    pub fn new(vector_store: Arc<dyn VectorStore>, embedder: Arc<dyn EmbeddingProvider>) -> Self {
         Self {
             vector_store,
             embedder,
@@ -162,20 +159,16 @@ impl HybridSearcher {
         }
 
         // Sort by RRF score descending
-        fused_scores.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        fused_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         fused_scores.truncate(top_k);
 
         // Build final SearchResult list
         let results: Vec<SearchResult> = fused_scores
             .into_iter()
             .filter_map(|(doc_id, score)| {
-                entries_map.remove(&doc_id).map(|entry| SearchResult {
-                    entry,
-                    score,
-                })
+                entries_map
+                    .remove(&doc_id)
+                    .map(|entry| SearchResult { entry, score })
             })
             .collect();
 
@@ -249,18 +242,24 @@ mod tests {
         let embedder = Arc::new(LocalEmbedding::default());
         let searcher = make_searcher(0.0); // pure BM25
 
-        let entry1 =
-            make_entry(embedder.as_ref(), "rust rust rust systems programming", None).await;
+        let entry1 = make_entry(
+            embedder.as_ref(),
+            "rust rust rust systems programming",
+            None,
+        )
+        .await;
         let id1 = entry1.id;
         searcher.insert(entry1).await.unwrap();
 
-        let entry2 =
-            make_entry(embedder.as_ref(), "python scripting language", None).await;
+        let entry2 = make_entry(embedder.as_ref(), "python scripting language", None).await;
         let id2 = entry2.id;
         searcher.insert(entry2).await.unwrap();
 
         let results = searcher.search("rust systems", 10, None).await.unwrap();
-        assert!(!results.is_empty(), "alpha=0 (BM25) should still return results");
+        assert!(
+            !results.is_empty(),
+            "alpha=0 (BM25) should still return results"
+        );
 
         // With pure BM25 (alpha=0), the document containing "rust" and "systems" should rank first
         assert_eq!(
@@ -302,8 +301,7 @@ mod tests {
         let id1 = entry1.id;
         searcher.insert(entry1).await.unwrap();
 
-        let entry2 =
-            make_entry(embedder.as_ref(), "cooking delicious dinner recipes", None).await;
+        let entry2 = make_entry(embedder.as_ref(), "cooking delicious dinner recipes", None).await;
         searcher.insert(entry2).await.unwrap();
 
         let results = searcher
@@ -357,10 +355,7 @@ mod tests {
         let id3 = entry3.id;
         searcher.insert(entry3).await.unwrap();
 
-        let results = searcher
-            .search("rust programming", 10, None)
-            .await
-            .unwrap();
+        let results = searcher.search("rust programming", 10, None).await.unwrap();
 
         // Both programming-related documents should appear before the cooking one
         let pos_1 = results.iter().position(|r| r.entry.id == id1);
@@ -395,8 +390,7 @@ mod tests {
         let embedder = Arc::new(LocalEmbedding::default());
         let searcher = make_searcher(0.5);
 
-        let entry =
-            make_entry(embedder.as_ref(), "rust programming language", None).await;
+        let entry = make_entry(embedder.as_ref(), "rust programming language", None).await;
         let id = entry.id;
         searcher.insert(entry).await.unwrap();
 

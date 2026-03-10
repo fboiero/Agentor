@@ -105,7 +105,11 @@ impl TranscriptStore for FileTranscriptStore {
             .filter(|l| !l.trim().is_empty())
             .map(serde_json::from_str)
             .collect::<Result<Vec<_>, _>>()?;
-        entries.sort_by(|a, b| a.turn.cmp(&b.turn).then_with(|| a.timestamp.cmp(&b.timestamp)));
+        entries.sort_by(|a, b| {
+            a.turn
+                .cmp(&b.turn)
+                .then_with(|| a.timestamp.cmp(&b.timestamp))
+        });
         Ok(entries)
     }
 }
@@ -244,21 +248,33 @@ mod tests {
         ];
 
         for (i, ev) in events.into_iter().enumerate() {
-            store
-                .append(make_entry(sid, i as u32, ev))
-                .await
-                .unwrap();
+            store.append(make_entry(sid, i as u32, ev)).await.unwrap();
         }
 
         let entries = store.read(sid).await.unwrap();
         assert_eq!(entries.len(), 5);
 
         // Verify discriminants through pattern matching.
-        assert!(matches!(&entries[0].event, TranscriptEvent::UserMessage { .. }));
-        assert!(matches!(&entries[1].event, TranscriptEvent::AssistantMessage { .. }));
-        assert!(matches!(&entries[2].event, TranscriptEvent::ToolCallRequest { .. }));
-        assert!(matches!(&entries[3].event, TranscriptEvent::ToolCallResult { .. }));
-        assert!(matches!(&entries[4].event, TranscriptEvent::SystemEvent { .. }));
+        assert!(matches!(
+            &entries[0].event,
+            TranscriptEvent::UserMessage { .. }
+        ));
+        assert!(matches!(
+            &entries[1].event,
+            TranscriptEvent::AssistantMessage { .. }
+        ));
+        assert!(matches!(
+            &entries[2].event,
+            TranscriptEvent::ToolCallRequest { .. }
+        ));
+        assert!(matches!(
+            &entries[3].event,
+            TranscriptEvent::ToolCallResult { .. }
+        ));
+        assert!(matches!(
+            &entries[4].event,
+            TranscriptEvent::SystemEvent { .. }
+        ));
     }
 
     #[tokio::test]

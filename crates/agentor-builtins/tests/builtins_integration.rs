@@ -30,7 +30,14 @@ fn register_builtins_contains_expected_skill_names() {
     let mut registry = SkillRegistry::new();
     register_builtins(&mut registry);
 
-    let expected = ["shell", "file_read", "file_write", "http_fetch", "browser", "human_approval"];
+    let expected = [
+        "shell",
+        "file_read",
+        "file_write",
+        "http_fetch",
+        "browser",
+        "human_approval",
+    ];
     for name in &expected {
         assert!(
             registry.get(name).is_some(),
@@ -260,7 +267,11 @@ async fn memory_store_then_search_roundtrip() {
             arguments: serde_json::json!({"content": content}),
         };
         let result = store_skill.execute(call).await.unwrap();
-        assert!(!result.is_error, "Store failed for entry {i}: {}", result.content);
+        assert!(
+            !result.is_error,
+            "Store failed for entry {i}: {}",
+            result.content
+        );
     }
 
     // Search for something related to Rust
@@ -270,7 +281,11 @@ async fn memory_store_then_search_roundtrip() {
         arguments: serde_json::json!({"query": "systems programming safety", "top_k": 3}),
     };
     let search_result = search_skill.execute(search_call).await.unwrap();
-    assert!(!search_result.is_error, "Search failed: {}", search_result.content);
+    assert!(
+        !search_result.is_error,
+        "Search failed: {}",
+        search_result.content
+    );
 
     let parsed: serde_json::Value = serde_json::from_str(&search_result.content).unwrap();
     let total = parsed["total"].as_u64().unwrap();
@@ -305,7 +320,11 @@ async fn artifact_store_create_read_list() {
         }),
     };
     let store_result = skill.execute(store_call).await.unwrap();
-    assert!(!store_result.is_error, "Store failed: {}", store_result.content);
+    assert!(
+        !store_result.is_error,
+        "Store failed: {}",
+        store_result.content
+    );
     let parsed: serde_json::Value = serde_json::from_str(&store_result.content).unwrap();
     assert_eq!(parsed["stored"], true);
     assert_eq!(parsed["key"], "report.md");
@@ -320,10 +339,17 @@ async fn artifact_store_create_read_list() {
         }),
     };
     let retrieve_result = skill.execute(retrieve_call).await.unwrap();
-    assert!(!retrieve_result.is_error, "Retrieve failed: {}", retrieve_result.content);
+    assert!(
+        !retrieve_result.is_error,
+        "Retrieve failed: {}",
+        retrieve_result.content
+    );
     let parsed: serde_json::Value = serde_json::from_str(&retrieve_result.content).unwrap();
     assert_eq!(parsed["found"], true);
-    assert!(parsed["content"].as_str().unwrap().contains("Integration Test Report"));
+    assert!(parsed["content"]
+        .as_str()
+        .unwrap()
+        .contains("Integration Test Report"));
 
     // List
     let list_call = ToolCall {
@@ -332,7 +358,11 @@ async fn artifact_store_create_read_list() {
         arguments: serde_json::json!({"action": "list"}),
     };
     let list_result = skill.execute(list_call).await.unwrap();
-    assert!(!list_result.is_error, "List failed: {}", list_result.content);
+    assert!(
+        !list_result.is_error,
+        "List failed: {}",
+        list_result.content
+    );
     let parsed: serde_json::Value = serde_json::from_str(&list_result.content).unwrap();
     assert_eq!(parsed["count"], 1);
     assert_eq!(parsed["artifacts"][0]["key"], "report.md");

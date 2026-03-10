@@ -160,9 +160,9 @@ impl FileVectorStore {
         let inner = InMemoryVectorStore::new();
 
         if path.exists() {
-            let data = tokio::fs::read_to_string(&path).await.map_err(|e| {
-                AgentorError::Session(format!("Failed to read vector store: {e}"))
-            })?;
+            let data = tokio::fs::read_to_string(&path)
+                .await
+                .map_err(|e| AgentorError::Session(format!("Failed to read vector store: {e}")))?;
             for line in data.lines() {
                 if line.trim().is_empty() {
                     continue;

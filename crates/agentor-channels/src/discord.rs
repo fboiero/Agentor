@@ -103,18 +103,24 @@ impl DiscordChannel {
         // Step 3: Wait for Hello (op 10)
         let heartbeat_interval = match read.next().await {
             Some(Ok(tokio_tungstenite::tungstenite::Message::Text(text))) => {
-                let payload: GatewayPayload = serde_json::from_str(&text)
-                    .map_err(|e| AgentorError::Channel(format!("Discord Gateway parse error: {e}")))?;
+                let payload: GatewayPayload = serde_json::from_str(&text).map_err(|e| {
+                    AgentorError::Channel(format!("Discord Gateway parse error: {e}"))
+                })?;
                 if payload.op != 10 {
                     return Err(AgentorError::Channel(
                         "Expected op 10 (Hello) from Discord Gateway".into(),
                     ));
                 }
                 let hello: HelloPayload = serde_json::from_value(
-                    payload.d.ok_or_else(|| AgentorError::Channel("Missing Hello data".into()))?,
+                    payload
+                        .d
+                        .ok_or_else(|| AgentorError::Channel("Missing Hello data".into()))?,
                 )
                 .map_err(|e| AgentorError::Channel(format!("Hello parse error: {e}")))?;
-                info!(interval_ms = hello.heartbeat_interval, "Discord Gateway: received Hello");
+                info!(
+                    interval_ms = hello.heartbeat_interval,
+                    "Discord Gateway: received Hello"
+                );
                 hello.heartbeat_interval
             }
             _ => {

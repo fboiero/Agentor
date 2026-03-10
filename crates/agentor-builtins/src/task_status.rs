@@ -48,17 +48,11 @@ impl Skill for TaskStatusSkill {
     }
 
     async fn execute(&self, call: ToolCall) -> AgentorResult<ToolResult> {
-        let action = call.arguments["action"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let action = call.arguments["action"].as_str().unwrap_or("").to_string();
 
         match action.as_str() {
             "query" => {
-                let task_id = call.arguments["task_id"]
-                    .as_str()
-                    .unwrap_or("")
-                    .to_string();
+                let task_id = call.arguments["task_id"].as_str().unwrap_or("").to_string();
                 if task_id.is_empty() {
                     return Ok(ToolResult::error(
                         &call.id,
@@ -69,8 +63,7 @@ impl Skill for TaskStatusSkill {
                 match self.queue.get_task_info(&task_id).await? {
                     Some(info) => Ok(ToolResult::success(
                         &call.id,
-                        serde_json::to_string(&info)
-                            .unwrap_or_else(|_| "{}".to_string()),
+                        serde_json::to_string(&info).unwrap_or_else(|_| "{}".to_string()),
                     )),
                     None => Ok(ToolResult::success(
                         &call.id,
@@ -97,8 +90,7 @@ impl Skill for TaskStatusSkill {
                 let summary = self.queue.task_summary().await?;
                 Ok(ToolResult::success(
                     &call.id,
-                    serde_json::to_string(&summary)
-                        .unwrap_or_else(|_| "{}".to_string()),
+                    serde_json::to_string(&summary).unwrap_or_else(|_| "{}".to_string()),
                 ))
             }
             _ => Ok(ToolResult::error(
@@ -150,7 +142,13 @@ mod tests {
         }
 
         async fn get_task_info(&self, task_id: &str) -> AgentorResult<Option<TaskInfo>> {
-            Ok(self.tasks.read().await.iter().find(|t| t.id == task_id).cloned())
+            Ok(self
+                .tasks
+                .read()
+                .await
+                .iter()
+                .find(|t| t.id == task_id)
+                .cloned())
         }
 
         async fn list_tasks(&self) -> AgentorResult<Vec<TaskInfo>> {

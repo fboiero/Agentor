@@ -389,10 +389,7 @@ async fn main() -> anyhow::Result<()> {
                     .connect_all(&config.mcp_servers, &mut registry)
                     .await;
                 if !errors.is_empty() {
-                    tracing::warn!(
-                        failed = errors.len(),
-                        "Some MCP servers failed to connect"
-                    );
+                    tracing::warn!(failed = errors.len(), "Some MCP servers failed to connect");
                 }
                 // Start background health check loop (60s default)
                 let mgr = mcp_manager.clone();
@@ -573,7 +570,10 @@ async fn main() -> anyhow::Result<()> {
                     std::time::Duration::from_secs(approval_timeout),
                 ));
                 agentor_builtins::register_builtins_with_approval(&mut registry, channel);
-                info!("Interactive approval enabled (timeout: {}s)", approval_timeout);
+                info!(
+                    "Interactive approval enabled (timeout: {}s)",
+                    approval_timeout
+                );
             } else {
                 agentor_builtins::register_builtins(&mut registry);
             }
@@ -599,7 +599,9 @@ async fn main() -> anyhow::Result<()> {
             let iso42001_module = Arc::new(agentor_compliance::Iso42001Module::new());
             let system_id = uuid::Uuid::new_v4();
 
-            let iso27001_hook = Arc::new(agentor_compliance::Iso27001Hook::new(iso27001_module.clone()));
+            let iso27001_hook = Arc::new(agentor_compliance::Iso27001Hook::new(
+                iso27001_module.clone(),
+            ));
             let iso42001_hook = Arc::new(agentor_compliance::Iso42001Hook::new(
                 iso42001_module.clone(),
                 system_id,
@@ -775,11 +777,7 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 if saved > 0 {
-                    println!(
-                        "\n{} report(s) saved to {}",
-                        saved,
-                        report_dir.display()
-                    );
+                    println!("\n{} report(s) saved to {}", saved, report_dir.display());
                 }
             }
         },

@@ -29,7 +29,7 @@ fn test_gdpr_assessment_returns_compliance_report() {
     // The two compliant findings
     assert!(report.findings[0].compliant); // consent
     assert!(report.findings[1].compliant); // erasure
-    // The two non-compliant findings
+                                           // The two non-compliant findings
     assert!(!report.findings[2].compliant); // portability
     assert!(!report.findings[3].compliant); // DPO
 
@@ -425,7 +425,12 @@ fn test_multiple_framework_assessments_sequentially() {
     assert!(dpga_report.summary.contains("DPGA"));
 
     // Collect all reports and verify they are distinct frameworks
-    let reports = [&gdpr_report, &iso27001_report, &iso42001_report, &dpga_report];
+    let reports = [
+        &gdpr_report,
+        &iso27001_report,
+        &iso42001_report,
+        &dpga_report,
+    ];
     let frameworks: Vec<ComplianceFramework> = reports.iter().map(|r| r.framework).collect();
     assert_eq!(frameworks.len(), 4);
     assert!(frameworks.contains(&ComplianceFramework::GDPR));

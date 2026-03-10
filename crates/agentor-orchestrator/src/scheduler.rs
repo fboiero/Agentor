@@ -80,8 +80,7 @@ impl Scheduler {
     pub async fn start(self) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             loop {
-                let enabled: Vec<&ScheduledJob> =
-                    self.jobs.iter().filter(|j| j.enabled).collect();
+                let enabled: Vec<&ScheduledJob> = self.jobs.iter().filter(|j| j.enabled).collect();
 
                 if enabled.is_empty() {
                     tracing::info!("Scheduler: no enabled jobs, sleeping 60s");

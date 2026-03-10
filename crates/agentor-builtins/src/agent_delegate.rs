@@ -100,10 +100,7 @@ impl Skill for AgentDelegateSkill {
         let role = call.arguments["role"].as_str().unwrap_or("").to_string();
 
         if description.is_empty() {
-            return Ok(ToolResult::error(
-                &call.id,
-                "Task description is required",
-            ));
+            return Ok(ToolResult::error(&call.id, "Task description is required"));
         }
         if role.is_empty() {
             return Ok(ToolResult::error(&call.id, "Role is required"));

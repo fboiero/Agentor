@@ -76,9 +76,7 @@ impl ComplianceReport {
             ComplianceStatus::PartiallyCompliant
         };
 
-        let summary = format!(
-            "{framework}: {compliant_count}/{total} controls compliant"
-        );
+        let summary = format!("{framework}: {compliant_count}/{total} controls compliant");
 
         Self {
             framework,

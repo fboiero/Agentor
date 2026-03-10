@@ -19,8 +19,8 @@ use {
     async_trait::async_trait,
     bollard::{
         container::{
-            Config as ContainerConfig, CreateContainerOptions, LogOutput,
-            RemoveContainerOptions, StartContainerOptions, StopContainerOptions,
+            Config as ContainerConfig, CreateContainerOptions, LogOutput, RemoveContainerOptions,
+            StartContainerOptions, StopContainerOptions,
         },
         exec::{CreateExecOptions, StartExecResults},
         Docker,
@@ -150,14 +150,14 @@ impl DockerSandbox {
     ///
     /// Connects to the local Docker daemon (via the default socket).
     pub async fn new(config: DockerSandboxConfig) -> AgentorResult<Self> {
-        let client = Docker::connect_with_local_defaults().map_err(|e| {
-            AgentorError::Skill(format!("Failed to connect to Docker daemon: {e}"))
-        })?;
+        let client = Docker::connect_with_local_defaults()
+            .map_err(|e| AgentorError::Skill(format!("Failed to connect to Docker daemon: {e}")))?;
 
         // Quick health check — ping the daemon.
-        client.ping().await.map_err(|e| {
-            AgentorError::Skill(format!("Docker daemon ping failed: {e}"))
-        })?;
+        client
+            .ping()
+            .await
+            .map_err(|e| AgentorError::Skill(format!("Docker daemon ping failed: {e}")))?;
 
         info!(image = %config.image, "Docker sandbox created");
 
@@ -237,7 +237,9 @@ impl DockerSandbox {
         // which guarantees container_id is Some. If the invariant is somehow
         // broken we surface a clear error instead of panicking.
         let container_id = self.container_id.as_ref().ok_or_else(|| {
-            AgentorError::Skill("Docker sandbox: container_id missing after ensure_container".to_string())
+            AgentorError::Skill(
+                "Docker sandbox: container_id missing after ensure_container".to_string(),
+            )
         })?;
 
         let exec_opts = CreateExecOptions {
@@ -264,8 +266,8 @@ impl DockerSandbox {
         let mut stderr = String::new();
 
         if let StartExecResults::Attached { mut output, .. } = start_result {
-            let deadline =
-                tokio::time::Instant::now() + std::time::Duration::from_secs(self.config.timeout_secs);
+            let deadline = tokio::time::Instant::now()
+                + std::time::Duration::from_secs(self.config.timeout_secs);
 
             loop {
                 let chunk = tokio::time::timeout_at(deadline, output.next()).await;
@@ -307,7 +309,12 @@ impl DockerSandbox {
 
         let exit_code = inspect.exit_code.unwrap_or(-1);
 
-        debug!(exit_code, stdout_len = stdout.len(), stderr_len = stderr.len(), "Exec finished");
+        debug!(
+            exit_code,
+            stdout_len = stdout.len(),
+            stderr_len = stderr.len(),
+            "Exec finished"
+        );
 
         Ok(ExecResult {
             exit_code,
@@ -324,10 +331,7 @@ impl DockerSandbox {
             // Best-effort stop.
             let _ = self
                 .client
-                .stop_container(
-                    &id,
-                    Some(StopContainerOptions { t: 5 }),
-                )
+                .stop_container(&id, Some(StopContainerOptions { t: 5 }))
                 .await;
 
             // Force remove.
@@ -340,9 +344,7 @@ impl DockerSandbox {
                     }),
                 )
                 .await
-                .map_err(|e| {
-                    AgentorError::Skill(format!("Failed to remove container: {e}"))
-                })?;
+                .map_err(|e| AgentorError::Skill(format!("Failed to remove container: {e}")))?;
 
             info!(container_id = %id, "Docker container removed");
         }
@@ -583,9 +585,7 @@ mod tests {
             // Validate JSON schema structure
             let props = &descriptor.parameters_schema["properties"];
             assert!(props["command"]["type"].as_str() == Some("string"));
-            let required = descriptor.parameters_schema["required"]
-                .as_array()
-                .unwrap();
+            let required = descriptor.parameters_schema["required"].as_array().unwrap();
             assert!(required.contains(&serde_json::json!("command")));
         }
     }

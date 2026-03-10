@@ -169,9 +169,10 @@ impl BrowserAutomation {
 
     /// Navigate the browser to the given URL.
     pub async fn navigate(&self, url: &str) -> AgentorResult<BrowserResult> {
-        self.client.goto(url).await.map_err(|e| {
-            AgentorError::Skill(format!("Navigation to '{}' failed: {}", url, e))
-        })?;
+        self.client
+            .goto(url)
+            .await
+            .map_err(|e| AgentorError::Skill(format!("Navigation to '{}' failed: {}", url, e)))?;
 
         let current_url = self
             .client
@@ -187,9 +188,11 @@ impl BrowserAutomation {
 
     /// Take a screenshot and save it. Returns the file path.
     pub async fn screenshot(&self) -> AgentorResult<BrowserResult> {
-        let png_data = self.client.screenshot().await.map_err(|e| {
-            AgentorError::Skill(format!("Screenshot failed: {}", e))
-        })?;
+        let png_data = self
+            .client
+            .screenshot()
+            .await
+            .map_err(|e| AgentorError::Skill(format!("Screenshot failed: {}", e)))?;
 
         let dir = self
             .config
@@ -207,9 +210,8 @@ impl BrowserAutomation {
         );
         let path = std::path::Path::new(&dir).join(&filename);
 
-        std::fs::write(&path, &png_data).map_err(|e| {
-            AgentorError::Skill(format!("Failed to write screenshot: {}", e))
-        })?;
+        std::fs::write(&path, &png_data)
+            .map_err(|e| AgentorError::Skill(format!("Failed to write screenshot: {}", e)))?;
 
         let path_str = path.to_string_lossy().to_string();
         info!(path = %path_str, "Screenshot saved");
@@ -290,9 +292,10 @@ impl BrowserAutomation {
                 ))
             })?;
 
-        element.click().await.map_err(|e| {
-            AgentorError::Skill(format!("Click on '{}' failed: {}", selector, e))
-        })?;
+        element
+            .click()
+            .await
+            .map_err(|e| AgentorError::Skill(format!("Click on '{}' failed: {}", selector, e)))?;
 
         debug!(selector, "Element clicked");
 
@@ -301,9 +304,11 @@ impl BrowserAutomation {
 
     /// Get the full page source HTML.
     pub async fn get_page_source(&self) -> AgentorResult<BrowserResult> {
-        let source = self.client.source().await.map_err(|e| {
-            AgentorError::Skill(format!("Failed to get page source: {}", e))
-        })?;
+        let source = self
+            .client
+            .source()
+            .await
+            .map_err(|e| AgentorError::Skill(format!("Failed to get page source: {}", e)))?;
 
         debug!(source_len = source.len(), "Page source retrieved");
 
@@ -312,9 +317,10 @@ impl BrowserAutomation {
 
     /// Close the browser session and release WebDriver resources.
     pub async fn close(self) -> AgentorResult<()> {
-        self.client.close().await.map_err(|e| {
-            AgentorError::Skill(format!("Failed to close browser: {}", e))
-        })?;
+        self.client
+            .close()
+            .await
+            .map_err(|e| AgentorError::Skill(format!("Failed to close browser: {}", e)))?;
 
         info!("Browser session closed");
 
@@ -519,68 +525,51 @@ impl Skill for BrowserAutomationSkill {
             })?;
 
             let result: BrowserResult = match action {
-                BrowserAction::Navigate { url } => {
-                    match client.goto(&url).await {
-                        Ok(()) => {
-                            let current = client
-                                .current_url()
-                                .await
-                                .map(|u| u.to_string())
-                                .unwrap_or_else(|_| url.clone());
-                            BrowserResult::ok(format!("Navigated to {}", current))
-                        }
-                        Err(e) => BrowserResult::err(format!("Navigation failed: {}", e)),
+                BrowserAction::Navigate { url } => match client.goto(&url).await {
+                    Ok(()) => {
+                        let current = client
+                            .current_url()
+                            .await
+                            .map(|u| u.to_string())
+                            .unwrap_or_else(|_| url.clone());
+                        BrowserResult::ok(format!("Navigated to {}", current))
                     }
-                }
-                BrowserAction::Screenshot => {
-                    match client.screenshot().await {
-                        Ok(png_data) => {
-                            let dir = self
-                                .config
-                                .screenshot_dir
-                                .clone()
-                                .unwrap_or_else(|| {
-                                    std::env::temp_dir().to_string_lossy().to_string()
-                                });
+                    Err(e) => BrowserResult::err(format!("Navigation failed: {}", e)),
+                },
+                BrowserAction::Screenshot => match client.screenshot().await {
+                    Ok(png_data) => {
+                        let dir =
+                            self.config.screenshot_dir.clone().unwrap_or_else(|| {
+                                std::env::temp_dir().to_string_lossy().to_string()
+                            });
 
-                            if let Err(e) = std::fs::create_dir_all(&dir) {
-                                BrowserResult::err(format!(
-                                    "Failed to create screenshot dir: {}",
-                                    e
-                                ))
-                            } else {
-                                let filename = format!(
-                                    "screenshot_{}.png",
-                                    chrono::Utc::now().format("%Y%m%d_%H%M%S")
-                                );
-                                let path = std::path::Path::new(&dir).join(&filename);
-                                match std::fs::write(&path, &png_data) {
-                                    Ok(()) => {
-                                        BrowserResult::ok(path.to_string_lossy().to_string())
-                                    }
-                                    Err(e) => BrowserResult::err(format!(
-                                        "Failed to write screenshot: {}",
-                                        e
-                                    )),
+                        if let Err(e) = std::fs::create_dir_all(&dir) {
+                            BrowserResult::err(format!("Failed to create screenshot dir: {}", e))
+                        } else {
+                            let filename = format!(
+                                "screenshot_{}.png",
+                                chrono::Utc::now().format("%Y%m%d_%H%M%S")
+                            );
+                            let path = std::path::Path::new(&dir).join(&filename);
+                            match std::fs::write(&path, &png_data) {
+                                Ok(()) => BrowserResult::ok(path.to_string_lossy().to_string()),
+                                Err(e) => {
+                                    BrowserResult::err(format!("Failed to write screenshot: {}", e))
                                 }
                             }
                         }
-                        Err(e) => BrowserResult::err(format!("Screenshot failed: {}", e)),
                     }
-                }
+                    Err(e) => BrowserResult::err(format!("Screenshot failed: {}", e)),
+                },
                 BrowserAction::ExtractText { selector } => {
                     match client.find(Locator::Css(&selector)).await {
                         Ok(elem) => match elem.text().await {
                             Ok(text) => BrowserResult::ok(text),
-                            Err(e) => BrowserResult::err(format!(
-                                "Failed to extract text: {}",
-                                e
-                            )),
+                            Err(e) => BrowserResult::err(format!("Failed to extract text: {}", e)),
                         },
-                        Err(e) => BrowserResult::err(format!(
-                            "Element not found '{}': {}",
-                            selector, e
-                        )),
+                        Err(e) => {
+                            BrowserResult::err(format!("Element not found '{}': {}", selector, e))
+                        }
                     }
                 }
                 BrowserAction::FillForm { selector, value } => {
@@ -591,10 +580,7 @@ impl Skill for BrowserAutomationSkill {
                             } else if let Err(e) = elem.send_keys(&value).await {
                                 BrowserResult::err(format!("Failed to fill field: {}", e))
                             } else {
-                                BrowserResult::ok(format!(
-                                    "Filled '{}' with value",
-                                    selector
-                                ))
+                                BrowserResult::ok(format!("Filled '{}' with value", selector))
                             }
                         }
                         Err(e) => BrowserResult::err(format!(
@@ -606,24 +592,17 @@ impl Skill for BrowserAutomationSkill {
                 BrowserAction::Click { selector } => {
                     match client.find(Locator::Css(&selector)).await {
                         Ok(elem) => match elem.click().await {
-                            Ok(()) => {
-                                BrowserResult::ok(format!("Clicked '{}'", selector))
-                            }
-                            Err(e) => {
-                                BrowserResult::err(format!("Click failed: {}", e))
-                            }
+                            Ok(()) => BrowserResult::ok(format!("Clicked '{}'", selector)),
+                            Err(e) => BrowserResult::err(format!("Click failed: {}", e)),
                         },
-                        Err(e) => BrowserResult::err(format!(
-                            "Element not found '{}': {}",
-                            selector, e
-                        )),
+                        Err(e) => {
+                            BrowserResult::err(format!("Element not found '{}': {}", selector, e))
+                        }
                     }
                 }
                 BrowserAction::GetPageSource => match client.source().await {
                     Ok(source) => BrowserResult::ok(source),
-                    Err(e) => {
-                        BrowserResult::err(format!("Failed to get page source: {}", e))
-                    }
+                    Err(e) => BrowserResult::err(format!("Failed to get page source: {}", e)),
                 },
             };
 
@@ -676,10 +655,7 @@ mod tests {
         assert_eq!(deserialized.webdriver_url, "http://localhost:9515");
         assert!(!deserialized.headless);
         assert_eq!(deserialized.timeout_secs, 60);
-        assert_eq!(
-            deserialized.screenshot_dir,
-            Some("/tmp/shots".to_string())
-        );
+        assert_eq!(deserialized.screenshot_dir, Some("/tmp/shots".to_string()));
     }
 
     #[test]
@@ -714,9 +690,7 @@ mod tests {
     fn test_parse_navigate_action() {
         let args = serde_json::json!({"action": "navigate", "url": "https://example.com"});
         let action = parse_action(&args).unwrap();
-        assert!(
-            matches!(action, BrowserAction::Navigate { url } if url == "https://example.com")
-        );
+        assert!(matches!(action, BrowserAction::Navigate { url } if url == "https://example.com"));
     }
 
     #[test]
@@ -737,8 +711,7 @@ mod tests {
 
     #[test]
     fn test_parse_fill_form_action() {
-        let args =
-            serde_json::json!({"action": "fill_form", "selector": "#email", "value": "test@example.com"});
+        let args = serde_json::json!({"action": "fill_form", "selector": "#email", "value": "test@example.com"});
         let action = parse_action(&args).unwrap();
         assert!(
             matches!(action, BrowserAction::FillForm { selector, value } if selector == "#email" && value == "test@example.com")
@@ -749,9 +722,7 @@ mod tests {
     fn test_parse_click_action() {
         let args = serde_json::json!({"action": "click", "selector": "button.submit"});
         let action = parse_action(&args).unwrap();
-        assert!(
-            matches!(action, BrowserAction::Click { selector } if selector == "button.submit")
-        );
+        assert!(matches!(action, BrowserAction::Click { selector } if selector == "button.submit"));
     }
 
     #[test]

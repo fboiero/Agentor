@@ -30,9 +30,10 @@ impl ChannelManager {
 
     /// Send a message to a specific channel.
     pub async fn send_to(&self, channel_name: &str, message: ChannelMessage) -> AgentorResult<()> {
-        let channel = self.channels.get(channel_name).ok_or_else(|| {
-            AgentorError::Channel(format!("Channel '{channel_name}' not found"))
-        })?;
+        let channel = self
+            .channels
+            .get(channel_name)
+            .ok_or_else(|| AgentorError::Channel(format!("Channel '{channel_name}' not found")))?;
         channel.send(message).await
     }
 
@@ -51,7 +52,10 @@ impl ChannelManager {
 
     /// List all registered channel names.
     pub fn channel_names(&self) -> Vec<&str> {
-        self.channels.keys().map(std::string::String::as_str).collect()
+        self.channels
+            .keys()
+            .map(std::string::String::as_str)
+            .collect()
     }
 
     /// Get the number of registered channels.
@@ -88,7 +92,6 @@ mod tests {
                 send_count: Arc::new(AtomicUsize::new(0)),
             }
         }
-
     }
 
     #[async_trait]

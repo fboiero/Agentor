@@ -153,10 +153,7 @@ impl Bm25Index {
 
         // Sort by score descending and take top_k
         let mut results: Vec<(Uuid, f32)> = scores.into_iter().collect();
-        results.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         results.truncate(top_k);
 
         results
@@ -196,7 +193,10 @@ mod tests {
         index.add_document(id, "the quick brown fox jumps over the lazy dog");
 
         let results = index.search("quick brown fox", 10);
-        assert!(!results.is_empty(), "search should return at least one result");
+        assert!(
+            !results.is_empty(),
+            "search should return at least one result"
+        );
         assert_eq!(results[0].0, id, "the matching document should be returned");
         assert!(results[0].1 > 0.0, "score should be positive");
     }
@@ -220,7 +220,10 @@ mod tests {
         let results = index.search("rust programming", 10);
         // Only id2 should remain (matching "programming")
         for (doc_id, _) in &results {
-            assert_ne!(*doc_id, id1, "removed document should not appear in results");
+            assert_ne!(
+                *doc_id, id1,
+                "removed document should not appear in results"
+            );
         }
     }
 

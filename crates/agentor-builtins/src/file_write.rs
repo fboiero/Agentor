@@ -131,9 +131,7 @@ impl Skill for FileWriteSkill {
             if blocked_extensions.contains(&ext_lower.as_str()) {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!(
-                        "Access denied: writing executable files ({ext_lower}) is not allowed"
-                    ),
+                    format!("Access denied: writing executable files ({ext_lower}) is not allowed"),
                 ));
             }
         }

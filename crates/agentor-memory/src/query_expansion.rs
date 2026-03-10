@@ -154,13 +154,7 @@ impl QueryExpander for RuleBasedExpander {
                     let expanded: Vec<String> = tokens
                         .iter()
                         .enumerate()
-                        .map(|(j, t)| {
-                            if j == i {
-                                syn.clone()
-                            } else {
-                                t.to_string()
-                            }
-                        })
+                        .map(|(j, t)| if j == i { syn.clone() } else { t.to_string() })
                         .collect();
                     let expanded_query = expanded.join(" ");
 
@@ -192,10 +186,7 @@ pub fn deduplicate_results(results: Vec<(Uuid, f32)>) -> Vec<(Uuid, f32)> {
     }
 
     let mut deduped: Vec<(Uuid, f32)> = best.into_iter().collect();
-    deduped.sort_by(|a, b| {
-        b.1.partial_cmp(&a.1)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    deduped.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     deduped
 }
@@ -211,7 +202,7 @@ mod tests {
         let results = expander.expand("fix the error in auth");
         assert!(results.len() > 1);
         assert_eq!(results[0], "fix the error in auth"); // original first
-        // Should contain variations with synonyms
+                                                         // Should contain variations with synonyms
         let has_bug = results.iter().any(|r| r.contains("bug"));
         assert!(has_bug, "Should expand 'error' to 'bug': {results:?}");
     }

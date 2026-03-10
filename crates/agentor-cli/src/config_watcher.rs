@@ -48,34 +48,24 @@ impl ConfigWatcher {
     /// * `on_reload` -- called on a background thread each time the config
     ///   file is modified and successfully parsed.  Parse errors are logged
     ///   via `tracing::warn` and do **not** invoke the callback.
-    pub fn start<F>(
-        config_path: PathBuf,
-        debounce_ms: u64,
-        on_reload: F,
-    ) -> AgentorResult<Self>
+    pub fn start<F>(config_path: PathBuf, debounce_ms: u64, on_reload: F) -> AgentorResult<Self>
     where
         F: Fn(ReloadableConfig) + Send + Sync + 'static,
     {
         let (tx, rx) = std_mpsc::channel();
 
-        let mut watcher = notify::recommended_watcher(
-            move |res: Result<Event, notify::Error>| {
-                if let Ok(event) = res {
-                    if matches!(event.kind, EventKind::Modify(_)) {
-                        let _ = tx.send(());
-                    }
+        let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
+            if let Ok(event) = res {
+                if matches!(event.kind, EventKind::Modify(_)) {
+                    let _ = tx.send(());
                 }
-            },
-        )
-        .map_err(|e| {
-            AgentorError::Config(format!("Failed to create file watcher: {e}"))
-        })?;
+            }
+        })
+        .map_err(|e| AgentorError::Config(format!("Failed to create file watcher: {e}")))?;
 
         watcher
             .watch(config_path.as_ref(), RecursiveMode::NonRecursive)
-            .map_err(|e| {
-                AgentorError::Config(format!("Failed to watch config file: {e}"))
-            })?;
+            .map_err(|e| AgentorError::Config(format!("Failed to watch config file: {e}")))?;
 
         let path = config_path.clone();
         std::thread::spawn(move || {
@@ -112,11 +102,7 @@ impl ConfigWatcher {
 /// Read and parse a TOML config file into a [`ReloadableConfig`].
 pub fn parse_config(path: &Path) -> AgentorResult<ReloadableConfig> {
     let content = std::fs::read_to_string(path).map_err(|e| {
-        AgentorError::Config(format!(
-            "Failed to read config '{}': {}",
-            path.display(),
-            e
-        ))
+        AgentorError::Config(format!("Failed to read config '{}': {}", path.display(), e))
     })?;
     let config: ReloadableConfig = toml::from_str(&content).map_err(|e| {
         AgentorError::Config(format!(

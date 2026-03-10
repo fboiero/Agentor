@@ -100,9 +100,7 @@ impl Skill for HttpFetchSkill {
             if is_private_host(host) {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!(
-                        "Access denied: '{host}' resolves to a private/internal address"
-                    ),
+                    format!("Access denied: '{host}' resolves to a private/internal address"),
                 ));
             }
         }

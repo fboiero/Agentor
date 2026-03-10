@@ -274,9 +274,7 @@ async fn test_proxy_denied_tracking() {
 
     // Combine execution and denial for the same agent.
     let proxy2 = make_proxy_with(vec![Arc::new(StubSkill::ok("allowed"))]);
-    let _ = proxy2
-        .execute(make_call("e1", "allowed"), "agent-z")
-        .await;
+    let _ = proxy2.execute(make_call("e1", "allowed"), "agent-z").await;
     proxy2.record_denied("agent-z", "forbidden").await;
 
     let mz = proxy2.agent_metrics("agent-z").await;
@@ -388,8 +386,7 @@ async fn test_server_manager() {
 #[tokio::test]
 async fn test_server_config_validation() {
     // Minimal JSON: only "command" is required.
-    let cfg: McpServerConfig =
-        serde_json::from_str(r#"{"command":"my-server"}"#).unwrap();
+    let cfg: McpServerConfig = serde_json::from_str(r#"{"command":"my-server"}"#).unwrap();
     assert_eq!(cfg.command, "my-server");
     assert!(cfg.args.is_empty());
     assert!(cfg.env.is_empty());
@@ -408,7 +405,10 @@ async fn test_server_config_validation() {
     )
     .unwrap();
     assert_eq!(cfg.command, "npx");
-    assert_eq!(cfg.args, vec!["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]);
+    assert_eq!(
+        cfg.args,
+        vec!["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    );
     assert_eq!(cfg.env.get("NODE_ENV").unwrap(), "production");
     assert!(!cfg.auto_reconnect);
     assert_eq!(cfg.health_check_interval_secs, 120);

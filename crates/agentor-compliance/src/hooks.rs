@@ -166,9 +166,7 @@ impl ComplianceHook for Iso42001Hook {
                         self.system_id,
                         "task_execution",
                         &format!("Worker: {role}"),
-                        &format!(
-                            "Completed in {duration_ms}ms, {artifacts_count} artifacts"
-                        ),
+                        &format!("Completed in {duration_ms}ms, {artifacts_count} artifacts"),
                         None,
                     )
                     .await;

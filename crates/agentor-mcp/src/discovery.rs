@@ -15,7 +15,10 @@ impl ToolDiscovery {
         registry: &SkillRegistry,
         allowed_skills: &[String],
     ) -> Vec<SkillDescriptor> {
-        let allowed_set: HashSet<&str> = allowed_skills.iter().map(std::string::String::as_str).collect();
+        let allowed_set: HashSet<&str> = allowed_skills
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
 
         registry
             .list_descriptors()

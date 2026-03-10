@@ -181,10 +181,7 @@ mod tests {
         let config: WebhookConfig = serde_json::from_str(json).unwrap();
         assert_eq!(config.name, "github");
         assert_eq!(config.secret, Some("gh-secret-123".to_string()));
-        assert_eq!(
-            config.agent_prompt_template,
-            "GitHub event: {{payload}}"
-        );
+        assert_eq!(config.agent_prompt_template, "GitHub event: {{payload}}");
         assert_eq!(config.session_strategy, SessionStrategy::New);
     }
 

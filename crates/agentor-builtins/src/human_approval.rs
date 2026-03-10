@@ -1,7 +1,5 @@
 // Re-export approval types from core for backward compatibility.
-pub use agentor_core::approval::{
-    ApprovalChannel, ApprovalDecision, ApprovalRequest, RiskLevel,
-};
+pub use agentor_core::approval::{ApprovalChannel, ApprovalDecision, ApprovalRequest, RiskLevel};
 
 use agentor_core::{AgentorResult, ToolCall, ToolResult};
 use agentor_skills::skill::{Skill, SkillDescriptor};
@@ -32,8 +30,11 @@ impl ApprovalChannel for AutoApproveChannel {
 /// Callback-based approval channel. Delegates to a user-provided async function.
 pub struct CallbackApprovalChannel<F>
 where
-    F: Fn(ApprovalRequest) -> std::pin::Pin<Box<dyn std::future::Future<Output = AgentorResult<ApprovalDecision>> + Send>>
-        + Send
+    F: Fn(
+            ApprovalRequest,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = AgentorResult<ApprovalDecision>> + Send>,
+        > + Send
         + Sync,
 {
     callback: F,
@@ -41,8 +42,11 @@ where
 
 impl<F> CallbackApprovalChannel<F>
 where
-    F: Fn(ApprovalRequest) -> std::pin::Pin<Box<dyn std::future::Future<Output = AgentorResult<ApprovalDecision>> + Send>>
-        + Send
+    F: Fn(
+            ApprovalRequest,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = AgentorResult<ApprovalDecision>> + Send>,
+        > + Send
         + Sync,
 {
     pub fn new(callback: F) -> Self {
@@ -53,8 +57,11 @@ where
 #[async_trait]
 impl<F> ApprovalChannel for CallbackApprovalChannel<F>
 where
-    F: Fn(ApprovalRequest) -> std::pin::Pin<Box<dyn std::future::Future<Output = AgentorResult<ApprovalDecision>> + Send>>
-        + Send
+    F: Fn(
+            ApprovalRequest,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = AgentorResult<ApprovalDecision>> + Send>,
+        > + Send
         + Sync,
 {
     async fn request_approval(&self, request: ApprovalRequest) -> AgentorResult<ApprovalDecision> {
@@ -129,13 +136,9 @@ impl Skill for HumanApprovalSkill {
             .as_str()
             .unwrap_or("")
             .to_string();
-        let risk_level = RiskLevel::parse_level(
-            call.arguments["risk_level"].as_str().unwrap_or("medium"),
-        );
-        let context = call.arguments["context"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let risk_level =
+            RiskLevel::parse_level(call.arguments["risk_level"].as_str().unwrap_or("medium"));
+        let context = call.arguments["context"].as_str().unwrap_or("").to_string();
 
         if description.is_empty() {
             return Ok(ToolResult::error(

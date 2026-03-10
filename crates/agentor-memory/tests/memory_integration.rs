@@ -33,10 +33,7 @@ fn make_entry(content: &str, embedding: Vec<f32>) -> MemoryEntry {
     }
 }
 
-async fn make_entry_with_embedder(
-    embedder: &dyn EmbeddingProvider,
-    content: &str,
-) -> MemoryEntry {
+async fn make_entry_with_embedder(embedder: &dyn EmbeddingProvider, content: &str) -> MemoryEntry {
     let embedding = embedder.embed(content).await.unwrap();
     MemoryEntry {
         id: Uuid::new_v4(),
@@ -83,7 +80,10 @@ async fn file_vector_store_persistence() {
     // Searching after reload should work.
     let query_emb = embedder.embed("persistent entry one").await.unwrap();
     let results = store2.search(&query_emb, 2, None).await.unwrap();
-    assert!(!results.is_empty(), "search on reloaded store must return results");
+    assert!(
+        !results.is_empty(),
+        "search on reloaded store must return results"
+    );
     assert_eq!(
         results[0].entry.id, id1,
         "closest match should be entry one"
@@ -169,12 +169,18 @@ async fn bm25_crud() {
     // Search for "rust programming" should return id1.
     let results = index.search("rust programming", 10);
     assert!(!results.is_empty(), "BM25 should find matching documents");
-    assert_eq!(results[0].0, id1, "rust doc should rank first for 'rust programming'");
+    assert_eq!(
+        results[0].0, id1,
+        "rust doc should rank first for 'rust programming'"
+    );
 
     // Search for "cooking" should return id3 only.
     let results_cook = index.search("cooking meals", 10);
     assert!(!results_cook.is_empty());
-    assert_eq!(results_cook[0].0, id3, "cooking doc should rank first for 'cooking meals'");
+    assert_eq!(
+        results_cook[0].0, id3,
+        "cooking doc should rank first for 'cooking meals'"
+    );
 
     // Delete id1 and verify it is gone.
     index.remove_document(id1);
@@ -182,7 +188,10 @@ async fn bm25_crud() {
 
     let results_after_delete = index.search("rust programming", 10);
     let has_id1 = results_after_delete.iter().any(|(id, _)| *id == id1);
-    assert!(!has_id1, "deleted document should not appear in BM25 results");
+    assert!(
+        !has_id1,
+        "deleted document should not appear in BM25 results"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -196,7 +205,10 @@ async fn query_expansion_rule_based() {
     // "error" should expand to synonyms like bug, issue, problem, exception.
     let expansions = expander.expand("fix the error");
     assert!(expansions.len() > 1, "should produce at least two queries");
-    assert_eq!(expansions[0], "fix the error", "original query must be first");
+    assert_eq!(
+        expansions[0], "fix the error",
+        "original query must be first"
+    );
 
     let has_bug_variant = expansions.iter().any(|q| q.contains("bug"));
     let has_issue_variant = expansions.iter().any(|q| q.contains("issue"));
@@ -249,14 +261,8 @@ async fn alpha_extremes_produce_different_rankings() {
     let store_bm25 = Arc::new(InMemoryVectorStore::new()) as Arc<dyn VectorStore>;
     let searcher_bm25 =
         HybridSearcher::new(Arc::clone(&store_bm25), Arc::clone(&embedder)).with_alpha(0.0);
-    searcher_bm25
-        .insert(entry_a.clone())
-        .await
-        .unwrap();
-    searcher_bm25
-        .insert(entry_b.clone())
-        .await
-        .unwrap();
+    searcher_bm25.insert(entry_a.clone()).await.unwrap();
+    searcher_bm25.insert(entry_b.clone()).await.unwrap();
     let results_bm25 = searcher_bm25
         .search("rust systems", 10, None)
         .await
@@ -268,10 +274,7 @@ async fn alpha_extremes_produce_different_rankings() {
         HybridSearcher::new(Arc::clone(&store_vec), Arc::clone(&embedder)).with_alpha(1.0);
     searcher_vec.insert(entry_a).await.unwrap();
     searcher_vec.insert(entry_b).await.unwrap();
-    let results_vec = searcher_vec
-        .search("rust systems", 10, None)
-        .await
-        .unwrap();
+    let results_vec = searcher_vec.search("rust systems", 10, None).await.unwrap();
 
     // Both should return results.
     assert!(
@@ -325,7 +328,10 @@ async fn in_memory_vector_store_basic_ops() {
     // Search should return the closest entry first.
     let results = store.search(&[1.0, 0.0, 0.0], 2, None).await.unwrap();
     assert_eq!(results.len(), 2);
-    assert_eq!(results[0].entry.id, id1, "entry closest to query should rank first");
+    assert_eq!(
+        results[0].entry.id, id1,
+        "entry closest to query should rank first"
+    );
 
     // List all entries.
     let all = store.list(None).await.unwrap();
@@ -355,19 +361,28 @@ async fn empty_store_search_returns_empty() {
     // InMemoryVectorStore
     let mem_store = InMemoryVectorStore::new();
     let results = mem_store.search(&[1.0, 0.0], 10, None).await.unwrap();
-    assert!(results.is_empty(), "search on empty InMemoryVectorStore must return empty");
+    assert!(
+        results.is_empty(),
+        "search on empty InMemoryVectorStore must return empty"
+    );
 
     // FileVectorStore
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().join("empty.jsonl");
     let file_store = FileVectorStore::new(path).await.unwrap();
     let results2 = file_store.search(&[1.0, 0.0], 10, None).await.unwrap();
-    assert!(results2.is_empty(), "search on empty FileVectorStore must return empty");
+    assert!(
+        results2.is_empty(),
+        "search on empty FileVectorStore must return empty"
+    );
 
     // BM25
     let bm25 = Bm25Index::new();
     let results3 = bm25.search("anything", 10);
-    assert!(results3.is_empty(), "search on empty BM25 index must return empty");
+    assert!(
+        results3.is_empty(),
+        "search on empty BM25 index must return empty"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -454,7 +469,10 @@ async fn store_delete_actually_removes_entries() {
     assert_eq!(store2.count().await.unwrap(), 2);
     let all2 = store2.list(None).await.unwrap();
     let all2_ids: Vec<Uuid> = all2.iter().map(|e| e.id).collect();
-    assert!(!all2_ids.contains(&id_delete), "deletion must persist on disk");
+    assert!(
+        !all2_ids.contains(&id_delete),
+        "deletion must persist on disk"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -498,7 +516,11 @@ async fn multiple_stores_isolation() {
     // Deleting from store A should not affect store B.
     store_a.delete(id_a).await.unwrap();
     assert_eq!(store_a.count().await.unwrap(), 0);
-    assert_eq!(store_b.count().await.unwrap(), 1, "store B must be unaffected");
+    assert_eq!(
+        store_b.count().await.unwrap(),
+        1,
+        "store B must be unaffected"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -515,8 +537,10 @@ async fn search_result_ordering() {
     let query_emb = embedder.embed(query_text).await.unwrap();
 
     let doc_very_close = make_entry_with_embedder(&embedder, "rust programming language").await;
-    let doc_related = make_entry_with_embedder(&embedder, "systems programming software engineering").await;
-    let doc_unrelated = make_entry_with_embedder(&embedder, "chocolate cake baking dessert recipe frosting").await;
+    let doc_related =
+        make_entry_with_embedder(&embedder, "systems programming software engineering").await;
+    let doc_unrelated =
+        make_entry_with_embedder(&embedder, "chocolate cake baking dessert recipe frosting").await;
 
     let id_close = doc_very_close.id;
     let id_related = doc_related.id;
@@ -552,9 +576,21 @@ async fn search_result_ordering() {
     );
 
     // Verify score magnitudes make sense: close > related > unrelated.
-    let score_close = results.iter().find(|r| r.entry.id == id_close).unwrap().score;
-    let score_related = results.iter().find(|r| r.entry.id == id_related).unwrap().score;
-    let score_unrelated = results.iter().find(|r| r.entry.id == id_unrelated).unwrap().score;
+    let score_close = results
+        .iter()
+        .find(|r| r.entry.id == id_close)
+        .unwrap()
+        .score;
+    let score_related = results
+        .iter()
+        .find(|r| r.entry.id == id_related)
+        .unwrap()
+        .score;
+    let score_unrelated = results
+        .iter()
+        .find(|r| r.entry.id == id_unrelated)
+        .unwrap()
+        .score;
 
     assert!(
         score_close > score_related,
