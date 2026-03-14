@@ -1,5 +1,5 @@
-use argentor_core::{ArgentorResult, ToolCall, ToolResult};
-use argentor_security::Capability;
+use argentor_core::{ArgentorError, ArgentorResult, ToolCall, ToolResult};
+use argentor_security::{Capability, PermissionSet};
 use argentor_skills::skill::{Skill, SkillDescriptor};
 use async_trait::async_trait;
 use std::path::Path;
@@ -56,6 +56,44 @@ impl Default for FileReadSkill {
 impl Skill for FileReadSkill {
     fn descriptor(&self) -> &SkillDescriptor {
         &self.descriptor
+    }
+
+    fn validate_arguments(
+        &self,
+        call: &ToolCall,
+        permissions: &PermissionSet,
+    ) -> ArgentorResult<()> {
+        let path_str = call.arguments["path"].as_str().unwrap_or_default();
+        if path_str.is_empty() {
+            return Ok(()); // Empty path will be caught in execute()
+        }
+
+        let path = Path::new(path_str);
+
+        // Canonicalize the path to resolve symlinks and ".." components.
+        // If the file doesn't exist yet, canonicalize the parent directory.
+        let canonical = if path.exists() {
+            match path.canonicalize() {
+                Ok(p) => p,
+                Err(_) => return Ok(()), // Let execute() handle the error
+            }
+        } else if let Some(parent) = path.parent() {
+            match parent.canonicalize() {
+                Ok(p) => p.join(path.file_name().unwrap_or_default()),
+                Err(_) => return Ok(()), // Let execute() handle the error
+            }
+        } else {
+            return Ok(());
+        };
+
+        if !permissions.check_file_read_path(&canonical) {
+            return Err(ArgentorError::Security(format!(
+                "file read not permitted for path '{}'",
+                canonical.display()
+            )));
+        }
+
+        Ok(())
     }
 
     async fn execute(&self, call: ToolCall) -> ArgentorResult<ToolResult> {
@@ -232,5 +270,40 @@ mod tests {
         };
         let result = skill.execute(call).await.unwrap();
         assert!(result.is_error);
+    }
+
+    #[test]
+    fn test_validate_arguments_denies_disallowed_path() {
+        let skill = FileReadSkill::new();
+        let mut perms = PermissionSet::new();
+        perms.grant(Capability::FileRead {
+            allowed_paths: vec!["/allowed".to_string()],
+        });
+
+        // Use a path that exists so canonicalize works — /tmp always exists
+        let call = ToolCall {
+            id: "test_va_1".to_string(),
+            name: "file_read".to_string(),
+            arguments: serde_json::json!({"path": "/tmp/some_file.txt"}),
+        };
+        let result = skill.validate_arguments(&call, &perms);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_arguments_allows_permitted_path() {
+        let skill = FileReadSkill::new();
+        let mut perms = PermissionSet::new();
+        perms.grant(Capability::FileRead {
+            allowed_paths: vec!["/tmp".to_string()],
+        });
+
+        let call = ToolCall {
+            id: "test_va_2".to_string(),
+            name: "file_read".to_string(),
+            arguments: serde_json::json!({"path": "/tmp/some_file.txt"}),
+        };
+        let result = skill.validate_arguments(&call, &perms);
+        assert!(result.is_ok());
     }
 }

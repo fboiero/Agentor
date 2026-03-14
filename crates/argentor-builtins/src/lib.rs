@@ -52,7 +52,7 @@ pub use human_approval::{
     CallbackApprovalChannel, HumanApprovalSkill, RiskLevel,
 };
 pub use memory::{MemorySearchSkill, MemoryStoreSkill};
-pub use shell::ShellSkill;
+pub use shell::{CommandPolicy, ShellSkill};
 pub use stdin_approval::StdinApprovalChannel;
 pub use task_status::TaskStatusSkill;
 

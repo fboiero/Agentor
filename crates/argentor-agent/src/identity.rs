@@ -39,7 +39,7 @@ impl AgentPersonality {
             parts.push(format!("Communication style: {}.", self.style.tone));
         }
         if let Some(lang) = &self.style.language {
-            parts.push(format!("Respond in {}.", lang));
+            parts.push(format!("Respond in {lang}."));
         }
 
         if !self.constraints.is_empty() {
@@ -320,24 +320,33 @@ mod tests {
 
     #[test]
     fn personality_with_thinking_level() {
-        let mut p = AgentPersonality::default();
-        p.thinking_level = ThinkingLevel::High;
+        let p = AgentPersonality {
+            thinking_level: ThinkingLevel::High,
+            ..Default::default()
+        };
         let prompt = p.to_system_prompt();
         assert!(prompt.contains("Think deeply"));
     }
 
     #[test]
     fn personality_with_language() {
-        let mut p = AgentPersonality::default();
-        p.style.language = Some("Spanish".into());
+        let p = AgentPersonality {
+            style: CommunicationStyle {
+                language: Some("Spanish".into()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         let prompt = p.to_system_prompt();
         assert!(prompt.contains("Respond in Spanish"));
     }
 
     #[test]
     fn personality_with_expertise() {
-        let mut p = AgentPersonality::default();
-        p.expertise = vec!["Rust".into(), "security".into()];
+        let p = AgentPersonality {
+            expertise: vec!["Rust".into(), "security".into()],
+            ..Default::default()
+        };
         let prompt = p.to_system_prompt();
         assert!(prompt.contains("Rust, security"));
     }

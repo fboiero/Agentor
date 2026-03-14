@@ -326,7 +326,7 @@ impl SkillVetter {
             .capabilities
             .iter()
             .filter(|c| DANGEROUS_CAPABILITIES.contains(&c.as_str()))
-            .map(|c| c.as_str())
+            .map(String::as_str)
             .collect();
 
         if dangerous.is_empty() {

@@ -17,7 +17,7 @@ use argentor_security::{AuditLog, Capability, PermissionSet};
 use argentor_session::Session;
 use argentor_skills::SkillRegistry;
 use async_trait::async_trait;
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
@@ -323,7 +323,7 @@ fn print_stats(session: &Session, duration: std::time::Duration, tools_called: u
     println!();
 }
 
-fn print_audit_trail(audit_dir: &PathBuf) {
+fn print_audit_trail(audit_dir: &Path) {
     let log_path = audit_dir.join("audit.jsonl");
     // Small delay to let the async audit writer flush
     std::thread::sleep(std::time::Duration::from_millis(200));

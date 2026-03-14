@@ -37,7 +37,6 @@ const ITAL: &str = "\x1b[3m";
 const CYAN: &str = "\x1b[36m";
 const YEL: &str = "\x1b[33m";
 const GRN: &str = "\x1b[32m";
-const MAG: &str = "\x1b[35m";
 const RED: &str = "\x1b[31m";
 const BLU: &str = "\x1b[34m";
 const WHT: &str = "\x1b[97m";
@@ -548,9 +547,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  {BOLD}{BG_BLU}{WHT} USER {RST}");
     print!("  ");
     typewrite(
-        &format!(
-            "Scan the Argentor project for codebase health. Analyze git stats,\n  lines of code, annotations, security patterns, store findings, and generate a report."
-        ),
+        "Scan the Argentor project for codebase health. Analyze git stats,\n  lines of code, annotations, security patterns, store findings, and generate a report.",
         12,
     );
     println!();

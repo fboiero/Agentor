@@ -1,5 +1,5 @@
 use argentor_core::{ArgentorResult, ToolCall, ToolResult};
-use argentor_security::Capability;
+use argentor_security::{Capability, PermissionSet};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -18,4 +18,15 @@ pub trait Skill: Send + Sync {
     fn descriptor(&self) -> &SkillDescriptor;
 
     async fn execute(&self, call: ToolCall) -> ArgentorResult<ToolResult>;
+
+    /// Validate that the specific arguments in this tool call are permitted
+    /// by the given permission set. Override for skills that need argument-level checks.
+    /// Default: always returns Ok(()) (no argument-level validation).
+    fn validate_arguments(
+        &self,
+        _call: &ToolCall,
+        _permissions: &PermissionSet,
+    ) -> ArgentorResult<()> {
+        Ok(())
+    }
 }

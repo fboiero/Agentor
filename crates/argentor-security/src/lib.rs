@@ -31,7 +31,7 @@ pub mod tls;
 
 pub use audit::AuditLog;
 pub use audit_query::{query_audit_log, AuditFilter, AuditQueryResult};
-pub use capability::{Capability, PermissionSet};
+pub use capability::{is_private_ip, Capability, PermissionSet, ShellCheckResult};
 pub use encrypted_store::EncryptedStore;
 pub use rate_limit::RateLimiter;
 pub use rbac::{RbacDecision, RbacPolicy, Role};

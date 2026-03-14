@@ -1,5 +1,5 @@
-use argentor_core::{ArgentorResult, ToolCall, ToolResult};
-use argentor_security::Capability;
+use argentor_core::{ArgentorError, ArgentorResult, ToolCall, ToolResult};
+use argentor_security::{Capability, PermissionSet};
 use argentor_skills::skill::{Skill, SkillDescriptor};
 use async_trait::async_trait;
 use std::path::Path;
@@ -59,6 +59,49 @@ impl Default for FileWriteSkill {
 impl Skill for FileWriteSkill {
     fn descriptor(&self) -> &SkillDescriptor {
         &self.descriptor
+    }
+
+    fn validate_arguments(
+        &self,
+        call: &ToolCall,
+        permissions: &PermissionSet,
+    ) -> ArgentorResult<()> {
+        let path_str = call.arguments["path"].as_str().unwrap_or_default();
+        if path_str.is_empty() {
+            return Ok(()); // Empty path will be caught in execute()
+        }
+
+        let path = Path::new(path_str);
+
+        // For writes the file may not exist yet, so canonicalize the parent directory.
+        let canonical = if path.exists() {
+            match path.canonicalize() {
+                Ok(p) => p,
+                Err(_) => return Ok(()), // Let execute() handle the error
+            }
+        } else if let Some(parent) = path.parent() {
+            if parent.exists() {
+                match parent.canonicalize() {
+                    Ok(p) => p.join(path.file_name().unwrap_or_default()),
+                    Err(_) => return Ok(()),
+                }
+            } else {
+                // Parent doesn't exist either — use the path as-is for the check.
+                // This may happen with create_dirs=true.
+                path.to_path_buf()
+            }
+        } else {
+            return Ok(());
+        };
+
+        if !permissions.check_file_write_path(&canonical) {
+            return Err(ArgentorError::Security(format!(
+                "file write not permitted for path '{}'",
+                canonical.display()
+            )));
+        }
+
+        Ok(())
     }
 
     async fn execute(&self, call: ToolCall) -> ArgentorResult<ToolResult> {
@@ -350,5 +393,39 @@ mod tests {
         };
         let result = skill.execute(call).await.unwrap();
         assert!(result.is_error);
+    }
+
+    #[test]
+    fn test_validate_arguments_denies_disallowed_path() {
+        let skill = FileWriteSkill::new();
+        let mut perms = PermissionSet::new();
+        perms.grant(Capability::FileWrite {
+            allowed_paths: vec!["/allowed".to_string()],
+        });
+
+        let call = ToolCall {
+            id: "test_va_1".to_string(),
+            name: "file_write".to_string(),
+            arguments: serde_json::json!({"path": "/tmp/some_file.txt", "content": "x"}),
+        };
+        let result = skill.validate_arguments(&call, &perms);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_arguments_allows_permitted_path() {
+        let skill = FileWriteSkill::new();
+        let mut perms = PermissionSet::new();
+        perms.grant(Capability::FileWrite {
+            allowed_paths: vec!["/tmp".to_string()],
+        });
+
+        let call = ToolCall {
+            id: "test_va_2".to_string(),
+            name: "file_write".to_string(),
+            arguments: serde_json::json!({"path": "/tmp/some_file.txt", "content": "x"}),
+        };
+        let result = skill.validate_arguments(&call, &perms);
+        assert!(result.is_ok());
     }
 }

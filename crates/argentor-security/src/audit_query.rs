@@ -64,13 +64,12 @@ impl AuditFilter {
         }
 
         if let Some(outcome_str) = &self.outcome {
-            let matches_outcome = match (&entry.outcome, outcome_str.as_str()) {
-                (AuditOutcome::Success, "success") => true,
-                (AuditOutcome::Denied, "denied") => true,
-                (AuditOutcome::Error, "error") => true,
-                _ => false,
-            };
-            if !matches_outcome {
+            if !matches!(
+                (&entry.outcome, outcome_str.as_str()),
+                (AuditOutcome::Success, "success")
+                    | (AuditOutcome::Denied, "denied")
+                    | (AuditOutcome::Error, "error")
+            ) {
                 return false;
             }
         }

@@ -136,6 +136,12 @@ impl SkillRegistry {
     }
 
     /// Execute a tool call, checking permissions first.
+    ///
+    /// 1. Verify the permission set contains a capability of the right *type*
+    ///    (e.g. any `FileRead`).
+    /// 2. Call `validate_arguments` on the skill so it can check argument-level
+    ///    constraints (e.g. the specific file path against `allowed_paths`).
+    /// 3. Execute the skill.
     pub async fn execute(
         &self,
         call: ToolCall,
@@ -146,9 +152,10 @@ impl SkillRegistry {
             .get(&call.name)
             .ok_or_else(|| ArgentorError::Skill(format!("Unknown skill: {}", call.name)))?;
 
-        // Check required capabilities
+        // Check that the permission set has at least one capability of the required type.
         for cap in &skill.descriptor().required_capabilities {
-            if !permissions.has(cap) {
+            let type_name = cap.type_name();
+            if !permissions.has_capability_type(type_name) {
                 warn!(
                     skill = %call.name,
                     capability = ?cap,
@@ -162,6 +169,22 @@ impl SkillRegistry {
                     ),
                 ));
             }
+        }
+
+        // Validate specific arguments against the permission set.
+        if let Err(e) = skill.validate_arguments(&call, permissions) {
+            warn!(
+                skill = %call.name,
+                error = %e,
+                "Argument-level permission denied"
+            );
+            return Ok(ToolResult::error(
+                &call.id,
+                format!(
+                    "Permission denied: argument validation failed for '{}': {}",
+                    call.name, e
+                ),
+            ));
         }
 
         skill.execute(call).await
@@ -252,7 +275,8 @@ impl Default for SkillRegistry {
 mod tests {
     use super::*;
     use crate::skill::{Skill, SkillDescriptor};
-    use argentor_core::{ArgentorResult, ToolCall, ToolResult};
+    use argentor_core::{ArgentorError, ArgentorResult, ToolCall, ToolResult};
+    use argentor_security::{Capability, PermissionSet};
     use async_trait::async_trait;
 
     struct TestSkill {
@@ -279,6 +303,43 @@ mod tests {
         }
         async fn execute(&self, call: ToolCall) -> ArgentorResult<ToolResult> {
             Ok(ToolResult::success(&call.id, "ok"))
+        }
+    }
+
+    /// A skill that always denies access through `validate_arguments`.
+    struct DenyingSkill {
+        descriptor: SkillDescriptor,
+    }
+
+    impl DenyingSkill {
+        fn new(name: &str) -> Self {
+            Self {
+                descriptor: SkillDescriptor {
+                    name: name.to_string(),
+                    description: format!("Denying skill {name}"),
+                    parameters_schema: serde_json::json!({}),
+                    required_capabilities: vec![],
+                },
+            }
+        }
+    }
+
+    #[async_trait]
+    impl Skill for DenyingSkill {
+        fn descriptor(&self) -> &SkillDescriptor {
+            &self.descriptor
+        }
+        async fn execute(&self, call: ToolCall) -> ArgentorResult<ToolResult> {
+            Ok(ToolResult::success(&call.id, "should not reach here"))
+        }
+        fn validate_arguments(
+            &self,
+            _call: &ToolCall,
+            _permissions: &PermissionSet,
+        ) -> ArgentorResult<()> {
+            Err(ArgentorError::Security(
+                "argument-level access denied by test".to_string(),
+            ))
         }
     }
 
@@ -420,5 +481,106 @@ mod tests {
         ]);
         assert!(reg.get_group("a").is_some());
         assert!(reg.get_group("b").is_some());
+    }
+
+    #[tokio::test]
+    async fn test_validate_arguments_denies_returns_error_tool_result() {
+        let mut reg = SkillRegistry::new();
+        reg.register(Arc::new(DenyingSkill::new("deny_skill")));
+
+        let perms = PermissionSet::new();
+        let call = ToolCall {
+            id: "call_1".to_string(),
+            name: "deny_skill".to_string(),
+            arguments: serde_json::json!({}),
+        };
+
+        let result = reg.execute(call, &perms).await.unwrap();
+        assert!(result.is_error);
+        assert!(result.content.contains("argument validation failed"));
+        assert!(result
+            .content
+            .contains("argument-level access denied by test"));
+    }
+
+    #[tokio::test]
+    async fn test_no_validate_arguments_override_works_normally() {
+        let mut reg = SkillRegistry::new();
+        reg.register(Arc::new(TestSkill::new("simple_skill")));
+
+        let perms = PermissionSet::new();
+        let call = ToolCall {
+            id: "call_2".to_string(),
+            name: "simple_skill".to_string(),
+            arguments: serde_json::json!({}),
+        };
+
+        let result = reg.execute(call, &perms).await.unwrap();
+        assert!(!result.is_error);
+        assert_eq!(result.content, "ok");
+    }
+
+    #[tokio::test]
+    async fn test_capability_type_check_denies_missing_type() {
+        let mut reg = SkillRegistry::new();
+
+        // Create a skill that requires FileRead capability
+        let skill = Arc::new(TestSkill {
+            descriptor: SkillDescriptor {
+                name: "needs_file_read".to_string(),
+                description: "Needs file read".to_string(),
+                parameters_schema: serde_json::json!({}),
+                required_capabilities: vec![Capability::FileRead {
+                    allowed_paths: vec!["/tmp".to_string()],
+                }],
+            },
+        });
+        reg.register(skill);
+
+        // Empty permissions — should deny
+        let perms = PermissionSet::new();
+        let call = ToolCall {
+            id: "call_3".to_string(),
+            name: "needs_file_read".to_string(),
+            arguments: serde_json::json!({}),
+        };
+
+        let result = reg.execute(call, &perms).await.unwrap();
+        assert!(result.is_error);
+        assert!(result.content.contains("Permission denied"));
+    }
+
+    #[tokio::test]
+    async fn test_capability_type_check_allows_any_matching_type() {
+        let mut reg = SkillRegistry::new();
+
+        // Skill requires FileRead with /specific/path
+        let skill = Arc::new(TestSkill {
+            descriptor: SkillDescriptor {
+                name: "needs_file_read".to_string(),
+                description: "Needs file read".to_string(),
+                parameters_schema: serde_json::json!({}),
+                required_capabilities: vec![Capability::FileRead {
+                    allowed_paths: vec!["/specific/path".to_string()],
+                }],
+            },
+        });
+        reg.register(skill);
+
+        // Permission set has FileRead but with different paths — type check still passes
+        let mut perms = PermissionSet::new();
+        perms.grant(Capability::FileRead {
+            allowed_paths: vec!["/other/path".to_string()],
+        });
+
+        let call = ToolCall {
+            id: "call_4".to_string(),
+            name: "needs_file_read".to_string(),
+            arguments: serde_json::json!({}),
+        };
+
+        // Type check passes (any FileRead exists), and default validate_arguments is Ok
+        let result = reg.execute(call, &perms).await.unwrap();
+        assert!(!result.is_error);
     }
 }
