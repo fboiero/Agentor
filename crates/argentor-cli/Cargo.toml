@@ -41,3 +41,7 @@ notify.workspace = true
 [dev-dependencies]
 tempfile = "3"
 async-trait = "0.1"
+
+[[example]]
+name = "demo_team"
+path = "examples/demo_team.rs"
