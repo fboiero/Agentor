@@ -11,10 +11,14 @@
 //! - [`ConnectionManager`] — Tracks active WebSocket connections.
 //! - [`MessageRouter`] — Routes inbound messages to the appropriate handler.
 
+/// Bridge between ChannelManager and the gateway pipeline.
+pub mod channel_bridge;
 /// WebSocket connection management.
 pub mod connection;
 /// Authentication and rate-limiting middleware.
 pub mod middleware;
+/// REST API endpoints for managing agents, sessions, skills, and connections.
+pub mod rest_api;
 /// HTTP and WebSocket route definitions.
 pub mod router;
 /// Gateway server builder and runner.
@@ -24,7 +28,9 @@ pub mod webhook;
 /// WebSocket-based human approval channel.
 pub mod ws_approval;
 
+pub use channel_bridge::ChannelBridge;
 pub use middleware::AuthConfig;
+pub use rest_api::{api_router, RestApiState};
 pub use server::GatewayServer;
 pub use webhook::{SessionStrategy, WebhookConfig, WebhookState};
 pub use ws_approval::WsApprovalChannel;

@@ -216,6 +216,76 @@ impl SkillRegistry {
         skill.execute(call).await
     }
 
+    /// Execute multiple tool calls concurrently, returning results in the same
+    /// order as the input.
+    ///
+    /// Each call goes through the same permission checking and validation as
+    /// [`execute()`](Self::execute). Individual failures do not abort the batch;
+    /// the corresponding slot contains the error while successful calls return
+    /// normally.
+    ///
+    /// Because the concurrent tasks need shared access to the registry, this
+    /// method requires the registry to be wrapped in an `Arc`.
+    pub async fn execute_parallel(
+        self: &Arc<Self>,
+        calls: Vec<ToolCall>,
+        permissions: &PermissionSet,
+    ) -> Vec<ArgentorResult<ToolResult>> {
+        if calls.is_empty() {
+            return Vec::new();
+        }
+
+        let batch_size = calls.len();
+        let batch_start = std::time::Instant::now();
+
+        let mut handles = Vec::with_capacity(batch_size);
+
+        for call in calls {
+            let registry = Arc::clone(self);
+            let perms = permissions.clone();
+            let handle = tokio::spawn(async move { registry.execute(call, &perms).await });
+            handles.push(handle);
+        }
+
+        let mut results = Vec::with_capacity(batch_size);
+        for handle in handles {
+            match handle.await {
+                Ok(result) => results.push(result),
+                Err(join_err) => {
+                    results.push(Err(ArgentorError::Skill(format!(
+                        "Task panicked during parallel execution: {join_err}"
+                    ))));
+                }
+            }
+        }
+
+        let elapsed = batch_start.elapsed();
+        info!(
+            batch_size = batch_size,
+            elapsed_ms = elapsed.as_millis(),
+            "Parallel tool execution completed"
+        );
+
+        results
+    }
+
+    /// Execute a single tool call with a timeout.
+    ///
+    /// Wraps [`execute()`](Self::execute) with a `tokio::time::timeout`.
+    /// Returns [`ArgentorError::Skill`] if the timeout elapses before the
+    /// skill finishes.
+    pub async fn execute_with_timeout(
+        &self,
+        call: ToolCall,
+        permissions: &PermissionSet,
+        timeout: std::time::Duration,
+    ) -> ArgentorResult<ToolResult> {
+        match tokio::time::timeout(timeout, self.execute(call, permissions)).await {
+            Ok(result) => result,
+            Err(_elapsed) => Err(ArgentorError::Skill("Tool execution timed out".to_string())),
+        }
+    }
+
     /// Return only skills whose names appear in the given list.
     /// Used for progressive tool disclosure in multi-agent orchestration.
     pub fn filter_by_names(&self, names: &[String]) -> Vec<&SkillDescriptor> {
@@ -611,5 +681,287 @@ mod tests {
         // Type check passes (any FileRead exists), and default validate_arguments is Ok
         let result = reg.execute(call, &perms).await.unwrap();
         assert!(!result.is_error);
+    }
+
+    // -------------------------------------------------------------------
+    // Parallel execution tests
+    // -------------------------------------------------------------------
+
+    /// A skill that sleeps for a configurable duration before returning.
+    struct SlowSkill {
+        descriptor: SkillDescriptor,
+        delay: std::time::Duration,
+    }
+
+    impl SlowSkill {
+        fn new(name: &str, delay: std::time::Duration) -> Self {
+            Self {
+                descriptor: SkillDescriptor {
+                    name: name.to_string(),
+                    description: format!("Slow skill {name}"),
+                    parameters_schema: serde_json::json!({}),
+                    required_capabilities: vec![],
+                },
+                delay,
+            }
+        }
+    }
+
+    #[async_trait]
+    impl Skill for SlowSkill {
+        fn descriptor(&self) -> &SkillDescriptor {
+            &self.descriptor
+        }
+        async fn execute(&self, call: ToolCall) -> ArgentorResult<ToolResult> {
+            tokio::time::sleep(self.delay).await;
+            Ok(ToolResult::success(&call.id, format!("done-{}", call.name)))
+        }
+    }
+
+    /// A skill that always returns an error from execute().
+    struct FailingSkill {
+        descriptor: SkillDescriptor,
+    }
+
+    impl FailingSkill {
+        fn new(name: &str) -> Self {
+            Self {
+                descriptor: SkillDescriptor {
+                    name: name.to_string(),
+                    description: format!("Failing skill {name}"),
+                    parameters_schema: serde_json::json!({}),
+                    required_capabilities: vec![],
+                },
+            }
+        }
+    }
+
+    #[async_trait]
+    impl Skill for FailingSkill {
+        fn descriptor(&self) -> &SkillDescriptor {
+            &self.descriptor
+        }
+        async fn execute(&self, _call: ToolCall) -> ArgentorResult<ToolResult> {
+            Err(ArgentorError::Skill("intentional failure".to_string()))
+        }
+    }
+
+    #[tokio::test]
+    async fn test_parallel_execution_of_three_independent_tools() {
+        let mut reg = SkillRegistry::new();
+        reg.register(Arc::new(TestSkill::new("alpha")));
+        reg.register(Arc::new(TestSkill::new("beta")));
+        reg.register(Arc::new(TestSkill::new("gamma")));
+        let reg = Arc::new(reg);
+
+        let calls = vec![
+            ToolCall {
+                id: "c1".to_string(),
+                name: "alpha".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c2".to_string(),
+                name: "beta".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c3".to_string(),
+                name: "gamma".to_string(),
+                arguments: serde_json::json!({}),
+            },
+        ];
+
+        let perms = PermissionSet::new();
+        let results = reg.execute_parallel(calls, &perms).await;
+
+        assert_eq!(results.len(), 3);
+        for result in &results {
+            let r = result.as_ref().unwrap();
+            assert!(!r.is_error);
+            assert_eq!(r.content, "ok");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_parallel_one_failure_does_not_affect_others() {
+        let mut reg = SkillRegistry::new();
+        reg.register(Arc::new(TestSkill::new("good_a")));
+        reg.register(Arc::new(FailingSkill::new("bad")));
+        reg.register(Arc::new(TestSkill::new("good_b")));
+        let reg = Arc::new(reg);
+
+        let calls = vec![
+            ToolCall {
+                id: "c1".to_string(),
+                name: "good_a".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c2".to_string(),
+                name: "bad".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c3".to_string(),
+                name: "good_b".to_string(),
+                arguments: serde_json::json!({}),
+            },
+        ];
+
+        let perms = PermissionSet::new();
+        let results = reg.execute_parallel(calls, &perms).await;
+
+        assert_eq!(results.len(), 3);
+
+        // First succeeds
+        let r0 = results[0].as_ref().unwrap();
+        assert!(!r0.is_error);
+        assert_eq!(r0.content, "ok");
+
+        // Second fails
+        assert!(results[1].is_err());
+        let err_msg = format!("{}", results[1].as_ref().unwrap_err());
+        assert!(err_msg.contains("intentional failure"));
+
+        // Third succeeds
+        let r2 = results[2].as_ref().unwrap();
+        assert!(!r2.is_error);
+        assert_eq!(r2.content, "ok");
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_on_slow_tool() {
+        let mut reg = SkillRegistry::new();
+        reg.register(Arc::new(SlowSkill::new(
+            "very_slow",
+            std::time::Duration::from_secs(10),
+        )));
+
+        let call = ToolCall {
+            id: "c1".to_string(),
+            name: "very_slow".to_string(),
+            arguments: serde_json::json!({}),
+        };
+
+        let perms = PermissionSet::new();
+        let result = reg
+            .execute_with_timeout(call, &perms, std::time::Duration::from_millis(50))
+            .await;
+
+        assert!(result.is_err());
+        let err_msg = format!("{}", result.unwrap_err());
+        assert!(err_msg.contains("timed out"));
+    }
+
+    #[tokio::test]
+    async fn test_parallel_results_maintain_input_order() {
+        let mut reg = SkillRegistry::new();
+        // Give different delays to each skill so they complete out of order,
+        // but results should still be returned in input order.
+        reg.register(Arc::new(SlowSkill::new(
+            "slow",
+            std::time::Duration::from_millis(80),
+        )));
+        reg.register(Arc::new(SlowSkill::new(
+            "medium",
+            std::time::Duration::from_millis(40),
+        )));
+        reg.register(Arc::new(SlowSkill::new(
+            "fast",
+            std::time::Duration::from_millis(10),
+        )));
+        let reg = Arc::new(reg);
+
+        let calls = vec![
+            ToolCall {
+                id: "c_slow".to_string(),
+                name: "slow".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c_medium".to_string(),
+                name: "medium".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c_fast".to_string(),
+                name: "fast".to_string(),
+                arguments: serde_json::json!({}),
+            },
+        ];
+
+        let perms = PermissionSet::new();
+        let results = reg.execute_parallel(calls, &perms).await;
+
+        assert_eq!(results.len(), 3);
+
+        let r0 = results[0].as_ref().unwrap();
+        assert_eq!(r0.call_id, "c_slow");
+        assert_eq!(r0.content, "done-slow");
+
+        let r1 = results[1].as_ref().unwrap();
+        assert_eq!(r1.call_id, "c_medium");
+        assert_eq!(r1.content, "done-medium");
+
+        let r2 = results[2].as_ref().unwrap();
+        assert_eq!(r2.call_id, "c_fast");
+        assert_eq!(r2.content, "done-fast");
+    }
+
+    #[tokio::test]
+    async fn test_parallel_empty_calls_returns_empty() {
+        let reg = Arc::new(SkillRegistry::new());
+        let perms = PermissionSet::new();
+        let results = reg.execute_parallel(vec![], &perms).await;
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_parallel_permission_denial_in_batch() {
+        let mut reg = SkillRegistry::new();
+        // "open" has no required capabilities
+        reg.register(Arc::new(TestSkill::new("open")));
+        // "restricted" requires FileRead capability
+        reg.register(Arc::new(TestSkill {
+            descriptor: SkillDescriptor {
+                name: "restricted".to_string(),
+                description: "Restricted skill".to_string(),
+                parameters_schema: serde_json::json!({}),
+                required_capabilities: vec![Capability::FileRead {
+                    allowed_paths: vec!["/tmp".to_string()],
+                }],
+            },
+        }));
+        let reg = Arc::new(reg);
+
+        let calls = vec![
+            ToolCall {
+                id: "c1".to_string(),
+                name: "open".to_string(),
+                arguments: serde_json::json!({}),
+            },
+            ToolCall {
+                id: "c2".to_string(),
+                name: "restricted".to_string(),
+                arguments: serde_json::json!({}),
+            },
+        ];
+
+        // Empty permissions — no FileRead granted
+        let perms = PermissionSet::new();
+        let results = reg.execute_parallel(calls, &perms).await;
+
+        assert_eq!(results.len(), 2);
+
+        // First call succeeds (no capabilities required)
+        let r0 = results[0].as_ref().unwrap();
+        assert!(!r0.is_error);
+        assert_eq!(r0.content, "ok");
+
+        // Second call returns a permission-denied ToolResult (not an Err)
+        let r1 = results[1].as_ref().unwrap();
+        assert!(r1.is_error);
+        assert!(r1.content.contains("Permission denied"));
     }
 }

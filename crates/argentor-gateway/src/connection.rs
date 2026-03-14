@@ -47,6 +47,15 @@ impl ConnectionManager {
         self.connections.read().await.len()
     }
 
+    /// Return the set of unique session IDs across all active connections.
+    pub async fn session_ids(&self) -> Vec<Uuid> {
+        let conns = self.connections.read().await;
+        let mut ids: Vec<Uuid> = conns.values().map(|c| c.session_id).collect();
+        ids.sort();
+        ids.dedup();
+        ids
+    }
+
     /// Broadcast a message to all connected clients.
     pub async fn broadcast(&self, message: &str) {
         let conns = self.connections.read().await;

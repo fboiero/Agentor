@@ -418,6 +418,7 @@ async fn main() -> anyhow::Result<()> {
                 sessions,
                 Some(rate_limiter),
                 auth_config,
+                None,
             );
 
             let addr = format!("{host}:{port}");

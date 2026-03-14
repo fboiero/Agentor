@@ -2,7 +2,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use argentor_security::rbac::{RbacPolicy, Role};
-use argentor_security::{EncryptedStore, PermissionSet, Sanitizer};
+use argentor_security::{is_private_ip, Capability, EncryptedStore, PermissionSet, Sanitizer};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::path::Path;
 
 fn bench_rbac_evaluation(c: &mut Criterion) {
     let policy = RbacPolicy::with_defaults();
@@ -92,11 +94,178 @@ fn bench_sanitizer(c: &mut Criterion) {
     });
 }
 
+fn bench_path_canonicalization(c: &mut Criterion) {
+    let mut perms = PermissionSet::new();
+    perms.grant(Capability::FileRead {
+        allowed_paths: vec!["/tmp".into(), "/workspace".into(), "/home/user".into()],
+    });
+    perms.grant(Capability::FileWrite {
+        allowed_paths: vec!["/tmp".into(), "/workspace/output".into()],
+    });
+
+    c.bench_function("check_file_read_path (allowed, simple)", |b| {
+        b.iter(|| perms.check_file_read_path(black_box(Path::new("/tmp/data.txt"))));
+    });
+
+    c.bench_function("check_file_read_path (allowed, nested)", |b| {
+        b.iter(|| perms.check_file_read_path(black_box(Path::new("/workspace/src/main.rs"))));
+    });
+
+    c.bench_function("check_file_read_path (denied)", |b| {
+        b.iter(|| perms.check_file_read_path(black_box(Path::new("/etc/passwd"))));
+    });
+
+    c.bench_function("check_file_read_path (traversal attack)", |b| {
+        b.iter(|| perms.check_file_read_path(black_box(Path::new("/tmp/../etc/shadow"))));
+    });
+
+    c.bench_function("check_file_write_path (allowed)", |b| {
+        b.iter(|| perms.check_file_write_path(black_box(Path::new("/tmp/output.txt"))));
+    });
+
+    c.bench_function("check_file_write_path (denied)", |b| {
+        b.iter(|| perms.check_file_write_path(black_box(Path::new("/etc/shadow"))));
+    });
+
+    c.bench_function("check_file_write_path (traversal attack)", |b| {
+        b.iter(|| {
+            perms.check_file_write_path(black_box(Path::new("/workspace/output/../../etc/shadow")))
+        });
+    });
+}
+
+fn bench_shell_strict(c: &mut Criterion) {
+    let mut perms = PermissionSet::new();
+    perms.grant(Capability::ShellExec {
+        allowed_commands: vec![
+            "ls".into(),
+            "echo".into(),
+            "cat".into(),
+            "grep".into(),
+            "wc".into(),
+        ],
+    });
+
+    c.bench_function("check_shell_strict (simple allowed)", |b| {
+        b.iter(|| perms.check_shell_strict(black_box("ls -la")));
+    });
+
+    c.bench_function("check_shell_strict (pipe, all allowed)", |b| {
+        b.iter(|| perms.check_shell_strict(black_box("cat /tmp/file | grep pattern | wc -l")));
+    });
+
+    c.bench_function("check_shell_strict (denied command)", |b| {
+        b.iter(|| perms.check_shell_strict(black_box("rm -rf /")));
+    });
+
+    c.bench_function("check_shell_strict (injection attempt)", |b| {
+        b.iter(|| perms.check_shell_strict(black_box("echo hello; rm -rf /")));
+    });
+
+    c.bench_function("check_shell_strict (subshell injection)", |b| {
+        b.iter(|| perms.check_shell_strict(black_box("echo $(cat /etc/passwd)")));
+    });
+
+    c.bench_function("check_shell_strict (chain && allowed)", |b| {
+        b.iter(|| perms.check_shell_strict(black_box("echo start && ls -la && echo done")));
+    });
+}
+
+fn bench_network_ip(c: &mut Criterion) {
+    let mut perms = PermissionSet::new();
+    perms.grant(Capability::NetworkAccess {
+        allowed_hosts: vec!["8.8.8.8".into(), "1.1.1.1".into(), "*".into()],
+    });
+
+    c.bench_function("check_network_ip (public IPv4, allowed)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8));
+        b.iter(|| perms.check_network_ip(black_box(&ip)));
+    });
+
+    c.bench_function("check_network_ip (private IPv4, denied)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1));
+        b.iter(|| perms.check_network_ip(black_box(&ip)));
+    });
+
+    c.bench_function("check_network_ip (loopback IPv4, denied)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        b.iter(|| perms.check_network_ip(black_box(&ip)));
+    });
+
+    c.bench_function("check_network_ip (IPv6 loopback, denied)", |b| {
+        let ip = IpAddr::V6(Ipv6Addr::LOCALHOST);
+        b.iter(|| perms.check_network_ip(black_box(&ip)));
+    });
+
+    c.bench_function("check_network_ip (public IPv4, wildcard match)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 1));
+        b.iter(|| perms.check_network_ip(black_box(&ip)));
+    });
+
+    c.bench_function("is_private_ip (public)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(8, 8, 4, 4));
+        b.iter(|| is_private_ip(black_box(&ip)));
+    });
+
+    c.bench_function("is_private_ip (private 10.x)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1));
+        b.iter(|| is_private_ip(black_box(&ip)));
+    });
+
+    c.bench_function("is_private_ip (private 172.16.x)", |b| {
+        let ip = IpAddr::V4(Ipv4Addr::new(172, 16, 0, 1));
+        b.iter(|| is_private_ip(black_box(&ip)));
+    });
+}
+
+fn bench_has_capability_type(c: &mut Criterion) {
+    let mut perms = PermissionSet::new();
+    perms.grant(Capability::FileRead {
+        allowed_paths: vec!["/tmp".into()],
+    });
+    perms.grant(Capability::FileWrite {
+        allowed_paths: vec!["/tmp".into()],
+    });
+    perms.grant(Capability::NetworkAccess {
+        allowed_hosts: vec!["example.com".into()],
+    });
+    perms.grant(Capability::ShellExec {
+        allowed_commands: vec!["ls".into(), "echo".into()],
+    });
+    perms.grant(Capability::EnvRead {
+        allowed_vars: vec!["HOME".into(), "PATH".into()],
+    });
+    perms.grant(Capability::DatabaseQuery);
+    perms.grant(Capability::BrowserAccess {
+        allowed_domains: vec!["example.com".into()],
+    });
+
+    c.bench_function("has_capability_type (hit, first)", |b| {
+        b.iter(|| perms.has_capability_type(black_box("file_read")));
+    });
+
+    c.bench_function("has_capability_type (hit, last)", |b| {
+        b.iter(|| perms.has_capability_type(black_box("browser_access")));
+    });
+
+    c.bench_function("has_capability_type (miss)", |b| {
+        b.iter(|| perms.has_capability_type(black_box("nonexistent_type")));
+    });
+
+    c.bench_function("has_capability_type (database_query)", |b| {
+        b.iter(|| perms.has_capability_type(black_box("database_query")));
+    });
+}
+
 criterion_group!(
     benches,
     bench_rbac_evaluation,
     bench_permission_check,
     bench_encrypted_store,
     bench_sanitizer,
+    bench_path_canonicalization,
+    bench_shell_strict,
+    bench_network_ip,
+    bench_has_capability_type,
 );
 criterion_main!(benches);

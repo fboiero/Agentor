@@ -118,6 +118,52 @@ impl MessageRouter {
         Ok(())
     }
 
+    /// Handle an inbound message from a webhook (HTTP request/response).
+    ///
+    /// Unlike `handle_message` which sends the response over a WebSocket connection,
+    /// this method returns the agent response directly so the webhook handler can
+    /// include it in the HTTP response body.
+    pub async fn handle_webhook_message(&self, msg: InboundMessage) -> ArgentorResult<String> {
+        // Sanitize input
+        let content = match self.sanitizer.sanitize(&msg.content).into_string() {
+            Some(clean) => clean,
+            None => {
+                warn!("Rejected webhook message: failed sanitization");
+                return Ok("Message rejected: invalid content".to_string());
+            }
+        };
+
+        // Get or create session, preserving the provided session_id
+        let mut session = if let Some(sid) = msg.session_id {
+            match self.sessions.get(sid).await? {
+                Some(s) => s,
+                None => {
+                    let mut s = Session::new();
+                    s.id = sid;
+                    s
+                }
+            }
+        } else {
+            Session::new()
+        };
+
+        let session_id = session.id;
+        info!(session_id = %session_id, "Routing webhook message to agent");
+
+        // Run the agent
+        match self.agent.run(&mut session, &content).await {
+            Ok(response) => {
+                // Save session
+                self.sessions.update(&session).await?;
+                Ok(response)
+            }
+            Err(e) => {
+                warn!(error = %e, "Agent error processing webhook");
+                Err(e)
+            }
+        }
+    }
+
     /// Handle an inbound message with streaming.
     ///
     /// Instead of waiting for the full agent response, this method streams

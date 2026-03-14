@@ -1,3 +1,5 @@
+use crate::router::InboundMessage;
+use crate::server::AppState;
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -5,7 +7,8 @@ use axum::{
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
+use uuid::Uuid;
 
 /// Configuration for a single webhook endpoint.
 #[derive(Deserialize, Clone, Debug)]
@@ -64,18 +67,31 @@ pub fn render_template(template: &str, payload: &str) -> String {
 
 /// Axum handler for incoming webhook POST requests.
 ///
-/// Route: `POST /webhook/:name`
+/// Route: `POST /webhook/{name}`
 ///
 /// Looks up the webhook config by name, validates the secret if configured,
-/// renders the prompt template with the request body, and returns a JSON response.
+/// renders the prompt template with the request body, forwards the rendered
+/// message to the `MessageRouter` for agent processing, and returns the
+/// agent response to the caller.
 pub async fn webhook_handler(
     Path(name): Path<String>,
     headers: HeaderMap,
-    State(state): State<Arc<WebhookState>>,
+    State(state): State<Arc<AppState>>,
     body: String,
 ) -> impl IntoResponse {
+    // Ensure webhooks are configured
+    let webhook_state = match &state.webhooks {
+        Some(ws) => ws,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                serde_json::json!({"error": "webhooks not configured"}).to_string(),
+            );
+        }
+    };
+
     // Find the webhook config by name
-    let config = match state.webhooks.iter().find(|w| w.name == name) {
+    let config = match webhook_state.webhooks.iter().find(|w| w.name == name) {
         Some(c) => c,
         None => {
             warn!(webhook = %name, "Webhook not found");
@@ -105,21 +121,52 @@ pub async fn webhook_handler(
     // Render prompt template
     let rendered = render_template(&config.agent_prompt_template, &body);
 
+    // Determine session ID based on strategy
+    let session_id = match &config.session_strategy {
+        SessionStrategy::New => None,
+        SessionStrategy::ByHeader(header_name) => headers
+            .get(header_name)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| Uuid::parse_str(v).ok()),
+    };
+
     info!(
         webhook = %name,
         rendered_len = rendered.len(),
         session_strategy = ?config.session_strategy,
-        "Webhook accepted"
+        session_id = ?session_id,
+        "Webhook received, forwarding to agent"
     );
 
-    (
-        StatusCode::OK,
-        serde_json::json!({
-            "status": "accepted",
-            "webhook": name
-        })
-        .to_string(),
-    )
+    // Forward the rendered message to the MessageRouter for agent processing
+    let inbound = InboundMessage {
+        session_id,
+        content: rendered,
+    };
+
+    match state.router.handle_webhook_message(inbound).await {
+        Ok(response) => (
+            StatusCode::OK,
+            serde_json::json!({
+                "status": "processed",
+                "webhook": name,
+                "response": response
+            })
+            .to_string(),
+        ),
+        Err(e) => {
+            error!(webhook = %name, error = %e, "Webhook processing failed");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                serde_json::json!({
+                    "status": "error",
+                    "webhook": name,
+                    "error": e.to_string()
+                })
+                .to_string(),
+            )
+        }
+    }
 }
 
 #[cfg(test)]

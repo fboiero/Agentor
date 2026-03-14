@@ -22,6 +22,7 @@ tower.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
+chrono.workspace = true
 futures-util = "0.3"
 
 [dev-dependencies]

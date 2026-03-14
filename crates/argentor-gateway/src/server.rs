@@ -1,6 +1,7 @@
 use crate::connection::{Connection, ConnectionManager};
 use crate::middleware::{auth_middleware, rate_limit_middleware, AuthConfig, MiddlewareState};
 use crate::router::{InboundMessage, MessageRouter};
+use crate::webhook::{webhook_handler, WebhookConfig, WebhookState};
 use argentor_agent::AgentRunner;
 use argentor_security::RateLimiter;
 use argentor_session::SessionStore;
@@ -11,7 +12,7 @@ use axum::{
     },
     middleware as axum_mw,
     response::IntoResponse,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use std::sync::Arc;
@@ -23,6 +24,7 @@ use uuid::Uuid;
 pub struct AppState {
     pub router: Arc<MessageRouter>,
     pub connections: Arc<ConnectionManager>,
+    pub webhooks: Option<WebhookState>,
 }
 
 /// The main gateway server.
@@ -31,28 +33,38 @@ pub struct GatewayServer;
 impl GatewayServer {
     /// Build the gateway without auth or rate limiting (backwards compatible).
     pub fn build(agent: Arc<AgentRunner>, sessions: Arc<dyn SessionStore>) -> Router {
-        Self::build_with_middleware(agent, sessions, None, AuthConfig::new(vec![]))
+        Self::build_with_middleware(agent, sessions, None, AuthConfig::new(vec![]), None)
     }
 
-    /// Build the gateway with optional rate limiting and auth middleware.
+    /// Build the gateway with optional rate limiting, auth middleware, and webhooks.
     pub fn build_with_middleware(
         agent: Arc<AgentRunner>,
         sessions: Arc<dyn SessionStore>,
         rate_limiter: Option<Arc<RateLimiter>>,
         auth_config: AuthConfig,
+        webhooks: Option<Vec<WebhookConfig>>,
     ) -> Router {
         let connections = ConnectionManager::new();
         let router = Arc::new(MessageRouter::new(agent, sessions, connections.clone()));
 
+        let webhook_state = webhooks.map(|configs| WebhookState { webhooks: configs });
+
         let state = Arc::new(AppState {
             router,
             connections,
+            webhooks: webhook_state,
         });
 
-        let app = Router::new()
+        let mut app = Router::new()
             .route("/ws", get(ws_handler))
-            .route("/health", get(health_handler))
-            .with_state(state);
+            .route("/health", get(health_handler));
+
+        // Add webhook route if webhooks are configured
+        if state.webhooks.is_some() {
+            app = app.route("/webhook/{name}", post(webhook_handler));
+        }
+
+        let app = app.with_state(state);
 
         // Apply middleware if configured
         if rate_limiter.is_some() || auth_config.is_enabled() {
@@ -70,6 +82,24 @@ impl GatewayServer {
         } else {
             app
         }
+    }
+
+    /// Build the gateway with webhook support (convenience builder).
+    ///
+    /// This is equivalent to calling `build_with_middleware` with no auth or rate limiting
+    /// but with webhook configurations.
+    pub fn with_webhooks(
+        agent: Arc<AgentRunner>,
+        sessions: Arc<dyn SessionStore>,
+        configs: Vec<WebhookConfig>,
+    ) -> Router {
+        Self::build_with_middleware(
+            agent,
+            sessions,
+            None,
+            AuthConfig::new(vec![]),
+            Some(configs),
+        )
     }
 }
 
