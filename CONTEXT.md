@@ -1,4 +1,4 @@
-# Agentor — Session Context
+# Argentor — Session Context
 > Last updated: 2026-03-07 (session 7)
 
 ## Current Goal
@@ -15,7 +15,7 @@
 ### Phase 2 — Docker + K8s Deployment
 - Improved Dockerfile with security hardening (strip, non-root, HEALTHCHECK)
 - `docker-compose.yml` with resource limits, read-only fs, cap_drop ALL
-- Helm chart at `deploy/helm/agentor/` (7 templates)
+- Helm chart at `deploy/helm/argentor/` (7 templates)
 
 ### Phase 3 — Skill Registry Seguro
 - `SkillManifest` — name, version, author, SHA-256 checksum, declared capabilities, ed25519 signature
@@ -49,9 +49,9 @@
 
 ### Phase 6 — Benchmarks + Performance Proof
 - criterion.rs benchmarks for 3 crates:
-  - `agentor-core`: Message creation (~253ns), serialization (~253ns), batch (1000 msgs ~831µs)
-  - `agentor-security`: RBAC evaluation, permission checks, encryption, sanitizer
-  - `agentor-skills`: Registry lookup, registration, skill vetting/checksums
+  - `argentor-core`: Message creation (~253ns), serialization (~253ns), batch (1000 msgs ~831µs)
+  - `argentor-security`: RBAC evaluation, permission checks, encryption, sanitizer
+  - `argentor-skills`: Registry lookup, registration, skill vetting/checksums
 - HTML reports generated in `target/criterion/`
 
 ## Build Health
@@ -66,15 +66,15 @@
 ## Key New Files (sessions 6-7)
 | File | Role |
 |------|------|
-| `crates/agentor-agent/src/backends/gemini.rs` | Gemini API backend |
-| `crates/agentor-agent/tests/providers_integration.rs` | 29 provider tests |
-| `crates/agentor-agent/src/identity.rs` | Agent personality + session commands |
-| `crates/agentor-skills/src/vetting.rs` | Skill vetting + signing + index |
-| `crates/agentor-security/src/rbac.rs` | RBAC policy engine |
-| `crates/agentor-security/src/audit_query.rs` | Audit log querying |
-| `crates/agentor-security/src/encrypted_store.rs` | Encrypted at-rest storage |
-| `crates/agentor-core/benches/core_benchmarks.rs` | Core benchmarks |
-| `crates/agentor-security/benches/security_benchmarks.rs` | Security benchmarks |
-| `crates/agentor-skills/benches/skills_benchmarks.rs` | Skills benchmarks |
+| `crates/argentor-agent/src/backends/gemini.rs` | Gemini API backend |
+| `crates/argentor-agent/tests/providers_integration.rs` | 29 provider tests |
+| `crates/argentor-agent/src/identity.rs` | Agent personality + session commands |
+| `crates/argentor-skills/src/vetting.rs` | Skill vetting + signing + index |
+| `crates/argentor-security/src/rbac.rs` | RBAC policy engine |
+| `crates/argentor-security/src/audit_query.rs` | Audit log querying |
+| `crates/argentor-security/src/encrypted_store.rs` | Encrypted at-rest storage |
+| `crates/argentor-core/benches/core_benchmarks.rs` | Core benchmarks |
+| `crates/argentor-security/benches/security_benchmarks.rs` | Security benchmarks |
+| `crates/argentor-skills/benches/skills_benchmarks.rs` | Skills benchmarks |
 | `docker-compose.yml` | Docker Compose |
-| `deploy/helm/agentor/` | Helm chart (7 files) |
+| `deploy/helm/argentor/` | Helm chart (7 files) |

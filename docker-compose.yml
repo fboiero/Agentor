@@ -1,21 +1,21 @@
 services:
-  agentor:
+  argentor:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: agentor
+    container_name: argentor
     restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
-      - agentor-data:/app/data
-      - ./agentor.toml:/app/agentor.toml:ro
+      - argentor-data:/app/data
+      - ./argentor.toml:/app/argentor.toml:ro
       - ./skills:/app/skills:ro
     environment:
       - RUST_LOG=info
-      - AGENTOR_BIND=0.0.0.0:3000
+      - ARGENTOR_BIND=0.0.0.0:3000
     healthcheck:
-      test: ["CMD", "/app/agentor", "health"]
+      test: ["CMD", "/app/argentor", "health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -39,4 +39,4 @@ services:
       - NET_BIND_SERVICE
 
 volumes:
-  agentor-data:
+  argentor-data:

@@ -1,4 +1,4 @@
-# Agentor — Decision & Prompt Log
+# Argentor — Decision & Prompt Log
 
 ---
 
@@ -110,11 +110,11 @@
 
 ## 2026-02-23 — Session 3: Closing All 6 Gaps
 
-### Decision 9: ApprovalChannel Types Moved to agentor-core
+### Decision 9: ApprovalChannel Types Moved to argentor-core
 - **Timestamp**: 2026-02-23
-- **Asked**: Both agentor-builtins and agentor-gateway need ApprovalChannel — where to put shared types?
-- **Decision**: Moved `ApprovalChannel`, `ApprovalRequest`, `ApprovalDecision`, `RiskLevel` to `agentor-core::approval`. Re-exported from builtins for backward compat.
-- **Alternatives**: (1) Gateway depends on builtins — pulls in memory crate transitively. (2) New `agentor-hitl` crate — overkill.
+- **Asked**: Both argentor-builtins and argentor-gateway need ApprovalChannel — where to put shared types?
+- **Decision**: Moved `ApprovalChannel`, `ApprovalRequest`, `ApprovalDecision`, `RiskLevel` to `argentor-core::approval`. Re-exported from builtins for backward compat.
+- **Alternatives**: (1) Gateway depends on builtins — pulls in memory crate transitively. (2) New `argentor-hitl` crate — overkill.
 - **Notes**: Added `async-trait` to core's dependencies for the trait definition.
 
 ### Decision 10: TaskQueueHandle Trait to Avoid Circular Dependencies
@@ -208,7 +208,7 @@
 ### Decision 21: Config Hot-Reload via notify Crate
 - **Timestamp**: 2026-02-23
 - **Asked**: Support runtime config reloading without restart
-- **Decision**: `ConfigWatcher` using `notify::RecommendedWatcher` on agentor.toml. Debounce 500ms. `ReloadableConfig` has optional sections (security, skills, mcp_servers, tool_groups, webhooks). Non-reloadable: model config, server bind, TLS.
+- **Decision**: `ConfigWatcher` using `notify::RecommendedWatcher` on argentor.toml. Debounce 500ms. `ReloadableConfig` has optional sections (security, skills, mcp_servers, tool_groups, webhooks). Non-reloadable: model config, server bind, TLS.
 - **Alternatives**: (1) Polling — higher latency, wastes CPU. (2) inotify directly — Linux-only.
 - **Notes**: `notify` is cross-platform (inotify/kqueue/ReadDirectoryChanges). Background thread with std::mpsc for event coalescing.
 
@@ -222,7 +222,7 @@
 ### Decision 23: Query Expansion with Rule-Based Synonyms
 - **Timestamp**: 2026-02-23
 - **Asked**: Expand search queries for better recall
-- **Decision**: `QueryExpander` trait in agentor-memory. `RuleBasedExpander` with 10 synonym groups (e.g., error↔bug↔issue, create↔make↔build). Future: LLM-based expander in builtins (avoids circular dep memory→agent).
+- **Decision**: `QueryExpander` trait in argentor-memory. `RuleBasedExpander` with 10 synonym groups (e.g., error↔bug↔issue, create↔make↔build). Future: LLM-based expander in builtins (avoids circular dep memory→agent).
 - **Alternatives**: (1) Word2Vec/embedding similarity — requires model loading. (2) External thesaurus API — adds latency.
 - **Notes**: `deduplicate_results()` merges results from multiple expanded queries by ID.
 
@@ -255,27 +255,27 @@
 ### Decision 29 — Agent Identity System (Phase 4)
 
 - **Asked**: Continue the 6-phase plan, phase 4: Agent Identity + Session System
-- **Decision**: Created `identity.rs` in agentor-agent with `AgentPersonality` (system prompt generation from personality config), `ThinkingLevel` (Off/Low/Medium/High), `SessionCommand` (slash command parser with 9 commands), and `ContextCompactor` (threshold-based auto-compaction). Wired into `AgentRunner` via `with_personality()` builder method. Added `toml` as a regular dependency (was only dev-dep).
+- **Decision**: Created `identity.rs` in argentor-agent with `AgentPersonality` (system prompt generation from personality config), `ThinkingLevel` (Off/Low/Medium/High), `SessionCommand` (slash command parser with 9 commands), and `ContextCompactor` (threshold-based auto-compaction). Wired into `AgentRunner` via `with_personality()` builder method. Added `toml` as a regular dependency (was only dev-dep).
 - **Fix**: Case-insensitive parsing bug — command arguments weren't lowercased, so `/Think High` failed. Fixed by applying `to_lowercase()` to the argument as well.
 - **Result**: 27 identity tests passing.
 
 ### Decision 30 — Enterprise Security Hardening (Phase 5)
 
 - **Asked**: Phase 5: RBAC, audit CLI, encrypted storage
-- **Decision**: Three new modules in agentor-security:
+- **Decision**: Three new modules in argentor-security:
   1. `rbac.rs` — `RbacPolicy` with `PolicyBinding` per role (Admin/Operator/Viewer/Custom). Denied skills take precedence over allowed. Default policy ships with 3 roles with sensible permissions. 10 tests.
   2. `audit_query.rs` — `AuditFilter` (session, action, skill, outcome, time range, limit) and `query_audit_log()` that reads JSONL, filters, and computes `AuditStats`. Required adding `Deserialize` to `AuditEntry` and `AuditOutcome`. 8 tests.
   3. `encrypted_store.rs` — `EncryptedStore` backed by AES-256-style encryption (SHA-256 CTR mode + HMAC authentication). PBKDF2 key derivation, per-message random salt+nonce, constant-time auth tag verification, hashed filenames (key names never leaked). 11 tests.
-- **Dependencies added**: sha2, hex, getrandom (to agentor-security)
+- **Dependencies added**: sha2, hex, getrandom (to argentor-security)
 - **Result**: 40 security lib tests + 26 integration tests = 66 total (was 26).
 
 ### Decision 31 — Benchmarks + Performance Proof (Phase 6)
 
 - **Asked**: Phase 6: criterion.rs benchmarks
 - **Decision**: Created benchmark suites for 3 crates using criterion 0.5:
-  - `agentor-core`: Message::user creation, serialization/deserialization, batch creation (1000 msgs)
-  - `agentor-security`: RBAC evaluation (admin/operator/viewer), permission checks, encrypted store (put/get 18B and 4KB), sanitizer
-  - `agentor-skills`: Registry lookup (hit/miss, 100 skills), registration, list descriptors, filter_by_names, SkillManifest checksum, SkillVetter::vet
+  - `argentor-core`: Message::user creation, serialization/deserialization, batch creation (1000 msgs)
+  - `argentor-security`: RBAC evaluation (admin/operator/viewer), permission checks, encrypted store (put/get 18B and 4KB), sanitizer
+  - `argentor-skills`: Registry lookup (hit/miss, 100 skills), registration, list descriptors, filter_by_names, SkillManifest checksum, SkillVetter::vet
 - **Performance results** (from core bench): Message creation ~253ns, serialize ~253ns, 1000 messages ~831µs
 - **Result**: All 3 suites compile and run. HTML reports in target/criterion/.
 
@@ -283,5 +283,5 @@
 - 3 phases completed (4, 5, 6) — all 6 phases now DONE
 - Tests: 527 → 578 (+51 new)
 - New files: 6 (identity.rs, rbac.rs, audit_query.rs, encrypted_store.rs, 3 benchmark files)
-- New dependencies: 3 (sha2, hex, getrandom in agentor-security; criterion in 3 crates)
+- New dependencies: 3 (sha2, hex, getrandom in argentor-security; criterion in 3 crates)
 - Modified files: ~10

@@ -1,4 +1,4 @@
-# Agentor
+# Argentor
 
 **Secure multi-agent AI framework in Rust with WASM sandboxed plugins, MCP integration, and compliance modules.**
 
@@ -8,9 +8,30 @@
 
 ---
 
-## What is Agentor?
+## Demo
 
-Agentor is an autonomous AI agent framework designed for **security**, **compliance**, and **multi-agent orchestration**. Built from scratch in Rust, it addresses critical vulnerabilities found in existing frameworks (RCE, sandbox escape, SSRF, path traversal) while providing a complete multi-agent system following [Anthropic's recommended patterns](https://docs.anthropic.com/en/docs/build-with-claude/agentic-systems).
+> An Argentor agent running an automated 8-step DevOps pipeline — real tool execution, no API keys, no mocks.
+
+<p align="center">
+  <img src="docs/demo_pipeline.gif" alt="Argentor Pipeline Demo" width="700">
+</p>
+
+<details>
+<summary><b>Run it yourself</b></summary>
+
+```bash
+cargo run -p argentor-cli --example demo_pipeline
+```
+
+The agent executes 8 real tools: `shell` (git stats, LOC, annotations, security scan), `file_read` (Cargo.toml), `memory_store` (vector embeddings), `memory_search` (cosine similarity), and `file_write` (Markdown report). All with permission checks and audit logging.
+
+</details>
+
+---
+
+## What is Argentor?
+
+Argentor is an autonomous AI agent framework designed for **security**, **compliance**, and **multi-agent orchestration**. Built from scratch in Rust, it addresses critical vulnerabilities found in existing frameworks (RCE, sandbox escape, SSRF, path traversal) while providing a complete multi-agent system following [Anthropic's recommended patterns](https://docs.anthropic.com/en/docs/build-with-claude/agentic-systems).
 
 ### Key Features
 
@@ -54,7 +75,7 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
                              │
                     ┌────────▼────────┐
                     │   MCP Proxy     │  ← Centralized control plane
-                    │  (agentor-mcp)  │
+                    │  (argentor-mcp)  │
                     └────────┬────────┘
                              │
               ┌──────────────┼──────────────┐
@@ -69,19 +90,19 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 
 | Crate | Description |
 |-------|-------------|
-| `agentor-core` | Core types, errors, and message definitions |
-| `agentor-security` | Capabilities, permissions, rate limiting, audit, TLS |
-| `agentor-session` | Session management and persistence |
-| `agentor-skills` | Skill system with WASM sandbox, plugins, and registry |
-| `agentor-agent` | Agent runner, LLM backends, failover, streaming |
-| `agentor-channels` | Multi-platform communication channels |
-| `agentor-gateway` | HTTP/WebSocket gateway with auth and webhooks |
-| `agentor-builtins` | Built-in skills (shell, file I/O, HTTP, memory, browser, Docker) |
-| `agentor-memory` | Semantic memory with hybrid search and query expansion |
-| `agentor-mcp` | Model Context Protocol client, proxy, and discovery |
-| `agentor-orchestrator` | Multi-agent orchestration, scheduling, monitoring |
-| `agentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance |
-| `agentor-cli` | CLI binary (serve, skill list) |
+| `argentor-core` | Core types, errors, and message definitions |
+| `argentor-security` | Capabilities, permissions, rate limiting, audit, TLS |
+| `argentor-session` | Session management and persistence |
+| `argentor-skills` | Skill system with WASM sandbox, plugins, and registry |
+| `argentor-agent` | Agent runner, LLM backends, failover, streaming |
+| `argentor-channels` | Multi-platform communication channels |
+| `argentor-gateway` | HTTP/WebSocket gateway with auth and webhooks |
+| `argentor-builtins` | Built-in skills (shell, file I/O, HTTP, memory, browser, Docker) |
+| `argentor-memory` | Semantic memory with hybrid search and query expansion |
+| `argentor-mcp` | Model Context Protocol client, proxy, and discovery |
+| `argentor-orchestrator` | Multi-agent orchestration, scheduling, monitoring |
+| `argentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance |
+| `argentor-cli` | CLI binary (serve, skill list) |
 
 ---
 
@@ -95,8 +116,8 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 ### Build
 
 ```bash
-git clone https://github.com/fboiero/Agentor.git
-cd Agentor
+git clone https://github.com/fboiero/Argentor.git
+cd Argentor
 cargo build --workspace
 ```
 
@@ -105,7 +126,7 @@ cargo build --workspace
 Copy and edit the configuration file:
 
 ```bash
-cp agentor.toml my-config.toml
+cp argentor.toml my-config.toml
 # Edit my-config.toml with your API key and preferences
 ```
 
@@ -129,13 +150,13 @@ port = 3000
 
 ```bash
 # Start the gateway server
-cargo run --bin agentor -- serve
+cargo run --bin argentor -- serve
 
 # List available skills
-cargo run --bin agentor -- skill list
+cargo run --bin argentor -- skill list
 
 # Generate compliance report
-cargo run --bin agentor -- compliance report
+cargo run --bin argentor -- compliance report
 ```
 
 ### Test
@@ -150,7 +171,7 @@ cargo fmt --all -- --check       # Check formatting
 
 ## Security Model
 
-Agentor uses defense-in-depth with capability-based security:
+Argentor uses defense-in-depth with capability-based security:
 
 | Threat | Defense |
 |--------|---------|
@@ -224,7 +245,7 @@ TaskStatus::NeedsHumanReview  // Pauses execution until approved
 
 ### DPGA (Digital Public Goods Alliance)
 
-Agentor targets all 9 DPGA indicators:
+Argentor targets all 9 DPGA indicators:
 
 1. **Open Source** — AGPL-3.0-only
 2. **SDG Relevance** — SDG 9 (Innovation), SDG 16 (Institutions)
@@ -240,7 +261,7 @@ Agentor targets all 9 DPGA indicators:
 
 ## MCP Integration
 
-Agentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration:
+Argentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration:
 
 ```toml
 [[mcp_servers]]
@@ -259,8 +280,8 @@ The MCP Proxy centralizes all tool calls with:
 ## Docker
 
 ```bash
-docker build -t agentor .
-docker run -p 3000:3000 agentor serve
+docker build -t argentor .
+docker run -p 3000:3000 argentor serve
 ```
 
 ---

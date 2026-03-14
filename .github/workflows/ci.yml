@@ -95,9 +95,9 @@ jobs:
 
       - name: Run benchmarks (compile check + short run)
         run: |
-          cargo bench -p agentor-core --bench core_benchmarks -- --warm-up-time 1 --measurement-time 2
-          cargo bench -p agentor-security --bench security_benchmarks -- --warm-up-time 1 --measurement-time 2
-          cargo bench -p agentor-skills --bench skills_benchmarks -- --warm-up-time 1 --measurement-time 2
+          cargo bench -p argentor-core --bench core_benchmarks -- --warm-up-time 1 --measurement-time 2
+          cargo bench -p argentor-security --bench security_benchmarks -- --warm-up-time 1 --measurement-time 2
+          cargo bench -p argentor-skills --bench skills_benchmarks -- --warm-up-time 1 --measurement-time 2
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4

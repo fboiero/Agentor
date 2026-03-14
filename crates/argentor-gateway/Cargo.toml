@@ -1,0 +1,31 @@
+[package]
+name = "argentor-gateway"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argentor-core.workspace = true
+argentor-security.workspace = true
+argentor-agent.workspace = true
+argentor-session.workspace = true
+argentor-channels.workspace = true
+argentor-skills.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+axum.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+futures-util = "0.3"
+
+[dev-dependencies]
+tokio-tungstenite = "0.24"
+reqwest = { version = "0.12", features = ["json"] }
+tempfile = "3"
+argentor-builtins.workspace = true
