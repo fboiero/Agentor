@@ -45,3 +45,7 @@ async-trait = "0.1"
 [[example]]
 name = "demo_team"
 path = "examples/demo_team.rs"
+
+[[example]]
+name = "demo_security_challenge"
+path = "examples/demo_security_challenge.rs"

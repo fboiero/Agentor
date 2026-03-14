@@ -21,6 +21,8 @@ pub mod manager;
 pub mod protocol;
 /// MCP proxy for multi-server multiplexing.
 pub mod proxy;
+/// MCP server — exposes Argentor skills as MCP tools.
+pub mod server;
 /// MCP tool-to-skill adapter.
 pub mod skill;
 
@@ -28,4 +30,5 @@ pub use client::McpClient;
 pub use discovery::ToolDiscovery;
 pub use manager::{McpServerConfig, McpServerManager, McpServerStatus};
 pub use proxy::McpProxy;
+pub use server::McpServer;
 pub use skill::McpSkill;

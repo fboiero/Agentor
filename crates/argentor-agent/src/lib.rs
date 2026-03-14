@@ -29,6 +29,8 @@ pub mod llm;
 pub mod runner;
 /// Streaming event types.
 pub mod stream;
+/// Token counting and cost estimation for different LLM providers.
+pub mod token_counter;
 
 pub use backends::LlmBackend;
 pub use config::{LlmProvider, ModelConfig};
@@ -38,3 +40,4 @@ pub use identity::{AgentPersonality, ContextCompactor, SessionCommand, ThinkingL
 pub use llm::LlmClient;
 pub use runner::AgentRunner;
 pub use stream::StreamEvent;
+pub use token_counter::{TokenCounter, TokenEstimate, UsageTracker};

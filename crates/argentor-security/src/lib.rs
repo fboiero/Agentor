@@ -20,6 +20,8 @@ pub mod audit_query;
 pub mod capability;
 /// Encrypted at-rest storage (AES-256-GCM).
 pub mod encrypted_store;
+/// Production observability: metrics collection and Prometheus export.
+pub mod observability;
 /// Token-bucket rate limiting.
 pub mod rate_limit;
 /// Role-Based Access Control (RBAC).
@@ -33,6 +35,10 @@ pub use audit::AuditLog;
 pub use audit_query::{query_audit_log, AuditFilter, AuditQueryResult};
 pub use capability::{is_private_ip, Capability, PermissionSet, ShellCheckResult};
 pub use encrypted_store::EncryptedStore;
+pub use observability::{
+    AgentMetricsCollector, AgentMetricsSummary, MetricEvent, MetricsSummary, SecurityEventType,
+    ToolMetricsSummary,
+};
 pub use rate_limit::RateLimiter;
 pub use rbac::{RbacDecision, RbacPolicy, Role};
 pub use sanitizer::Sanitizer;

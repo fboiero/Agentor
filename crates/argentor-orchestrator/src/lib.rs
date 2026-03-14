@@ -20,6 +20,8 @@ pub mod engine;
 pub mod message_bus;
 /// Agent health and metrics monitoring.
 pub mod monitor;
+/// Advanced multi-agent collaboration patterns (Pipeline, Debate, Ensemble, etc.).
+pub mod patterns;
 /// Default agent profiles and role definitions.
 pub mod profiles;
 /// Dynamic re-planning and failure recovery strategies.
@@ -40,6 +42,10 @@ pub use budget::{
 pub use engine::{BackendFactory, Orchestrator, OrchestratorResult};
 pub use message_bus::{AgentMessage, BroadcastTarget, MessageBus, MessageType};
 pub use monitor::AgentMonitor;
+pub use patterns::{
+    describe_pattern, estimate_cost, validate_pattern, AggregationStrategy, CollaborationPattern,
+    PatternConfig, PatternConfigBuilder, PatternResult, PipelineStage, ReviewPolicy,
+};
 pub use profiles::default_profiles;
 pub use replanner::{
     FailureContext, RecoveryStrategy, RecoveryTask, ReplanEntry, ReplanHistory, Replanner,
