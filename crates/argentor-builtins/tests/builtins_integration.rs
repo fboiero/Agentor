@@ -21,8 +21,9 @@ use std::sync::Arc;
 fn register_builtins_registers_expected_count() {
     let mut registry = SkillRegistry::new();
     register_builtins(&mut registry);
-    // register_builtins adds: shell, file_read, file_write, http_fetch, browser, human_approval
-    assert_eq!(registry.skill_count(), 6);
+    // register_builtins adds: shell, file_read, file_write, http_fetch, browser, git,
+    // code_analysis, test_runner, human_approval = 9
+    assert_eq!(registry.skill_count(), 9);
 }
 
 #[test]
@@ -36,6 +37,9 @@ fn register_builtins_contains_expected_skill_names() {
         "file_write",
         "http_fetch",
         "browser",
+        "git",
+        "code_analysis",
+        "test_runner",
         "human_approval",
     ];
     for name in &expected {
@@ -52,8 +56,8 @@ fn register_builtins_with_memory_registers_eight_skills() {
     let store: Arc<dyn VectorStore> = Arc::new(InMemoryVectorStore::new());
     let embedder: Arc<dyn EmbeddingProvider> = Arc::new(LocalEmbedding::default());
     register_builtins_with_memory(&mut registry, store, embedder);
-    // Adds the 6 base + memory_store + memory_search = 8
-    assert_eq!(registry.skill_count(), 8);
+    // Adds the 9 base + memory_store + memory_search = 11
+    assert_eq!(registry.skill_count(), 11);
     assert!(registry.get("memory_store").is_some());
     assert!(registry.get("memory_search").is_some());
 }

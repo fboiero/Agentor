@@ -21,12 +21,16 @@ pub mod artifact_store;
 pub mod browser;
 /// WebDriver-based browser automation skill.
 pub mod browser_automation;
+/// Language-aware code analysis skill.
+pub mod code_analysis;
 /// Docker-sandboxed shell execution.
 pub mod docker_sandbox;
 /// File read skill.
 pub mod file_read;
 /// File write skill.
 pub mod file_write;
+/// Git operations skill (libgit2-based, no shell commands).
+pub mod git;
 /// HTTP fetch skill.
 pub mod http_fetch;
 /// Human-in-the-loop approval skill and channels.
@@ -39,13 +43,17 @@ pub mod shell;
 pub mod stdin_approval;
 /// Task status reporting skill.
 pub mod task_status;
+/// Test runner skill for multi-language test execution and result parsing.
+pub mod test_runner;
 
 pub use agent_delegate::{AgentDelegateSkill, TaskInfo, TaskQueueHandle, TaskSummary};
 pub use artifact_store::{ArtifactBackend, ArtifactStoreSkill, InMemoryArtifactBackend};
 pub use browser::BrowserSkill;
 pub use browser_automation::{BrowserAction, BrowserAutomationSkill, BrowserConfig, BrowserResult};
+pub use code_analysis::CodeAnalysisSkill;
 pub use file_read::FileReadSkill;
 pub use file_write::FileWriteSkill;
+pub use git::GitSkill;
 pub use http_fetch::HttpFetchSkill;
 pub use human_approval::{
     ApprovalChannel, ApprovalDecision, ApprovalRequest, AutoApproveChannel,
@@ -55,6 +63,7 @@ pub use memory::{MemorySearchSkill, MemoryStoreSkill};
 pub use shell::{CommandPolicy, ShellSkill};
 pub use stdin_approval::StdinApprovalChannel;
 pub use task_status::TaskStatusSkill;
+pub use test_runner::TestRunnerSkill;
 
 pub use docker_sandbox::{DockerSandboxConfig, ExecResult};
 
@@ -80,6 +89,9 @@ pub fn register_builtins_with_memory(
     registry.register(Arc::new(FileWriteSkill::new()));
     registry.register(Arc::new(HttpFetchSkill::new()));
     registry.register(Arc::new(BrowserSkill::new()));
+    registry.register(Arc::new(GitSkill::new()));
+    registry.register(Arc::new(CodeAnalysisSkill::new()));
+    registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(MemoryStoreSkill::new(
         store.clone(),
         embedder.clone(),
@@ -95,6 +107,9 @@ pub fn register_builtins(registry: &mut SkillRegistry) {
     registry.register(Arc::new(FileWriteSkill::new()));
     registry.register(Arc::new(HttpFetchSkill::new()));
     registry.register(Arc::new(BrowserSkill::new()));
+    registry.register(Arc::new(GitSkill::new()));
+    registry.register(Arc::new(CodeAnalysisSkill::new()));
+    registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(HumanApprovalSkill::auto_approve()));
 }
 
@@ -108,6 +123,9 @@ pub fn register_builtins_with_approval(
     registry.register(Arc::new(FileWriteSkill::new()));
     registry.register(Arc::new(HttpFetchSkill::new()));
     registry.register(Arc::new(BrowserSkill::new()));
+    registry.register(Arc::new(GitSkill::new()));
+    registry.register(Arc::new(CodeAnalysisSkill::new()));
+    registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(HumanApprovalSkill::new(approval_channel)));
 }
 
@@ -123,6 +141,9 @@ pub fn register_all(
     registry.register(Arc::new(FileWriteSkill::new()));
     registry.register(Arc::new(HttpFetchSkill::new()));
     registry.register(Arc::new(BrowserSkill::new()));
+    registry.register(Arc::new(GitSkill::new()));
+    registry.register(Arc::new(CodeAnalysisSkill::new()));
+    registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(MemoryStoreSkill::new(
         store.clone(),
         embedder.clone(),
@@ -155,6 +176,9 @@ pub fn register_builtins_with_browser(registry: &mut SkillRegistry, config: Brow
     registry.register(Arc::new(FileWriteSkill::new()));
     registry.register(Arc::new(HttpFetchSkill::new()));
     registry.register(Arc::new(BrowserSkill::new()));
+    registry.register(Arc::new(GitSkill::new()));
+    registry.register(Arc::new(CodeAnalysisSkill::new()));
+    registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(HumanApprovalSkill::auto_approve()));
     registry.register(Arc::new(BrowserAutomationSkill::new(config)));
 }
