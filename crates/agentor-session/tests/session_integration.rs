@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use agentor_core::Message;
 use agentor_session::{FileSessionStore, Session, SessionStore};
 use uuid::Uuid;

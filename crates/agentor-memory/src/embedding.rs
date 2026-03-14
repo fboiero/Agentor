@@ -107,6 +107,7 @@ fn simple_hash(data: &[u8]) -> u32 {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -139,9 +140,7 @@ mod tests {
         // Similar texts should have higher similarity
         assert!(
             sim_12 > sim_13,
-            "sim(rust-rust)={} should be > sim(rust-cooking)={}",
-            sim_12,
-            sim_13
+            "sim(rust-rust)={sim_12} should be > sim(rust-cooking)={sim_13}"
         );
     }
 

@@ -54,7 +54,7 @@ pub async fn auth_middleware(
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
-        .map(|s| s.to_string());
+        .map(std::string::ToString::to_string);
 
     // Check query param: ?api_key=<key>
     let key = key_from_header.or_else(|| query.api_key.clone());
@@ -98,6 +98,7 @@ pub async fn rate_limit_middleware(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

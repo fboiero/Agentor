@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-end orchestration test.
 //!
 //! Verifies the full Spec → Code → Test → Review pipeline using mock LLM backends.
@@ -37,16 +38,17 @@ impl LlmBackend for MockBackend {
         _tools: &[SkillDescriptor],
     ) -> AgentorResult<LlmResponse> {
         // Extract the enriched prompt (last user message) to verify context flow
-        let last_msg = messages.last().map(|m| m.content.clone()).unwrap_or_default();
+        let last_msg = messages
+            .last()
+            .map(|m| m.content.clone())
+            .unwrap_or_default();
 
         let response = match self.role {
-            AgentRole::Spec => {
-                "## Specification\n\n\
+            AgentRole::Spec => "## Specification\n\n\
                  1. Implement a `greet(name)` function\n\
                  2. Returns `Hello, {name}!`\n\
                  3. Edge case: empty name returns `Hello, World!`"
-                    .to_string()
-            }
+                .to_string(),
             AgentRole::Coder => {
                 // Verify that spec context was passed
                 assert!(
@@ -132,6 +134,8 @@ fn test_config() -> ModelConfig {
         temperature: 0.0,
         max_tokens: 1024,
         max_turns: 5,
+        fallback_models: Vec::new(),
+        retry_policy: None,
     }
 }
 
@@ -158,7 +162,10 @@ async fn test_e2e_happy_path() {
         .with_output_dir(tmp.path().join("output"))
         .with_backend_factory(factory);
 
-    let result = orchestrator.run("Implement a greet function").await.unwrap();
+    let result = orchestrator
+        .run("Implement a greet function")
+        .await
+        .unwrap();
 
     // All 4 tasks completed
     assert_eq!(result.total_tasks, 4);
@@ -214,10 +221,13 @@ async fn test_e2e_hitl_review_flagged() {
         })
     });
 
-    let orchestrator = Orchestrator::new(&test_config(), skills, permissions, audit)
-        .with_backend_factory(factory);
+    let orchestrator =
+        Orchestrator::new(&test_config(), skills, permissions, audit).with_backend_factory(factory);
 
-    let result = orchestrator.run("Implement a greet function").await.unwrap();
+    let result = orchestrator
+        .run("Implement a greet function")
+        .await
+        .unwrap();
 
     // 3 completed + 1 needs review
     assert_eq!(result.total_tasks, 4);
@@ -256,8 +266,8 @@ async fn test_e2e_proxy_metrics() {
         })
     });
 
-    let orchestrator = Orchestrator::new(&test_config(), skills, permissions, audit)
-        .with_backend_factory(factory);
+    let orchestrator =
+        Orchestrator::new(&test_config(), skills, permissions, audit).with_backend_factory(factory);
 
     let _result = orchestrator.run("Test proxy metrics").await.unwrap();
 
@@ -285,8 +295,8 @@ async fn test_e2e_monitor_tracking() {
         })
     });
 
-    let orchestrator = Orchestrator::new(&test_config(), skills, permissions, audit)
-        .with_backend_factory(factory);
+    let orchestrator =
+        Orchestrator::new(&test_config(), skills, permissions, audit).with_backend_factory(factory);
 
     let _result = orchestrator.run("Test monitor").await.unwrap();
 
@@ -300,7 +310,7 @@ async fn test_e2e_monitor_tracking() {
     let agg = orchestrator.monitor().aggregate_metrics().await;
     assert!(agg.total_turns > 0);
     // Note: with mock backends, execution can be sub-millisecond (0ms).
-    assert!(agg.total_turns > 0 || agg.duration_ms >= 0);
+    assert!(agg.total_turns > 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -324,10 +334,13 @@ async fn test_e2e_progressive_disclosure() {
         })
     });
 
-    let orchestrator = Orchestrator::new(&test_config(), skills, permissions, audit)
-        .with_backend_factory(factory);
+    let orchestrator =
+        Orchestrator::new(&test_config(), skills, permissions, audit).with_backend_factory(factory);
 
-    let result = orchestrator.run("Test progressive disclosure").await.unwrap();
+    let result = orchestrator
+        .run("Test progressive disclosure")
+        .await
+        .unwrap();
 
     // Pipeline should complete
     assert_eq!(result.completed_tasks, 4);
@@ -371,7 +384,11 @@ async fn test_e2e_progress_callback() {
 
     let log = progress_log.lock().unwrap();
     // At least 4 "working..." + 4 "done" messages
-    assert!(log.len() >= 8, "Expected >= 8 progress messages, got {}", log.len());
+    assert!(
+        log.len() >= 8,
+        "Expected >= 8 progress messages, got {}",
+        log.len()
+    );
 
     // Verify all roles reported progress
     let roles: Vec<AgentRole> = log.iter().map(|(r, _)| *r).collect();
@@ -400,8 +417,8 @@ async fn test_e2e_queue_state() {
         })
     });
 
-    let orchestrator = Orchestrator::new(&test_config(), skills, permissions, audit)
-        .with_backend_factory(factory);
+    let orchestrator =
+        Orchestrator::new(&test_config(), skills, permissions, audit).with_backend_factory(factory);
 
     let _result = orchestrator.run("Test queue state").await.unwrap();
 

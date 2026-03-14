@@ -195,10 +195,9 @@ impl SlackChannel {
             .await
             .map_err(|e| AgentorError::Channel(format!("Slack connections.open error: {e}")))?;
 
-        let body: ConnectionsOpenResponse = resp
-            .json()
-            .await
-            .map_err(|e| AgentorError::Channel(format!("Slack connections.open parse error: {e}")))?;
+        let body: ConnectionsOpenResponse = resp.json().await.map_err(|e| {
+            AgentorError::Channel(format!("Slack connections.open parse error: {e}"))
+        })?;
 
         if !body.ok {
             return Err(AgentorError::Channel(format!(
@@ -207,9 +206,8 @@ impl SlackChannel {
             )));
         }
 
-        body.url.ok_or_else(|| {
-            AgentorError::Channel("Slack connections.open returned no URL".into())
-        })
+        body.url
+            .ok_or_else(|| AgentorError::Channel("Slack connections.open returned no URL".into()))
     }
 
     /// Process a Socket Mode event payload and forward as ChannelEvent.

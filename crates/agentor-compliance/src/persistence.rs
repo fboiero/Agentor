@@ -24,7 +24,7 @@ impl JsonReportStore {
 
         let framework = framework_slug(&report.framework);
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
-        let filename = format!("{}_{}.json", framework, timestamp);
+        let filename = format!("{framework}_{timestamp}.json");
         let path = self.base_dir.join(filename);
 
         let json = serde_json::to_string_pretty(report)?;
@@ -95,6 +95,7 @@ fn framework_slug(framework: &ComplianceFramework) -> &'static str {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::report::{ComplianceStatus, Finding, Severity};

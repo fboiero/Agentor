@@ -1,0 +1,28 @@
+[package]
+name = "argentor-orchestrator"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argentor-core.workspace = true
+argentor-agent.workspace = true
+argentor-security.workspace = true
+argentor-session.workspace = true
+argentor-skills.workspace = true
+argentor-mcp.workspace = true
+argentor-compliance.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+cron = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+argentor-builtins.workspace = true

@@ -29,7 +29,7 @@ impl Channel for WebChatChannel {
     async fn send(&self, message: ChannelMessage) -> AgentorResult<()> {
         self.tx
             .send(message)
-            .map_err(|e| agentor_core::AgentorError::Channel(format!("Send failed: {}", e)))?;
+            .map_err(|e| agentor_core::AgentorError::Channel(format!("Send failed: {e}")))?;
         Ok(())
     }
 }

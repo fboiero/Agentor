@@ -33,23 +33,11 @@ pub fn format_approval_prompt(request: &ApprovalRequest) -> String {
 
     let mut prompt = String::new();
     prompt.push_str("\n\x1b[1;37m╔══ APPROVAL REQUIRED ══╗\x1b[0m\n");
-    prompt.push_str(&format!(
-        "  Task:  {}\n",
-        request.task_id
-    ));
-    prompt.push_str(&format!(
-        "  Risk:  \x1b[{}m{}\x1b[0m\n",
-        color, label
-    ));
-    prompt.push_str(&format!(
-        "  Desc:  {}\n",
-        request.description
-    ));
+    prompt.push_str(&format!("  Task:  {}\n", request.task_id));
+    prompt.push_str(&format!("  Risk:  \x1b[{color}m{label}\x1b[0m\n"));
+    prompt.push_str(&format!("  Desc:  {}\n", request.description));
     if !request.context.is_empty() {
-        prompt.push_str(&format!(
-            "  Info:  {}\n",
-            request.context
-        ));
+        prompt.push_str(&format!("  Info:  {}\n", request.context));
     }
     prompt.push_str("\x1b[1;37m╚═══════════════════════╝\x1b[0m\n");
     prompt.push_str("  Approve? [y/N/reason]: ");
@@ -83,14 +71,17 @@ impl ApprovalChannel for StdinApprovalChannel {
         let timeout = self.timeout;
 
         // Print prompt to stderr (preserving stdout for piped output)
-        eprint!("{}", prompt);
+        eprint!("{prompt}");
 
         // Read from stdin in a blocking task with timeout
-        let result = tokio::time::timeout(timeout, tokio::task::spawn_blocking(|| {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).ok();
-            input
-        }))
+        let result = tokio::time::timeout(
+            timeout,
+            tokio::task::spawn_blocking(|| {
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input).ok();
+                input
+            }),
+        )
         .await;
 
         let reviewer = std::env::var("USER")
@@ -101,7 +92,7 @@ impl ApprovalChannel for StdinApprovalChannel {
             Ok(Ok(input)) => {
                 let (approved, reason) = parse_approval_input(&input);
                 let decision_text = if approved { "APPROVED" } else { "DENIED" };
-                eprintln!("  → {}\n", decision_text);
+                eprintln!("  → {decision_text}\n");
                 Ok(ApprovalDecision {
                     approved,
                     reason,
@@ -129,6 +120,7 @@ impl ApprovalChannel for StdinApprovalChannel {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

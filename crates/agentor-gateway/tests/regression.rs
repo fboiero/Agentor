@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Regression tests for agentor-gateway: full stack integration,
 //! connection management, middleware, WebSocket lifecycle.
 
@@ -20,6 +21,8 @@ fn test_model_config() -> ModelConfig {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     }
 }
 
@@ -74,7 +77,7 @@ async fn start_full_server(api_keys: Vec<String>) -> (String, tempfile::TempDir)
 #[tokio::test]
 async fn test_full_stack_health_no_auth() {
     let (addr, _tmp) = start_full_server(vec![]).await;
-    let resp = reqwest::get(&format!("http://{}/health", addr))
+    let resp = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(resp.status(), 200);
@@ -87,7 +90,7 @@ async fn test_full_stack_health_no_auth() {
 #[tokio::test]
 async fn test_full_stack_websocket_with_builtins() {
     let (addr, _tmp) = start_full_server(vec![]).await;
-    let url = format!("ws://{}/ws", addr);
+    let url = format!("ws://{addr}/ws");
 
     let (mut ws, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
 
@@ -126,7 +129,7 @@ async fn test_full_stack_auth_blocks_health() {
     let (addr, _tmp) = start_full_server(vec!["my-secret-key".to_string()]).await;
 
     // Without key
-    let resp = reqwest::get(&format!("http://{}/health", addr))
+    let resp = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(resp.status(), 401);
@@ -138,7 +141,7 @@ async fn test_full_stack_auth_allows_with_key() {
 
     let client = reqwest::Client::new();
     let resp = client
-        .get(&format!("http://{}/health", addr))
+        .get(format!("http://{addr}/health"))
         .header("Authorization", "Bearer my-secret-key")
         .send()
         .await
@@ -155,7 +158,7 @@ async fn test_full_stack_auth_multiple_keys() {
 
     // Both keys should work
     let resp1 = client
-        .get(&format!("http://{}/health", addr))
+        .get(format!("http://{addr}/health"))
         .header("Authorization", "Bearer key-alpha")
         .send()
         .await
@@ -163,7 +166,7 @@ async fn test_full_stack_auth_multiple_keys() {
     assert_eq!(resp1.status(), 200);
 
     let resp2 = client
-        .get(&format!("http://{}/health", addr))
+        .get(format!("http://{addr}/health"))
         .header("Authorization", "Bearer key-beta")
         .send()
         .await
@@ -172,7 +175,7 @@ async fn test_full_stack_auth_multiple_keys() {
 
     // Wrong key should fail
     let resp3 = client
-        .get(&format!("http://{}/health", addr))
+        .get(format!("http://{addr}/health"))
         .header("Authorization", "Bearer key-gamma")
         .send()
         .await
@@ -185,7 +188,7 @@ async fn test_full_stack_auth_multiple_keys() {
 #[tokio::test]
 async fn test_websocket_disconnect_and_reconnect() {
     let (addr, _tmp) = start_full_server(vec![]).await;
-    let url = format!("ws://{}/ws", addr);
+    let url = format!("ws://{addr}/ws");
 
     // Connect, get session
     let (mut ws1, _) = tokio_tungstenite::connect_async(&url).await.unwrap();
@@ -209,7 +212,7 @@ async fn test_websocket_disconnect_and_reconnect() {
 #[tokio::test]
 async fn test_websocket_concurrent_connections() {
     let (addr, _tmp) = start_full_server(vec![]).await;
-    let url = format!("ws://{}/ws", addr);
+    let url = format!("ws://{addr}/ws");
 
     // Open 5 concurrent connections
     let mut connections = Vec::new();
@@ -264,12 +267,12 @@ async fn test_rate_limiting_burst_and_recovery() {
     });
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
-    let url = format!("http://{}/health", addr);
+    let url = format!("http://{addr}/health");
 
     // First 3 requests should succeed (burst)
     for i in 0..3 {
         let resp = reqwest::get(&url).await.unwrap();
-        assert_eq!(resp.status(), 200, "Request {} should succeed (burst)", i);
+        assert_eq!(resp.status(), 200, "Request {i} should succeed (burst)");
     }
 
     // 4th should be rate limited
@@ -308,7 +311,7 @@ async fn test_gateway_build_without_middleware() {
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
     // Health should work without any auth
-    let resp = reqwest::get(&format!("http://{}/health", addr))
+    let resp = reqwest::get(&format!("http://{addr}/health"))
         .await
         .unwrap();
     assert_eq!(resp.status(), 200);

@@ -1,6 +1,6 @@
-# Contributing to Agentor
+# Contributing to Argentor
 
-Thank you for your interest in contributing to Agentor! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Argentor! This document provides guidelines for contributing to the project.
 
 ## Code of Conduct
 
@@ -9,7 +9,7 @@ Be respectful, constructive, and inclusive. We welcome contributors from all bac
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/Agentor.git`
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/Argentor.git`
 3. Create a feature branch: `git checkout -b feature/your-feature`
 4. Make your changes
 5. Run tests: `cargo test --workspace`
@@ -38,19 +38,19 @@ cargo fmt --all -- --check    # Check formatting
 
 ```
 crates/
-  agentor-core/          # Base types (Message, ToolCall, etc.)
-  agentor-security/      # Capability-based security
-  agentor-session/       # Session management
-  agentor-skills/        # Skill trait + WASM runtime
-  agentor-agent/         # AgentRunner (agentic loop)
-  agentor-channels/      # Messaging adapters
-  agentor-gateway/       # HTTP/WebSocket server
-  agentor-builtins/      # Built-in skills
-  agentor-memory/        # Vector memory
-  agentor-mcp/           # MCP client + proxy
-  agentor-orchestrator/  # Multi-agent orchestration
-  agentor-compliance/    # GDPR, ISO, DPGA
-  agentor-cli/           # CLI binary
+  argentor-core/          # Base types (Message, ToolCall, etc.)
+  argentor-security/      # Capability-based security
+  argentor-session/       # Session management
+  argentor-skills/        # Skill trait + WASM runtime
+  argentor-agent/         # AgentRunner (agentic loop)
+  argentor-channels/      # Messaging adapters
+  argentor-gateway/       # HTTP/WebSocket server
+  argentor-builtins/      # Built-in skills
+  argentor-memory/        # Vector memory
+  argentor-mcp/           # MCP client + proxy
+  argentor-orchestrator/  # Multi-agent orchestration
+  argentor-compliance/    # GDPR, ISO, DPGA
+  argentor-cli/           # CLI binary
 ```
 
 ## Coding Standards
@@ -66,7 +66,7 @@ crates/
 - All skills must use capability-based permissions
 - Never allow unbounded resource access
 - Validate inputs at system boundaries
-- Use `agentor_security::Sanitizer` for untrusted content
+- Use `argentor_security::Sanitizer` for untrusted content
 
 ### Tests
 - Unit tests go in the same file (`#[cfg(test)]`)

@@ -17,12 +17,17 @@ pub struct BrowserSkill {
 
 impl BrowserSkill {
     pub fn new() -> Self {
+        // reqwest::Client::builder().build() only fails if TLS backend
+        // initialization fails, which indicates a fundamentally broken
+        // environment. We allow expect here because there is no meaningful
+        // recovery path at construction time.
+        #[allow(clippy::expect_used)]
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
             .redirect(reqwest::redirect::Policy::limited(10))
             .user_agent("Agentor/0.1 (AI Agent Browser)")
             .build()
-            .expect("Failed to create HTTP client for browser");
+            .expect("Failed to create HTTP client for browser — TLS backend unavailable");
 
         Self {
             descriptor: SkillDescriptor {
@@ -81,7 +86,7 @@ impl Skill for BrowserSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Invalid URL '{}': {}", url, e),
+                    format!("Invalid URL '{url}': {e}"),
                 ));
             }
         };
@@ -92,7 +97,7 @@ impl Skill for BrowserSkill {
             scheme => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Unsupported scheme '{}'. Only http/https.", scheme),
+                    format!("Unsupported scheme '{scheme}'. Only http/https."),
                 ));
             }
         }
@@ -102,7 +107,7 @@ impl Skill for BrowserSkill {
             if is_private_host(host) {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Access denied: '{}' is a private address", host),
+                    format!("Access denied: '{host}' is a private address"),
                 ));
             }
         }
@@ -119,7 +124,7 @@ impl Skill for BrowserSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Failed to fetch '{}': {}", url, e),
+                    format!("Failed to fetch '{url}': {e}"),
                 ));
             }
         };
@@ -130,7 +135,7 @@ impl Skill for BrowserSkill {
         if !response.status().is_success() {
             return Ok(ToolResult::error(
                 &call.id,
-                format!("HTTP {} from {}", status, final_url),
+                format!("HTTP {status} from {final_url}"),
             ));
         }
 
@@ -139,7 +144,7 @@ impl Skill for BrowserSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Failed to read body: {}", e),
+                    format!("Failed to read body: {e}"),
                 ));
             }
         };
@@ -414,6 +419,7 @@ fn is_private_host(host: &str) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

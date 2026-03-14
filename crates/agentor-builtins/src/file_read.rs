@@ -73,7 +73,7 @@ impl Skill for FileReadSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Cannot resolve path '{}': {}", path_str, e),
+                    format!("Cannot resolve path '{path_str}': {e}"),
                 ));
             }
         };
@@ -93,7 +93,7 @@ impl Skill for FileReadSkill {
             if canonical_str.contains(pattern) {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Access denied: '{}' matches blocked pattern", path_str),
+                    format!("Access denied: '{path_str}' matches blocked pattern"),
                 ));
             }
         }
@@ -104,7 +104,7 @@ impl Skill for FileReadSkill {
             Err(e) => {
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Cannot read metadata for '{}': {}", path_str, e),
+                    format!("Cannot read metadata for '{path_str}': {e}"),
                 ));
             }
         };
@@ -112,7 +112,7 @@ impl Skill for FileReadSkill {
         if !metadata.is_file() {
             return Ok(ToolResult::error(
                 &call.id,
-                format!("'{}' is not a file", path_str),
+                format!("'{path_str}' is not a file"),
             ));
         }
 
@@ -149,7 +149,7 @@ impl Skill for FileReadSkill {
                     Err(e2) => {
                         return Ok(ToolResult::error(
                             &call.id,
-                            format!("Failed to read '{}': {}", path_str, e2),
+                            format!("Failed to read '{path_str}': {e2}"),
                         ));
                     }
                 }
@@ -179,6 +179,7 @@ impl Skill for FileReadSkill {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

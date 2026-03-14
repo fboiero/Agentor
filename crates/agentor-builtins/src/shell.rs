@@ -77,7 +77,7 @@ impl Skill for ShellSkill {
                 warn!(command = %command, "Blocked dangerous command");
                 return Ok(ToolResult::error(
                     &call.id,
-                    format!("Command blocked: contains dangerous pattern '{}'", pattern),
+                    format!("Command blocked: contains dangerous pattern '{pattern}'"),
                 ));
             }
         }
@@ -111,11 +111,11 @@ impl Skill for ShellSkill {
             }
             Ok(Err(e)) => Ok(ToolResult::error(
                 &call.id,
-                format!("Failed to execute command: {}", e),
+                format!("Failed to execute command: {e}"),
             )),
             Err(_) => Ok(ToolResult::error(
                 &call.id,
-                format!("Command timed out after {}s", timeout_secs),
+                format!("Command timed out after {timeout_secs}s"),
             )),
         }
     }
@@ -130,6 +130,7 @@ fn truncate_output(s: &str, max_len: usize) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

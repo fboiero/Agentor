@@ -1,6 +1,6 @@
 ---
 name: test_guidelines
-description: Testing guidelines for Agentor
+description: Testing guidelines for Argentor
 group: coding
 prompt_injection: true
 ---

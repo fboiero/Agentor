@@ -1,3 +1,15 @@
+//! CLI binary for the Agentor framework.
+//!
+//! Provides the `agentor` command-line tool with the following subcommands:
+//!
+//! - `serve` — Start the HTTP/WebSocket gateway server.
+//! - `skill list` — List all registered skills and their capabilities.
+//! - `compliance report` — Generate a compliance report across all frameworks.
+//! - `orchestrate` — Run multi-agent orchestration on a task description.
+
+/// Configuration file hot-reload watcher.
+mod config_watcher;
+
 use agentor_agent::{AgentRunner, ModelConfig};
 use agentor_gateway::{AuthConfig, GatewayServer};
 use agentor_security::tls;
@@ -251,6 +263,9 @@ fn load_tool_groups(config: &AgentorConfig, registry: &mut SkillRegistry) {
 
 /// Wait for a shutdown signal (Ctrl+C or SIGTERM).
 async fn shutdown_signal() {
+    // Signal handlers cannot propagate errors — if OS signal registration
+    // fails the process cannot function, so expect is justified here.
+    #[allow(clippy::expect_used)]
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
@@ -258,6 +273,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
+    #[allow(clippy::expect_used)]
     let terminate = async {
         tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
             .expect("Failed to install SIGTERM handler")
@@ -345,7 +361,7 @@ async fn main() -> anyhow::Result<()> {
             let vector_store: Arc<dyn agentor_memory::VectorStore> = Arc::new(
                 agentor_memory::FileVectorStore::new(memory_path)
                     .await
-                    .expect("Failed to initialize vector store"),
+                    .map_err(|e| anyhow::anyhow!("Failed to initialize vector store: {e}"))?,
             );
             let embedder: Arc<dyn agentor_memory::EmbeddingProvider> =
                 Arc::new(agentor_memory::LocalEmbedding::default());
@@ -373,10 +389,7 @@ async fn main() -> anyhow::Result<()> {
                     .connect_all(&config.mcp_servers, &mut registry)
                     .await;
                 if !errors.is_empty() {
-                    tracing::warn!(
-                        failed = errors.len(),
-                        "Some MCP servers failed to connect"
-                    );
+                    tracing::warn!(failed = errors.len(), "Some MCP servers failed to connect");
                 }
                 // Start background health check loop (60s default)
                 let mgr = mcp_manager.clone();
@@ -407,7 +420,7 @@ async fn main() -> anyhow::Result<()> {
                 auth_config,
             );
 
-            let addr = format!("{}:{}", host, port);
+            let addr = format!("{host}:{port}");
             let listener = tokio::net::TcpListener::bind(&addr).await?;
 
             if config.server.tls.enabled {
@@ -499,19 +512,19 @@ async fn main() -> anyhow::Result<()> {
                             for cap in &skill.required_capabilities {
                                 match cap {
                                     Capability::FileRead { allowed_paths } => {
-                                        println!("      file_read: {:?}", allowed_paths);
+                                        println!("      file_read: {allowed_paths:?}");
                                     }
                                     Capability::FileWrite { allowed_paths } => {
-                                        println!("      file_write: {:?}", allowed_paths);
+                                        println!("      file_write: {allowed_paths:?}");
                                     }
                                     Capability::NetworkAccess { allowed_hosts } => {
-                                        println!("      network: {:?}", allowed_hosts);
+                                        println!("      network: {allowed_hosts:?}");
                                     }
                                     Capability::ShellExec { allowed_commands } => {
-                                        println!("      shell: {:?}", allowed_commands);
+                                        println!("      shell: {allowed_commands:?}");
                                     }
                                     _ => {
-                                        println!("      {:?}", cap);
+                                        println!("      {cap:?}");
                                     }
                                 }
                             }
@@ -557,7 +570,10 @@ async fn main() -> anyhow::Result<()> {
                     std::time::Duration::from_secs(approval_timeout),
                 ));
                 agentor_builtins::register_builtins_with_approval(&mut registry, channel);
-                info!("Interactive approval enabled (timeout: {}s)", approval_timeout);
+                info!(
+                    "Interactive approval enabled (timeout: {}s)",
+                    approval_timeout
+                );
             } else {
                 agentor_builtins::register_builtins(&mut registry);
             }
@@ -583,7 +599,9 @@ async fn main() -> anyhow::Result<()> {
             let iso42001_module = Arc::new(agentor_compliance::Iso42001Module::new());
             let system_id = uuid::Uuid::new_v4();
 
-            let iso27001_hook = Arc::new(agentor_compliance::Iso27001Hook::new(iso27001_module.clone()));
+            let iso27001_hook = Arc::new(agentor_compliance::Iso27001Hook::new(
+                iso27001_module.clone(),
+            ));
             let iso42001_hook = Arc::new(agentor_compliance::Iso42001Hook::new(
                 iso42001_module.clone(),
                 system_id,
@@ -599,7 +617,7 @@ async fn main() -> anyhow::Result<()> {
                 agentor_orchestrator::Orchestrator::new(&config.model, skills, permissions, audit);
             orchestrator = orchestrator
                 .with_progress(|role, msg| {
-                    eprintln!("  [{:>10}] {}", role, msg);
+                    eprintln!("  [{role:>10}] {msg}");
                 })
                 .with_compliance(compliance_chain.clone());
             if let Some(dir) = output_dir {
@@ -608,7 +626,7 @@ async fn main() -> anyhow::Result<()> {
 
             eprintln!("Agentor Multi-Agent Orchestrator");
             eprintln!("================================");
-            eprintln!("Task: {}", task);
+            eprintln!("Task: {task}");
             eprintln!();
 
             let start = Instant::now();
@@ -625,7 +643,7 @@ async fn main() -> anyhow::Result<()> {
                         eprintln!();
                         eprintln!("Files written:");
                         for f in &result.written_files {
-                            eprintln!("  {}", f);
+                            eprintln!("  {f}");
                         }
                     }
 
@@ -640,13 +658,13 @@ async fn main() -> anyhow::Result<()> {
                             agentor_orchestrator::ArtifactKind::Review => "REVIEW",
                             agentor_orchestrator::ArtifactKind::Report => "REPORT",
                         };
-                        println!("=== {} ===", label);
+                        println!("=== {label} ===");
                         println!("{}", artifact.content);
                         println!();
                     }
                 }
                 Err(e) => {
-                    eprintln!("Orchestration failed: {}", e);
+                    eprintln!("Orchestration failed: {e}");
                     std::process::exit(1);
                 }
             }
@@ -656,8 +674,7 @@ async fn main() -> anyhow::Result<()> {
             let transparency_logs = iso42001_module.transparency_log_count().await;
             if access_events > 0 || transparency_logs > 0 {
                 eprintln!(
-                    "Compliance: {} ISO 27001 access events, {} ISO 42001 transparency logs",
-                    access_events, transparency_logs
+                    "Compliance: {access_events} ISO 27001 access events, {transparency_logs} ISO 42001 transparency logs"
                 );
             }
         }
@@ -760,11 +777,7 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 if saved > 0 {
-                    println!(
-                        "\n{} report(s) saved to {}",
-                        saved,
-                        report_dir.display()
-                    );
+                    println!("\n{} report(s) saved to {}", saved, report_dir.display());
                 }
             }
         },
@@ -774,6 +787,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

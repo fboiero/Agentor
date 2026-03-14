@@ -125,7 +125,7 @@ impl MarkdownSkill {
         let content = after_open[close_pos + 3..].trim().to_string();
 
         let frontmatter: MarkdownFrontmatter = serde_yaml_ng::from_str(yaml_str)
-            .map_err(|e| AgentorError::Config(format!("Invalid YAML frontmatter: {}", e)))?;
+            .map_err(|e| AgentorError::Config(format!("Invalid YAML frontmatter: {e}")))?;
 
         Ok((frontmatter, content))
     }
@@ -198,7 +198,7 @@ impl Skill for MarkdownSkill {
             .arguments
             .get("query")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .map(std::string::ToString::to_string);
 
         let response = if let Some(q) = query {
             format!(
@@ -346,6 +346,7 @@ impl LoadedMarkdownSkills {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

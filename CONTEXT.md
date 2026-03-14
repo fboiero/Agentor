@@ -1,96 +1,80 @@
-# Agentor — Session Context
-> Last updated: 2026-02-23 (session 3)
+# Argentor — Session Context
+> Last updated: 2026-03-07 (session 7)
 
 ## Current Goal
-All identified gaps from codebase audit are now CLOSED. Framework is production-ready for core features.
+6-phase OpenClaw parity plan — **ALL 6 PHASES COMPLETE**.
 
-## Task Tracker
-| Task | Description | Status |
-|------|-------------|--------|
-| #45 | LlmBackend trait abstraction | **COMPLETED** |
-| #46 | Markdown skills system | **COMPLETED** |
-| #47 | Tool groups in SkillRegistry | **COMPLETED** |
-| #48 | Wire MCP Proxy into orchestrator | **COMPLETED** |
-| #50 | Wire progressive tool disclosure | **COMPLETED** |
-| #49 | Implement HITL with human_approval skill | **COMPLETED** |
-| #51 | Add E2E orchestration integration test | **COMPLETED** |
-| #52 | CLI Approval Channel (stdin) | **COMPLETED** |
-| #53 | Orchestration Builtins (3 skills) | **COMPLETED** |
-| #54 | WebSocket Approval Channel | **COMPLETED** |
-| #55 | Channels Completion (Socket Mode, Gateway, Manager) | **COMPLETED** |
-| #56 | MCP Server Manager (auto-reconnect, health) | **COMPLETED** |
-| #57 | Compliance Integration (hooks + persistence) | **COMPLETED** |
+## What's Completed
 
-## What's Completed in Session 3
+### Phase 1 — LLM Provider Expansion (5 → 14 providers)
+- 9 new providers: Gemini, Ollama, Mistral, XAi, AzureOpenAi, Cerebras, Together, DeepSeek, VLlm
+- `GeminiBackend` — full Google Gemini API backend (chat + streaming + tool calling)
+- Azure auth handling (api-key header)
+- 29 integration tests with wiremock mock HTTP server
 
-### Task #52 — CLI Approval Channel
-- `StdinApprovalChannel` in `agentor-builtins/src/stdin_approval.rs`
-- ANSI-colored prompt to stderr, stdin reader with timeout
-- `--interactive-approval` and `--approval-timeout` flags on CLI `Orchestrate`
-- 5 tests
+### Phase 2 — Docker + K8s Deployment
+- Improved Dockerfile with security hardening (strip, non-root, HEALTHCHECK)
+- `docker-compose.yml` with resource limits, read-only fs, cap_drop ALL
+- Helm chart at `deploy/helm/argentor/` (7 templates)
 
-### Task #53 — Orchestration Builtins
-- `ArtifactStoreSkill` with `InMemoryArtifactBackend` (store/retrieve/list)
-- `AgentDelegateSkill` with `TaskQueueHandle` trait (avoid circular deps)
-- `TaskStatusSkill` (query/list/summary)
-- `register_orchestration_builtins()` function
-- 17 tests (70 total in builtins)
+### Phase 3 — Skill Registry Seguro
+- `SkillManifest` — name, version, author, SHA-256 checksum, declared capabilities, ed25519 signature
+- `SkillVetter` — 5-check pipeline: checksum, size, signature, capabilities, WASM static analysis
+- `SkillIndex` — local registry with install/uninstall/upgrade, persistence as JSON
+- Ed25519 signing & verification with trusted key management
+- Constant-time checksum comparison (anti-timing-attack)
+- 15 tests covering all vetting scenarios
 
-### Task #54 — WebSocket Approval Channel
-- Moved `ApprovalChannel` + types to `agentor-core::approval` (shared across crates)
-- `WsApprovalChannel` in `agentor-gateway/src/ws_approval.rs`
-- Broadcasts JSON to all connections, routes responses via oneshot channels
-- `broadcast()` method on `ConnectionManager`
-- 6 tests (25 total in gateway)
+### Phase 4 — Agent Identity + Session System
+- `AgentPersonality` — name, role, instructions, style, constraints, expertise, thinking level
+- `CommunicationStyle` — tone, language, use_markdown, max_response_length
+- `ThinkingLevel` — Off/Low/Medium/High chain-of-thought control
+- `SessionCommand` — slash commands (/status, /new, /reset, /compact, /think, /usage, /skills, /audit, /help)
+- `ContextCompactor` — threshold-based auto-compaction with split and summary
+- `AgentRunner::with_personality()` — wired into runner as alternative to hardcoded system prompt
+- TOML file loading for personality configuration
+- 27 tests
 
-### Task #55 — Channels Completion
-- Full Slack Socket Mode in `slack.rs` (WebSocket, envelope ACK, event forwarding)
-- Full Discord Gateway in `discord.rs` (Hello, Identify, heartbeat loop, MESSAGE_CREATE)
-- `ChannelManager` in `manager.rs` (add/get/send_to/broadcast)
-- 6 tests
+### Phase 5 — Enterprise Security Hardening
+- `RbacPolicy` — Role-based access control with Admin/Operator/Viewer/Custom roles
+- `PolicyBinding` — per-role permissions, allowed/denied skills, rate limits
+- `RbacDecision` — evaluation result with effective permissions
+- `AuditFilter` + `query_audit_log()` — structured querying of JSONL audit logs
+- `AuditQueryResult` + `AuditStats` — query results with statistics
+- `EncryptedStore` — AES-256-GCM encrypted at-rest key-value store
+- PBKDF2-HMAC-SHA256 key derivation, per-message salts, HMAC authentication
+- Constant-time comparison, tamper detection
+- `AuditEntry` now has Deserialize (was Serialize-only)
+- 40 security tests (was 26)
 
-### Task #56 — MCP Server Manager
-- `McpServerManager` in `agentor-mcp/src/manager.rs`
-- `connect_all()`, `health_check()`, `reconnect_with_backoff()`, `start_health_loop()`
-- Exponential backoff: 1s→2s→4s...max 60s, 5 retries
-- `health_check()` on `McpClient`
-- CLI refactored to use `McpServerManager`
-- 5 tests (27 total in MCP)
-
-### Task #57 — Compliance Integration
-- `ComplianceHook` trait + `ComplianceHookChain` in `hooks.rs`
-- `ComplianceEvent` enum: ToolCall, TaskStarted, TaskCompleted, ApprovalRequested, ApprovalDecided
-- `Iso27001Hook` and `Iso42001Hook` implementations
-- `JsonReportStore` persistence (save/load/list reports as JSON)
-- Orchestrator `with_compliance()` builder, emits events during task execution
-- CLI `Orchestrate` auto-creates hooks, reports event counts
-- CLI `Compliance Report` saves reports to `data_dir/compliance_reports/`
-- 9 tests in compliance (36 total)
+### Phase 6 — Benchmarks + Performance Proof
+- criterion.rs benchmarks for 3 crates:
+  - `argentor-core`: Message creation (~253ns), serialization (~253ns), batch (1000 msgs ~831µs)
+  - `argentor-security`: RBAC evaluation, permission checks, encryption, sanitizer
+  - `argentor-skills`: Registry lookup, registration, skill vetting/checksums
+- HTML reports generated in `target/criterion/`
 
 ## Build Health
-- `cargo build --workspace` — OK
-- `cargo test --workspace` — **330 tests passing**
-- `cargo clippy --workspace` — **0 warnings**
+- `cargo test --workspace` — **578 tests passing** (was 527, +51 new)
+- 0 failures
+- 3 benchmark suites compiling and running
 
 ## Git State
-- **Branch**: master, all changes LOCAL and UNCOMMITTED
-- Session 2 commit: `617e808` (tasks #45-#51)
-- Session 3: tasks #52-#57 not yet committed
+- **Branch**: master, changes LOCAL and UNCOMMITTED
+- Last commit: `bf16029` (session 5)
 
-## Key File Paths (new/modified in session 3)
+## Key New Files (sessions 6-7)
 | File | Role |
 |------|------|
-| `crates/agentor-core/src/approval.rs` | ApprovalChannel trait + types (shared) |
-| `crates/agentor-builtins/src/stdin_approval.rs` | CLI stdin approval channel |
-| `crates/agentor-builtins/src/artifact_store.rs` | Artifact store skill + backend |
-| `crates/agentor-builtins/src/agent_delegate.rs` | Task delegation skill |
-| `crates/agentor-builtins/src/task_status.rs` | Task status query skill |
-| `crates/agentor-gateway/src/ws_approval.rs` | WebSocket approval channel |
-| `crates/agentor-channels/src/slack.rs` | Slack Socket Mode (rewritten) |
-| `crates/agentor-channels/src/discord.rs` | Discord Gateway (rewritten) |
-| `crates/agentor-channels/src/manager.rs` | ChannelManager |
-| `crates/agentor-mcp/src/manager.rs` | McpServerManager |
-| `crates/agentor-compliance/src/hooks.rs` | Compliance hooks |
-| `crates/agentor-compliance/src/persistence.rs` | JSON report persistence |
-| `crates/agentor-orchestrator/src/engine.rs` | Compliance hook wiring |
-| `crates/agentor-cli/src/main.rs` | CLI compliance integration |
+| `crates/argentor-agent/src/backends/gemini.rs` | Gemini API backend |
+| `crates/argentor-agent/tests/providers_integration.rs` | 29 provider tests |
+| `crates/argentor-agent/src/identity.rs` | Agent personality + session commands |
+| `crates/argentor-skills/src/vetting.rs` | Skill vetting + signing + index |
+| `crates/argentor-security/src/rbac.rs` | RBAC policy engine |
+| `crates/argentor-security/src/audit_query.rs` | Audit log querying |
+| `crates/argentor-security/src/encrypted_store.rs` | Encrypted at-rest storage |
+| `crates/argentor-core/benches/core_benchmarks.rs` | Core benchmarks |
+| `crates/argentor-security/benches/security_benchmarks.rs` | Security benchmarks |
+| `crates/argentor-skills/benches/skills_benchmarks.rs` | Skills benchmarks |
+| `docker-compose.yml` | Docker Compose |
+| `deploy/helm/argentor/` | Helm chart (7 files) |

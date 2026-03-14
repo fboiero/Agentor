@@ -74,9 +74,13 @@ impl OpenAiBackend {
     }
 
     fn add_provider_headers(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-        let request = request
-            .header("Authorization", format!("Bearer {}", self.config.api_key))
-            .header("Content-Type", "application/json");
+        let request = match self.config.provider {
+            // Azure uses "api-key" header instead of Bearer token
+            LlmProvider::AzureOpenAi => request.header("api-key", &self.config.api_key),
+            _ => request.header("Authorization", format!("Bearer {}", self.config.api_key)),
+        };
+
+        let request = request.header("Content-Type", "application/json");
 
         // OpenRouter requires extra headers
         if matches!(self.config.provider, LlmProvider::OpenRouter) {
@@ -126,8 +130,7 @@ impl LlmBackend for OpenAiBackend {
 
         if !status.is_success() {
             return Err(AgentorError::Http(format!(
-                "OpenAI API error {}: {}",
-                status, resp_body
+                "OpenAI API error {status}: {resp_body}"
             )));
         }
 
@@ -172,8 +175,7 @@ impl LlmBackend for OpenAiBackend {
                 .await
                 .unwrap_or_else(|_| "unknown error".to_string());
             return Err(AgentorError::Http(format!(
-                "OpenAI API error {}: {}",
-                status, error_body
+                "OpenAI API error {status}: {error_body}"
             )));
         }
 
@@ -194,10 +196,10 @@ impl LlmBackend for OpenAiBackend {
                     Err(e) => {
                         let _ = tx
                             .send(StreamEvent::Error {
-                                message: format!("Stream read error: {}", e),
+                                message: format!("Stream read error: {e}"),
                             })
                             .await;
-                        return Err(AgentorError::Http(format!("Stream read error: {}", e)));
+                        return Err(AgentorError::Http(format!("Stream read error: {e}")));
                     }
                 };
 

@@ -119,10 +119,7 @@ impl Skill for ArtifactStoreSkill {
     }
 
     async fn execute(&self, call: ToolCall) -> AgentorResult<ToolResult> {
-        let action = call.arguments["action"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let action = call.arguments["action"].as_str().unwrap_or("").to_string();
 
         match action.as_str() {
             "store" => {
@@ -207,13 +204,17 @@ impl Skill for ArtifactStoreSkill {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
     #[tokio::test]
     async fn test_in_memory_store_and_retrieve() {
         let backend = InMemoryArtifactBackend::new();
-        backend.store("main.rs", "fn main() {}", "code").await.unwrap();
+        backend
+            .store("main.rs", "fn main() {}", "code")
+            .await
+            .unwrap();
         let content = backend.retrieve("main.rs").await.unwrap();
         assert_eq!(content, Some("fn main() {}".to_string()));
     }

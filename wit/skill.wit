@@ -1,10 +1,10 @@
-/// WIT interface for Agentor skills.
+/// WIT interface for Argentor skills.
 /// Skills implement this interface to run inside the WASM sandbox.
 ///
 /// MVP uses WASI _start convention (args for input, stdout for output).
 /// Future versions will use this typed interface via wit-bindgen.
 
-package agentor:skill@0.1.0;
+package argentor:skill@0.1.0;
 
 interface types {
     /// A key-value pair for metadata.

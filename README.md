@@ -1,16 +1,37 @@
-# Agentor
+# Argentor
 
 **Secure multi-agent AI framework in Rust with WASM sandboxed plugins, MCP integration, and compliance modules.**
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-227%2B-green.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-483-green.svg)]()
 
 ---
 
-## What is Agentor?
+## Demo
 
-Agentor is an autonomous AI agent framework designed for **security**, **compliance**, and **multi-agent orchestration**. Built from scratch in Rust, it addresses critical vulnerabilities found in existing frameworks (RCE, sandbox escape, SSRF, path traversal) while providing a complete multi-agent system following [Anthropic's recommended patterns](https://docs.anthropic.com/en/docs/build-with-claude/agentic-systems).
+> An Argentor agent running an automated 8-step DevOps pipeline — real tool execution, no API keys, no mocks.
+
+<p align="center">
+  <img src="docs/demo_pipeline.gif" alt="Argentor Pipeline Demo" width="700">
+</p>
+
+<details>
+<summary><b>Run it yourself</b></summary>
+
+```bash
+cargo run -p argentor-cli --example demo_pipeline
+```
+
+The agent executes 8 real tools: `shell` (git stats, LOC, annotations, security scan), `file_read` (Cargo.toml), `memory_store` (vector embeddings), `memory_search` (cosine similarity), and `file_write` (Markdown report). All with permission checks and audit logging.
+
+</details>
+
+---
+
+## What is Argentor?
+
+Argentor is an autonomous AI agent framework designed for **security**, **compliance**, and **multi-agent orchestration**. Built from scratch in Rust, it addresses critical vulnerabilities found in existing frameworks (RCE, sandbox escape, SSRF, path traversal) while providing a complete multi-agent system following [Anthropic's recommended patterns](https://docs.anthropic.com/en/docs/build-with-claude/agentic-systems).
 
 ### Key Features
 
@@ -22,6 +43,16 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 - **Capability-based Security** — Fine-grained permissions per skill (FileRead, NetworkAccess, etc.)
 - **Vector Memory** — Local embedding-based memory with JSONL persistence
 - **Multi-Provider LLM** — Claude, OpenAI, OpenRouter (200+ models)
+- **Failover** — Automatic LLM backend failover across providers
+- **Transcripts** — Full conversation transcript capture and replay
+- **Hybrid Search** — BM25 + embedding similarity for semantic memory retrieval
+- **Webhooks** — Inbound/outbound webhook support in the gateway
+- **Docker Sandbox** — Run untrusted code in isolated Docker containers
+- **Browser Automation** — Headless browser skill for web scraping and interaction
+- **Scheduler** — Cron-like task scheduling for recurring agent jobs
+- **Query Expansion** — Automatic query rewriting for improved search recall
+- **Config Hot-Reload** — Live configuration updates without server restart
+- **Markdown Skills** — Define skills declaratively in Markdown files
 
 ---
 
@@ -44,7 +75,7 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
                              │
                     ┌────────▼────────┐
                     │   MCP Proxy     │  ← Centralized control plane
-                    │  (agentor-mcp)  │
+                    │  (argentor-mcp)  │
                     └────────┬────────┘
                              │
               ┌──────────────┼──────────────┐
@@ -59,19 +90,19 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 
 | Crate | Description |
 |-------|-------------|
-| `agentor-core` | Base types: Message, ToolCall, ToolResult, AgentorError |
-| `agentor-security` | Capabilities, permissions, rate limiting, audit log, TLS/mTLS |
-| `agentor-session` | Session management with JSON persistence |
-| `agentor-skills` | Skill trait, registry, WASM runtime (wasmtime) |
-| `agentor-agent` | AgentRunner with agentic loop and streaming |
-| `agentor-channels` | Channel adapters (Telegram, Slack, Discord, webchat) |
-| `agentor-gateway` | Axum WebSocket gateway with auth middleware |
-| `agentor-builtins` | Built-in skills: echo, time, help, memory |
-| `agentor-memory` | Vector store with local embeddings (bag-of-words FNV) |
-| `agentor-mcp` | MCP client (JSON-RPC 2.0 stdio), proxy, progressive disclosure |
-| `agentor-orchestrator` | Multi-agent engine: profiles, task queue, monitor |
-| `agentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance modules |
-| `agentor-cli` | CLI binary: serve, skill list, compliance report |
+| `argentor-core` | Core types, errors, and message definitions |
+| `argentor-security` | Capabilities, permissions, rate limiting, audit, TLS |
+| `argentor-session` | Session management and persistence |
+| `argentor-skills` | Skill system with WASM sandbox, plugins, and registry |
+| `argentor-agent` | Agent runner, LLM backends, failover, streaming |
+| `argentor-channels` | Multi-platform communication channels |
+| `argentor-gateway` | HTTP/WebSocket gateway with auth and webhooks |
+| `argentor-builtins` | Built-in skills (shell, file I/O, HTTP, memory, browser, Docker) |
+| `argentor-memory` | Semantic memory with hybrid search and query expansion |
+| `argentor-mcp` | Model Context Protocol client, proxy, and discovery |
+| `argentor-orchestrator` | Multi-agent orchestration, scheduling, monitoring |
+| `argentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance |
+| `argentor-cli` | CLI binary (serve, skill list) |
 
 ---
 
@@ -85,8 +116,8 @@ Agentor is an autonomous AI agent framework designed for **security**, **complia
 ### Build
 
 ```bash
-git clone https://github.com/fboiero/Agentor.git
-cd Agentor
+git clone https://github.com/fboiero/Argentor.git
+cd Argentor
 cargo build --workspace
 ```
 
@@ -95,7 +126,7 @@ cargo build --workspace
 Copy and edit the configuration file:
 
 ```bash
-cp agentor.toml my-config.toml
+cp argentor.toml my-config.toml
 # Edit my-config.toml with your API key and preferences
 ```
 
@@ -119,19 +150,19 @@ port = 3000
 
 ```bash
 # Start the gateway server
-cargo run --bin agentor -- serve
+cargo run --bin argentor -- serve
 
 # List available skills
-cargo run --bin agentor -- skill list
+cargo run --bin argentor -- skill list
 
 # Generate compliance report
-cargo run --bin agentor -- compliance report
+cargo run --bin argentor -- compliance report
 ```
 
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 227+ tests
+cargo test --workspace           # Run all 483 tests
 cargo clippy --workspace         # 0 warnings
 cargo fmt --all -- --check       # Check formatting
 ```
@@ -140,7 +171,7 @@ cargo fmt --all -- --check       # Check formatting
 
 ## Security Model
 
-Agentor uses defense-in-depth with capability-based security:
+Argentor uses defense-in-depth with capability-based security:
 
 | Threat | Defense |
 |--------|---------|
@@ -214,7 +245,7 @@ TaskStatus::NeedsHumanReview  // Pauses execution until approved
 
 ### DPGA (Digital Public Goods Alliance)
 
-Agentor targets all 9 DPGA indicators:
+Argentor targets all 9 DPGA indicators:
 
 1. **Open Source** — AGPL-3.0-only
 2. **SDG Relevance** — SDG 9 (Innovation), SDG 16 (Institutions)
@@ -230,7 +261,7 @@ Agentor targets all 9 DPGA indicators:
 
 ## MCP Integration
 
-Agentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration:
+Argentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration:
 
 ```toml
 [[mcp_servers]]
@@ -243,6 +274,15 @@ The MCP Proxy centralizes all tool calls with:
 - Permission validation
 - Rate limiting per agent
 - Progressive tool disclosure (~98% token reduction)
+
+---
+
+## Docker
+
+```bash
+docker build -t argentor .
+docker run -p 3000:3000 argentor serve
+```
 
 ---
 

@@ -1,0 +1,29 @@
+[package]
+name = "argentor-security"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argentor-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+tokio-rustls = "0.26"
+rustls-pemfile = "2"
+sha2 = "0.10"
+hex = "0.4"
+getrandom = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "security_benchmarks"
+harness = false

@@ -105,8 +105,16 @@ impl McpServerManager {
         config: &McpServerConfig,
         registry: &mut SkillRegistry,
     ) -> AgentorResult<usize> {
-        let args: Vec<&str> = config.args.iter().map(|s| s.as_str()).collect();
-        let env: Vec<(&str, &str)> = config.env.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+        let args: Vec<&str> = config
+            .args
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
+        let env: Vec<(&str, &str)> = config
+            .env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
 
         let (client, tools) = McpClient::connect(&config.command, &args, &env).await?;
         let client = Arc::new(client);
@@ -271,8 +279,16 @@ async fn reconnect_with_backoff(
     let mut delay = Duration::from_secs(1);
 
     for attempt in 1..=max_retries {
-        let args: Vec<&str> = config.args.iter().map(|s| s.as_str()).collect();
-        let env: Vec<(&str, &str)> = config.env.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+        let args: Vec<&str> = config
+            .args
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
+        let env: Vec<(&str, &str)> = config
+            .env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
 
         match McpClient::connect(&config.command, &args, &env).await {
             Ok(result) => return Ok(result),
@@ -299,6 +315,7 @@ async fn reconnect_with_backoff(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

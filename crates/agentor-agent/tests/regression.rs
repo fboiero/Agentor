@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Regression tests for agentor-agent: ContextWindow, ModelConfig, LlmProvider, AgentRunner.
 
 use agentor_agent::{AgentRunner, ContextWindow, LlmProvider, ModelConfig, StreamEvent};
@@ -49,6 +50,8 @@ fn test_model_config_full_serialization() {
         temperature: 0.5,
         max_tokens: 2048,
         max_turns: 10,
+        fallback_models: vec![],
+        retry_policy: None,
     };
 
     let json = serde_json::to_string(&config).unwrap();
@@ -71,6 +74,8 @@ fn test_model_config_base_url_defaults() {
         temperature: 0.7,
         max_tokens: 4096,
         max_turns: 20,
+        fallback_models: vec![],
+        retry_policy: None,
     };
     assert_eq!(claude_config.base_url(), "https://api.anthropic.com");
 
@@ -82,6 +87,8 @@ fn test_model_config_base_url_defaults() {
         temperature: 0.7,
         max_tokens: 4096,
         max_turns: 20,
+        fallback_models: vec![],
+        retry_policy: None,
     };
     assert_eq!(openai_config.base_url(), "https://api.openai.com");
 
@@ -93,6 +100,8 @@ fn test_model_config_base_url_defaults() {
         temperature: 0.7,
         max_tokens: 4096,
         max_turns: 20,
+        fallback_models: vec![],
+        retry_policy: None,
     };
     assert_eq!(openrouter_config.base_url(), "https://openrouter.ai/api");
 }
@@ -107,6 +116,8 @@ fn test_model_config_base_url_custom_override() {
         temperature: 0.7,
         max_tokens: 4096,
         max_turns: 20,
+        fallback_models: vec![],
+        retry_policy: None,
     };
     assert_eq!(config.base_url(), "http://localhost:8080");
 }
@@ -267,6 +278,8 @@ async fn test_agent_runner_construction() {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     };
 
     // Just verify construction doesn't panic
@@ -294,6 +307,8 @@ async fn test_agent_runner_with_builtins() {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     };
 
     let _agent = AgentRunner::new(config, skills, permissions, audit);
@@ -314,6 +329,8 @@ async fn test_agent_runner_run_fails_with_bad_url() {
         temperature: 0.7,
         max_tokens: 100,
         max_turns: 3,
+        fallback_models: vec![],
+        retry_policy: None,
     };
 
     let agent = AgentRunner::new(config, skills, permissions, audit);

@@ -119,6 +119,7 @@ impl ApprovalChannel for WsApprovalChannel {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -137,9 +138,7 @@ mod tests {
 
         // Spawn the approval request in a task
         let ch = channel.clone();
-        let handle = tokio::spawn(async move {
-            ch.request_approval(request).await
-        });
+        let handle = tokio::spawn(async move { ch.request_approval(request).await });
 
         // Simulate a small delay, then deliver the response
         tokio::time::sleep(Duration::from_millis(50)).await;
@@ -227,13 +226,21 @@ mod tests {
         channel
             .handle_approval_response(
                 "t2",
-                ApprovalDecision { approved: false, reason: Some("no".into()), reviewer: "r2".into() },
+                ApprovalDecision {
+                    approved: false,
+                    reason: Some("no".into()),
+                    reviewer: "r2".into(),
+                },
             )
             .await;
         channel
             .handle_approval_response(
                 "t1",
-                ApprovalDecision { approved: true, reason: None, reviewer: "r1".into() },
+                ApprovalDecision {
+                    approved: true,
+                    reason: None,
+                    reviewer: "r1".into(),
+                },
             )
             .await;
 

@@ -43,10 +43,7 @@ fn spec_profile(base: &ModelConfig) -> AgentProfile {
         role: AgentRole::Spec,
         model,
         system_prompt: SPEC_PROMPT.to_string(),
-        allowed_skills: vec![
-            "memory_search".to_string(),
-            "memory_store".to_string(),
-        ],
+        allowed_skills: vec!["memory_search".to_string(), "memory_store".to_string()],
         tool_group: Some("minimal".to_string()),
         max_turns: 15,
     }
@@ -91,10 +88,7 @@ fn reviewer_profile(base: &ModelConfig) -> AgentProfile {
         role: AgentRole::Reviewer,
         model,
         system_prompt: REVIEWER_PROMPT.to_string(),
-        allowed_skills: vec![
-            "memory_search".to_string(),
-            "human_approval".to_string(),
-        ],
+        allowed_skills: vec!["memory_search".to_string(), "human_approval".to_string()],
         tool_group: Some("minimal".to_string()),
         max_turns: 10,
     }
@@ -180,6 +174,7 @@ Rules:
 ";
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use agentor_agent::LlmProvider;
@@ -193,6 +188,8 @@ mod tests {
             temperature: 0.7,
             max_tokens: 4096,
             max_turns: 20,
+            fallback_models: Vec::new(),
+            retry_policy: None,
         }
     }
 

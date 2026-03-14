@@ -37,7 +37,7 @@ impl McpClient {
         }
 
         let mut child = cmd.spawn().map_err(|e| {
-            AgentorError::Skill(format!("Failed to spawn MCP server '{}': {}", command, e))
+            AgentorError::Skill(format!("Failed to spawn MCP server '{command}': {e}"))
         })?;
 
         let stdin = child
@@ -138,27 +138,27 @@ impl McpClient {
         }
 
         let msg = serde_json::to_string(&req)
-            .map_err(|e| AgentorError::Skill(format!("Failed to serialize request: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to serialize request: {e}")))?;
 
         {
             let mut stdin = self.stdin.lock().await;
             stdin
                 .write_all(msg.as_bytes())
                 .await
-                .map_err(|e| AgentorError::Skill(format!("Failed to write to MCP stdin: {}", e)))?;
+                .map_err(|e| AgentorError::Skill(format!("Failed to write to MCP stdin: {e}")))?;
             stdin
                 .write_all(b"\n")
                 .await
-                .map_err(|e| AgentorError::Skill(format!("Failed to write newline: {}", e)))?;
+                .map_err(|e| AgentorError::Skill(format!("Failed to write newline: {e}")))?;
             stdin
                 .flush()
                 .await
-                .map_err(|e| AgentorError::Skill(format!("Failed to flush stdin: {}", e)))?;
+                .map_err(|e| AgentorError::Skill(format!("Failed to flush stdin: {e}")))?;
         }
 
         let resp = tokio::time::timeout(std::time::Duration::from_secs(30), rx)
             .await
-            .map_err(|_| AgentorError::Skill(format!("MCP request '{}' timed out", method)))?
+            .map_err(|_| AgentorError::Skill(format!("MCP request '{method}' timed out")))?
             .map_err(|_| AgentorError::Skill("MCP response channel dropped".into()))?;
 
         if let Some(err) = &resp.error {
@@ -180,21 +180,21 @@ impl McpClient {
         });
 
         let serialized = serde_json::to_string(&msg)
-            .map_err(|e| AgentorError::Skill(format!("Failed to serialize notification: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to serialize notification: {e}")))?;
 
         let mut stdin = self.stdin.lock().await;
         stdin
             .write_all(serialized.as_bytes())
             .await
-            .map_err(|e| AgentorError::Skill(format!("Failed to write notification: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to write notification: {e}")))?;
         stdin
             .write_all(b"\n")
             .await
-            .map_err(|e| AgentorError::Skill(format!("Failed to write newline: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to write newline: {e}")))?;
         stdin
             .flush()
             .await
-            .map_err(|e| AgentorError::Skill(format!("Failed to flush: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to flush: {e}")))?;
 
         Ok(())
     }
@@ -215,7 +215,7 @@ impl McpClient {
             resp.result
                 .ok_or_else(|| AgentorError::Skill("Empty initialize result".into()))?,
         )
-        .map_err(|e| AgentorError::Skill(format!("Failed to parse initialize result: {}", e)))?;
+        .map_err(|e| AgentorError::Skill(format!("Failed to parse initialize result: {e}")))?;
 
         Ok(result)
     }
@@ -233,7 +233,7 @@ impl McpClient {
                 .cloned()
                 .unwrap_or(serde_json::json!([])),
         )
-        .map_err(|e| AgentorError::Skill(format!("Failed to parse tools: {}", e)))?;
+        .map_err(|e| AgentorError::Skill(format!("Failed to parse tools: {e}")))?;
 
         Ok(tools)
     }
@@ -255,7 +255,7 @@ impl McpClient {
             .ok_or_else(|| AgentorError::Skill("Empty tools/call result".into()))?;
 
         let tool_result: McpToolResult = serde_json::from_value(result)
-            .map_err(|e| AgentorError::Skill(format!("Failed to parse tool result: {}", e)))?;
+            .map_err(|e| AgentorError::Skill(format!("Failed to parse tool result: {e}")))?;
 
         Ok(tool_result)
     }
@@ -273,6 +273,7 @@ impl McpClient {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

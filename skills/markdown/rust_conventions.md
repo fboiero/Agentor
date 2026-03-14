@@ -1,13 +1,13 @@
 ---
 name: rust_conventions
-description: Rust coding conventions for Agentor
+description: Rust coding conventions for Argentor
 group: coding
 prompt_injection: true
 ---
 
 Follow these Rust conventions when generating code:
 
-- Use `AgentorResult<T>` for all fallible operations
+- Use `ArgentorResult<T>` for all fallible operations
 - Never use `unwrap()` in production code — use `?` or explicit error handling
 - Use `tracing` macros (`info!`, `warn!`, `error!`) for logging, not `println!`
 - Prefer `Arc<dyn Trait>` for shared ownership of trait objects
