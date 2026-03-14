@@ -13,30 +13,36 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 COPY wit/ wit/
-RUN cargo build --release --bin agentor
+RUN cargo build --release --bin argentor && strip /build/target/release/argentor
 
-# Stage 3: Minimal runtime image
+# Stage 3: Minimal runtime image (~80MB)
 FROM debian:bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -s /bin/bash agentor
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -r -s /usr/sbin/nologin -d /app argentor
 
 WORKDIR /app
 
 # Copy binary
-COPY --from=builder /build/target/release/agentor /app/agentor
+COPY --from=builder /build/target/release/argentor /app/argentor
 
 # Copy WASM skills
 COPY --from=wasm-builder /build/skills/echo-skill/target/wasm32-wasip1/release/echo-skill.wasm /app/skills/echo-skill.wasm
 
 # Copy default config
-COPY agentor.toml /app/agentor.toml
+COPY argentor.toml /app/argentor.toml
 
 # Create data directories
-RUN mkdir -p /app/data/audit /app/data/sessions && chown -R agentor:agentor /app
+RUN mkdir -p /app/data/audit /app/data/sessions /app/data/transcripts && \
+    chown -R argentor:argentor /app
 
-USER agentor
+USER argentor
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/agentor"]
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
+    CMD ["/app/argentor", "health"]
+
+ENTRYPOINT ["/app/argentor"]
 CMD ["serve"]

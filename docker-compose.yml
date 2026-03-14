@@ -1,0 +1,42 @@
+services:
+  argentor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: argentor
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - argentor-data:/app/data
+      - ./argentor.toml:/app/argentor.toml:ro
+      - ./skills:/app/skills:ro
+    environment:
+      - RUST_LOG=info
+      - ARGENTOR_BIND=0.0.0.0:3000
+    healthcheck:
+      test: ["CMD", "/app/argentor", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+        reservations:
+          memory: 64M
+          cpus: "0.25"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+volumes:
+  argentor-data:

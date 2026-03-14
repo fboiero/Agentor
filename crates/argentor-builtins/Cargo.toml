@@ -1,0 +1,31 @@
+[package]
+name = "argentor-builtins"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argentor-core.workspace = true
+argentor-skills.workspace = true
+argentor-security.workspace = true
+argentor-memory.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+fantoccini = { version = "0.21", optional = true }
+bollard = { version = "0.17", optional = true }
+
+[features]
+default = []
+browser = ["fantoccini"]
+docker = ["bollard"]
+
+[dev-dependencies]
+tempfile = "3"

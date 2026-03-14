@@ -1,0 +1,20 @@
+[package]
+name = "argentor-compliance"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argentor-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+
+[dev-dependencies]
+tempfile = "3"

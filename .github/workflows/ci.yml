@@ -74,7 +74,38 @@ jobs:
           key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-clippy-
 
-      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo clippy --workspace --all-targets -- -D warnings -A missing-docs
+
+  bench:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-bench-
+
+      - name: Run benchmarks (compile check + short run)
+        run: |
+          cargo bench -p argentor-core --bench core_benchmarks -- --warm-up-time 1 --measurement-time 2
+          cargo bench -p argentor-security --bench security_benchmarks -- --warm-up-time 1 --measurement-time 2
+          cargo bench -p argentor-skills --bench skills_benchmarks -- --warm-up-time 1 --measurement-time 2
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: target/criterion/
+          retention-days: 30
 
   fmt:
     name: Format
