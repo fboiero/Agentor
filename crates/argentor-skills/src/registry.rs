@@ -72,6 +72,32 @@ pub fn default_tool_groups() -> Vec<ToolGroup> {
             ],
         ),
         ToolGroup::new(
+            "development",
+            "Extended development tools — git, analysis, testing, files, shell, memory",
+            vec![
+                "git".into(),
+                "code_analysis".into(),
+                "test_runner".into(),
+                "file_read".into(),
+                "file_write".into(),
+                "shell".into(),
+                "memory_store".into(),
+                "memory_search".into(),
+            ],
+        ),
+        ToolGroup::new(
+            "devops",
+            "DevOps tools — shell, HTTP, file operations, memory",
+            vec![
+                "shell".into(),
+                "http_fetch".into(),
+                "file_read".into(),
+                "file_write".into(),
+                "memory_store".into(),
+                "memory_search".into(),
+            ],
+        ),
+        ToolGroup::new(
             "full",
             "All registered skills — use with caution",
             vec![], // Empty = all skills
@@ -399,12 +425,15 @@ mod tests {
     fn test_default_tool_groups() {
         let reg = SkillRegistry::new();
         let groups = reg.list_groups();
-        assert!(groups.len() >= 4);
+        assert!(groups.len() >= 7);
 
         // Check that standard groups exist
         assert!(reg.get_group("minimal").is_some());
         assert!(reg.get_group("coding").is_some());
         assert!(reg.get_group("web").is_some());
+        assert!(reg.get_group("orchestration").is_some());
+        assert!(reg.get_group("development").is_some());
+        assert!(reg.get_group("devops").is_some());
         assert!(reg.get_group("full").is_some());
     }
 

@@ -17,10 +17,12 @@ async-trait.workspace = true
 tokio.workspace = true
 reqwest.workspace = true
 tracing.workspace = true
+regex.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 fantoccini = { version = "0.21", optional = true }
 bollard = { version = "0.17", optional = true }
+git2.workspace = true
 
 [features]
 default = []

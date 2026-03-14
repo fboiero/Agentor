@@ -65,7 +65,7 @@ impl Orchestrator {
     ) -> Self {
         let profiles: HashMap<AgentRole, AgentProfile> = default_profiles(base_config)
             .into_iter()
-            .map(|p| (p.role, p))
+            .map(|p| (p.role.clone(), p))
             .collect();
 
         let proxy = Arc::new(McpProxy::new(skills.clone(), permissions.clone()));
@@ -93,7 +93,7 @@ impl Orchestrator {
         audit: Arc<AuditLog>,
     ) -> Self {
         let profiles: HashMap<AgentRole, AgentProfile> =
-            profiles.into_iter().map(|p| (p.role, p)).collect();
+            profiles.into_iter().map(|p| (p.role.clone(), p)).collect();
 
         let proxy = Arc::new(McpProxy::new(skills.clone(), permissions.clone()));
 
@@ -270,7 +270,7 @@ impl Orchestrator {
                 queue
                     .all_ready()
                     .iter()
-                    .map(|t| (t.id, t.assigned_to, t.description.clone()))
+                    .map(|t| (t.id, t.assigned_to.clone(), t.description.clone()))
                     .collect()
             };
 
@@ -291,7 +291,7 @@ impl Orchestrator {
                 // Single task: run inline (no spawn overhead)
                 let (task_id, role, description) = &ready_tasks[0];
                 let context = self.gather_dependency_context(*task_id).await;
-                self.execute_task(*task_id, *role, description, &context)
+                self.execute_task(*task_id, role.clone(), description, &context)
                     .await?;
             } else {
                 // Multiple tasks ready: execute in parallel with tokio::spawn
@@ -301,11 +301,12 @@ impl Orchestrator {
                 for (task_id, role, description) in ready_tasks {
                     let context = self.gather_dependency_context(task_id).await;
                     let ctx = self.worker_context();
+                    let role_for_log = role.clone();
 
                     let handle = tokio::spawn(async move {
                         Self::execute_task_static(task_id, role, &description, &context, &ctx).await
                     });
-                    handles.push((task_id, role, handle));
+                    handles.push((task_id, role_for_log, handle));
                 }
 
                 // Await all parallel tasks
@@ -415,7 +416,7 @@ impl Orchestrator {
             let mut q = ctx.queue.write().await;
             q.mark_running(task_id);
         }
-        ctx.monitor.start_task(role, task_id).await;
+        ctx.monitor.start_task(role.clone(), task_id).await;
 
         // Emit compliance event: task started
         if let Some(hooks) = &ctx.compliance_hooks {
@@ -463,13 +464,19 @@ impl Orchestrator {
 
         // Create a dedicated agent runner for this worker with specialized system prompt.
         // Route tool calls through the MCP proxy for centralized logging.
+        // Use per-profile permissions when available, falling back to shared permissions.
+        let worker_permissions = if profile.permissions.is_empty() {
+            ctx.permissions.clone()
+        } else {
+            profile.permissions.clone()
+        };
         let agent_id = format!("{role}:{task_id}");
         let runner = if let Some(factory) = &ctx.backend_factory {
             let backend = factory(&role);
             AgentRunner::from_backend(
                 backend,
                 worker_skills,
-                ctx.permissions.clone(),
+                worker_permissions,
                 ctx.audit.clone(),
                 profile.max_turns,
             )
@@ -477,7 +484,7 @@ impl Orchestrator {
             AgentRunner::new(
                 profile.model.clone(),
                 worker_skills,
-                ctx.permissions.clone(),
+                worker_permissions,
                 ctx.audit.clone(),
             )
         }
@@ -494,7 +501,7 @@ impl Orchestrator {
         };
 
         if let Some(cb) = &ctx.on_progress {
-            cb(role, "working...");
+            cb(role.clone(), "working...");
         }
         info!(
             task_id = %task_id,
@@ -506,17 +513,21 @@ impl Orchestrator {
 
         let duration = start.elapsed();
         ctx.monitor
-            .record_duration(role, duration.as_millis() as u64)
+            .record_duration(role.clone(), duration.as_millis() as u64)
             .await;
 
         match result {
             Ok(response) => {
-                let artifact_kind = match role {
+                let artifact_kind = match &role {
                     AgentRole::Spec => ArtifactKind::Spec,
                     AgentRole::Coder => ArtifactKind::Code,
                     AgentRole::Tester => ArtifactKind::Test,
-                    AgentRole::Reviewer => ArtifactKind::Review,
+                    AgentRole::Reviewer | AgentRole::SecurityAuditor => ArtifactKind::Review,
                     AgentRole::Orchestrator => ArtifactKind::Report,
+                    AgentRole::Architect => ArtifactKind::Spec,
+                    AgentRole::DevOps => ArtifactKind::Code,
+                    AgentRole::DocumentWriter => ArtifactKind::Report,
+                    AgentRole::Custom(_) => ArtifactKind::Report,
                 };
 
                 // Check if the Reviewer flagged issues for human review.
@@ -527,7 +538,7 @@ impl Orchestrator {
 
                 if needs_review {
                     info!(task_id = %task_id, "Reviewer flagged task for human review");
-                    ctx.monitor.waiting_for_approval(role).await;
+                    ctx.monitor.waiting_for_approval(role.clone()).await;
                     {
                         let mut q = ctx.queue.write().await;
                         if let Some(task) = q.get_mut(task_id) {
@@ -536,7 +547,7 @@ impl Orchestrator {
                         q.mark_needs_review(task_id);
                     }
                     if let Some(cb) = &ctx.on_progress {
-                        cb(role, "needs human review");
+                        cb(role.clone(), "needs human review");
                     }
                 } else {
                     let artifact = Artifact::new(artifact_kind, response);
@@ -549,8 +560,8 @@ impl Orchestrator {
                     }
                 }
 
-                ctx.monitor.finish_task(role).await;
-                ctx.monitor.record_turn(role, 1, 0).await;
+                ctx.monitor.finish_task(role.clone()).await;
+                ctx.monitor.record_turn(role.clone(), 1, 0).await;
 
                 // Emit compliance event: task completed
                 if let Some(hooks) = &ctx.compliance_hooks {
@@ -567,7 +578,10 @@ impl Orchestrator {
 
                 if let Some(cb) = &ctx.on_progress {
                     if !needs_review {
-                        cb(role, &format!("done ({:.1}s)", duration.as_secs_f64()));
+                        cb(
+                            role.clone(),
+                            &format!("done ({:.1}s)", duration.as_secs_f64()),
+                        );
                     }
                 }
                 info!(task_id = %task_id, role = %role, needs_review = needs_review, "Task completed");
@@ -575,14 +589,14 @@ impl Orchestrator {
             }
             Err(e) => {
                 if let Some(cb) = &ctx.on_progress {
-                    cb(role, &format!("FAILED: {e}"));
+                    cb(role.clone(), &format!("FAILED: {e}"));
                 }
                 error!(task_id = %task_id, role = %role, error = %e, "Task failed");
                 {
                     let mut q = ctx.queue.write().await;
                     q.mark_failed(task_id, e.to_string());
                 }
-                ctx.monitor.record_error(role).await;
+                ctx.monitor.record_error(role.clone()).await;
                 ctx.monitor.finish_task(role).await;
                 Err(e)
             }

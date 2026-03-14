@@ -101,6 +101,11 @@ impl LlmBackend for MockBackend {
                 }
             }
             AgentRole::Orchestrator => "Orchestration plan complete.".to_string(),
+            AgentRole::Architect => "## Architecture\n\nSystem design document.".to_string(),
+            AgentRole::SecurityAuditor => "## Security Audit\n\nNo issues found.".to_string(),
+            AgentRole::DevOps => "## DevOps\n\nDeployment configuration.".to_string(),
+            AgentRole::DocumentWriter => "## Documentation\n\nAPI reference.".to_string(),
+            AgentRole::Custom(ref name) => format!("Custom agent '{name}' output."),
         };
 
         Ok(LlmResponse::Done(response))
@@ -153,7 +158,7 @@ async fn test_e2e_happy_path() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: false,
         })
     });
@@ -216,7 +221,7 @@ async fn test_e2e_hitl_review_flagged() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: true, // Reviewer will flag for human review
         })
     });
@@ -261,7 +266,7 @@ async fn test_e2e_proxy_metrics() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: false,
         })
     });
@@ -290,7 +295,7 @@ async fn test_e2e_monitor_tracking() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: false,
         })
     });
@@ -329,7 +334,7 @@ async fn test_e2e_progressive_disclosure() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: false,
         })
     });
@@ -369,7 +374,7 @@ async fn test_e2e_progress_callback() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: false,
         })
     });
@@ -391,7 +396,7 @@ async fn test_e2e_progress_callback() {
     );
 
     // Verify all roles reported progress
-    let roles: Vec<AgentRole> = log.iter().map(|(r, _)| *r).collect();
+    let roles: Vec<AgentRole> = log.iter().map(|(r, _)| r.clone()).collect();
     assert!(roles.contains(&AgentRole::Spec));
     assert!(roles.contains(&AgentRole::Coder));
     assert!(roles.contains(&AgentRole::Tester));
@@ -412,7 +417,7 @@ async fn test_e2e_queue_state() {
 
     let factory: BackendFactory = Arc::new(|role| {
         Box::new(MockBackend {
-            role: *role,
+            role: role.clone(),
             flag_review: false,
         })
     });

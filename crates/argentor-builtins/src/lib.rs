@@ -25,6 +25,8 @@ pub mod browser_automation;
 pub mod code_analysis;
 /// Docker-sandboxed shell execution.
 pub mod docker_sandbox;
+/// File-system-based artifact backend for persistent storage.
+pub mod file_artifact_backend;
 /// File read skill.
 pub mod file_read;
 /// File write skill.
@@ -51,6 +53,7 @@ pub use artifact_store::{ArtifactBackend, ArtifactStoreSkill, InMemoryArtifactBa
 pub use browser::BrowserSkill;
 pub use browser_automation::{BrowserAction, BrowserAutomationSkill, BrowserConfig, BrowserResult};
 pub use code_analysis::CodeAnalysisSkill;
+pub use file_artifact_backend::FileArtifactBackend;
 pub use file_read::FileReadSkill;
 pub use file_write::FileWriteSkill;
 pub use git::GitSkill;

@@ -1,10 +1,11 @@
 use argentor_agent::ModelConfig;
+use argentor_security::PermissionSet;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Role of each agent in the multi-agent system.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AgentRole {
     /// Decomposes tasks, delegates to workers, synthesizes results.
@@ -17,6 +18,16 @@ pub enum AgentRole {
     Tester,
     /// Reviews code for quality, security, and compliance.
     Reviewer,
+    /// System design and API design.
+    Architect,
+    /// Security review and vulnerability analysis.
+    SecurityAuditor,
+    /// Deployment, infrastructure, and CI/CD.
+    DevOps,
+    /// Documentation writing and maintenance.
+    DocumentWriter,
+    /// User-defined custom role.
+    Custom(String),
 }
 
 impl std::fmt::Display for AgentRole {
@@ -27,6 +38,11 @@ impl std::fmt::Display for AgentRole {
             AgentRole::Coder => write!(f, "coder"),
             AgentRole::Tester => write!(f, "tester"),
             AgentRole::Reviewer => write!(f, "reviewer"),
+            AgentRole::Architect => write!(f, "architect"),
+            AgentRole::SecurityAuditor => write!(f, "security_auditor"),
+            AgentRole::DevOps => write!(f, "devops"),
+            AgentRole::DocumentWriter => write!(f, "document_writer"),
+            AgentRole::Custom(name) => write!(f, "custom:{name}"),
         }
     }
 }
@@ -44,6 +60,9 @@ pub struct AgentProfile {
     /// Takes precedence over `allowed_skills`.
     pub tool_group: Option<String>,
     pub max_turns: u32,
+    /// Per-role permissions — controls what capabilities this agent has.
+    #[serde(default)]
+    pub permissions: PermissionSet,
 }
 
 /// Status of a task in the execution queue.
@@ -221,6 +240,14 @@ mod tests {
         assert_eq!(AgentRole::Orchestrator.to_string(), "orchestrator");
         assert_eq!(AgentRole::Coder.to_string(), "coder");
         assert_eq!(AgentRole::Reviewer.to_string(), "reviewer");
+        assert_eq!(AgentRole::Architect.to_string(), "architect");
+        assert_eq!(AgentRole::SecurityAuditor.to_string(), "security_auditor");
+        assert_eq!(AgentRole::DevOps.to_string(), "devops");
+        assert_eq!(AgentRole::DocumentWriter.to_string(), "document_writer");
+        assert_eq!(
+            AgentRole::Custom("my_role".to_string()).to_string(),
+            "custom:my_role"
+        );
     }
 
     #[test]

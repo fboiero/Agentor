@@ -48,6 +48,9 @@ fantoccini = "0.21"
 wasmtime = "28"
 wasmtime-wasi = "28"
 
+# Text processing
+regex = "1"
+
 # Observability
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
@@ -57,6 +60,7 @@ clap = { version = "4", features = ["derive"] }
 toml = "0.8"
 notify = { version = "7", features = ["macos_fsevent"] }
 bollard = "0.17"
+git2 = "0.19"
 
 # Testing
 wiremock = "0.6"

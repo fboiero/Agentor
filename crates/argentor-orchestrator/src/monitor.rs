@@ -12,17 +12,21 @@ pub struct AgentMonitor {
 impl AgentMonitor {
     pub fn new() -> Self {
         let mut states = HashMap::new();
-        for role in &[
+        for role in [
             AgentRole::Orchestrator,
             AgentRole::Spec,
             AgentRole::Coder,
             AgentRole::Tester,
             AgentRole::Reviewer,
+            AgentRole::Architect,
+            AgentRole::SecurityAuditor,
+            AgentRole::DevOps,
+            AgentRole::DocumentWriter,
         ] {
             states.insert(
-                *role,
+                role.clone(),
                 AgentState {
-                    role: *role,
+                    role,
                     current_task: None,
                     status: WorkerStatus::Idle,
                     metrics: AgentMetrics::default(),
@@ -37,10 +41,14 @@ impl AgentMonitor {
     /// Mark an agent as working on a task.
     pub async fn start_task(&self, role: AgentRole, task_id: Uuid) {
         let mut states = self.states.write().await;
-        if let Some(state) = states.get_mut(&role) {
-            state.current_task = Some(task_id);
-            state.status = WorkerStatus::Working;
-        }
+        let state = states.entry(role.clone()).or_insert_with(|| AgentState {
+            role,
+            current_task: None,
+            status: WorkerStatus::Idle,
+            metrics: AgentMetrics::default(),
+        });
+        state.current_task = Some(task_id);
+        state.status = WorkerStatus::Working;
     }
 
     /// Mark an agent as idle (task completed or failed).
@@ -139,7 +147,7 @@ mod tests {
     async fn test_initial_state() {
         let monitor = AgentMonitor::new();
         let states = monitor.snapshot().await;
-        assert_eq!(states.len(), 5);
+        assert_eq!(states.len(), 9);
         for state in &states {
             assert_eq!(state.status, WorkerStatus::Idle);
             assert!(state.current_task.is_none());

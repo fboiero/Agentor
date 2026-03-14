@@ -12,12 +12,18 @@
 //! - [`Scheduler`] — Cron-based job scheduler for recurring tasks.
 //! - [`AgentProfile`] — Configuration profile defining an agent's role and capabilities.
 
+/// Token and resource budgeting per agent.
+pub mod budget;
 /// Orchestration engine and pipeline execution.
 pub mod engine;
+/// Inter-agent message bus for A2A communication.
+pub mod message_bus;
 /// Agent health and metrics monitoring.
 pub mod monitor;
 /// Default agent profiles and role definitions.
 pub mod profiles;
+/// Dynamic re-planning and failure recovery strategies.
+pub mod replanner;
 /// Cron-based job scheduler.
 pub mod scheduler;
 /// Sub-agent spawning utilities.
@@ -27,9 +33,17 @@ pub mod task_queue;
 /// Shared orchestration types (Task, AgentProfile, Artifact, etc.).
 pub mod types;
 
+pub use budget::{
+    default_budget, AgentUsage, AgentUsageEntry, BudgetStatus, BudgetSummary, BudgetTracker,
+    TokenBudget,
+};
 pub use engine::{BackendFactory, Orchestrator, OrchestratorResult};
+pub use message_bus::{AgentMessage, BroadcastTarget, MessageBus, MessageType};
 pub use monitor::AgentMonitor;
 pub use profiles::default_profiles;
+pub use replanner::{
+    FailureContext, RecoveryStrategy, RecoveryTask, ReplanEntry, ReplanHistory, Replanner,
+};
 pub use scheduler::{ScheduledJob, Scheduler};
 pub use spawner::{SpawnRequest, SubAgentSpawner};
 pub use task_queue::TaskQueue;
