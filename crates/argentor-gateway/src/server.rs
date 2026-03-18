@@ -109,12 +109,13 @@ impl GatewayServer {
         )
     }
 
-    /// Build the complete gateway with every optional subsystem including proxy management and A2A.
+    /// Build the complete gateway with every optional subsystem including proxy management, A2A, and XcapitSFF.
     ///
     /// This is the most comprehensive builder. All other `build_*` methods delegate here.
     ///
     /// - `proxy_management` — mounts proxy management routes (`/api/v1/proxy-management/…`).
     /// - `a2a` — mounts A2A protocol routes (`/.well-known/agent.json`, `/a2a`).
+    /// - `xcapitsff` — mounts XcapitSFF integration routes (`/api/v1/agent/…`, `/api/v1/proxy/…`).
     #[allow(clippy::too_many_arguments)]
     pub fn build_complete(
         agent: Arc<AgentRunner>,

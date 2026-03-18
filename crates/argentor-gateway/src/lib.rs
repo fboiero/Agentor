@@ -37,6 +37,8 @@ pub mod server;
 pub mod webhook;
 /// WebSocket-based human approval channel.
 pub mod ws_approval;
+/// XcapitSFF integration — agent execution, webhook proxy, health checks.
+pub mod xcapitsff;
 /// Graceful shutdown manager with cleanup hooks and connection draining.
 pub mod graceful_shutdown;
 /// OpenAPI 3.0 specification generator for Argentor REST API.
@@ -65,3 +67,7 @@ pub use openapi::{
     ApiEndpoint, ApiParameter, ApiResponse, HttpMethod, OpenApiGenerator, argentor_openapi_spec,
 };
 pub use rate_limit_headers::{RateLimitHeaders, RateLimitInfo};
+pub use xcapitsff::{
+    XcapitConfig, XcapitState, xcapitsff_router, default_xcapit_profiles,
+    RunTaskRequest, RunTaskResponse, BatchRequest, BatchResponse,
+};
