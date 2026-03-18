@@ -9,15 +9,77 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Clippy hardening**: Strict workspace-level lints (unwrap_used, expect_used, uninlined_format_args, redundant_closure_for_method_calls, etc.)
+
+#### Phase 15 — Integration & Production Wiring
+- **McpServerManager integration**: CredentialVault and TokenPool wired via builder methods, credentials resolved before MCP server connections — 8 tests
+- **ProxyOrchestrator in Orchestrator**: Intelligent proxy routing per worker role in multi-agent pipelines, metrics reporting — 5 tests
+- **Proxy Management API**: 13 REST endpoints under `/api/v1/proxy-management/` for credentials, tokens, and orchestrator management with automatic secret redaction — 12 tests
+- **PersistentStore**: Atomic JSON file persistence for control plane state (deployments, agents, health), credential and token pool snapshots — 17 tests
+- **E2E Proxy Orchestration Demo**: `demo_proxy_orchestration.rs` showcasing full credential → pool → routing → circuit breaker pipeline
+
+#### Phase 14 — MCP Proxy Orchestration Hub
+- **CredentialVault**: Centralized API token storage with usage tracking, expiry detection, provider grouping, rotation, and quota enforcement — 21 tests
+- **ProxyOrchestrator**: Multi-proxy coordination with routing rules (Fixed/RoundRobin/LeastLoaded/PatternBased), circuit breaker (open/half-open/closed), failover, aggregated metrics — 24 tests
+- **TokenPool**: Per-provider token pool with sliding-window rate limiting, daily quotas, tier priority (Production/Development/Free/Backup), weighted selection — 27 tests
+
+#### Phase 12 — Orchestrator as Deployment Platform
+- **DeploymentManager**: Deploy/undeploy/scale/restart agents with replicas, heartbeats, auto-restart — 24 tests
+- **AgentRegistry**: Thread-safe registration with name uniqueness, catalog import/export, 9 default role definitions — 20 tests
+- **HealthChecker**: Liveness/readiness/heartbeat probes, state machine transitions (Healthy→Degraded→Unhealthy→Dead), auto-recovery — 23 tests
+- **Control Plane REST API**: 17 endpoints under `/api/v1/control-plane/` for managing deployments, agents, and health — 17 tests
+
+#### Phase 13 — Full-Stack Platform
+- **Gateway Wiring**: `GatewayServer::build_full()` mounts control-plane and REST API routers, backward compatible
+- **A2A Protocol Crate** (`argentor-a2a`): Google Agent-to-Agent interop via JSON-RPC 2.0, AgentCard discovery, TaskHandler trait, A2AClient/A2AServer — 30+ tests
+- **Web Dashboard**: Dark-themed SPA at `/dashboard` with deployment management, agent catalog, health monitoring, and metrics — embedded HTML, no build tooling
+- **OpenTelemetry**: `TelemetryConfig` behind `telemetry` feature flag, OTLP export, `#[tracing::instrument]` on key paths
+- **CLI Subcommands**: `deploy`, `agents`, `health` commands for managing the deployment platform via HTTP API
+- **E2E Deployment Demo**: `demo_deployment.rs` showcasing full lifecycle (registry → deploy → heartbeats → scaling → health → cleanup)
+
+#### Phase 7 — Built-in Skills Expansion
+- **GitSkill**: libgit2-based git operations (status, diff, log, add, commit, branch)
+- **CodeAnalysisSkill**: Language-aware code analysis (function extraction, complexity, dependency listing)
+- **TestRunnerSkill**: Multi-language test runner with result parsing (Rust, Python, Node, Go)
+- **FileArtifactBackend**: File-system persistent artifact storage with path traversal protection
+
+#### Phase 8 — Multi-Agent Clusters
+- **MessageBus**: Inter-agent communication (send, receive, peek, subscribe, broadcast) — 12 tests
+- **Replanner**: Dynamic re-planning with 6 recovery strategies (Retry, Reassign, Decompose, Skip, Abort, Escalate) — 15 tests
+- **BudgetTracker**: Per-agent token budget tracking with cost estimation and warning thresholds — 12 tests
+- **Collaboration Patterns**: 6 multi-agent patterns (Pipeline, MapReduce, Debate, Ensemble, Supervisor, Swarm) with builder API — 22 tests
+
+#### Phase 9 — REST API & Gateway
+- **REST API**: 10 endpoints under `/api/v1/` (sessions CRUD, skills list/detail, agent chat, connections, metrics) — 9 tests
+- **Channel Bridge**: ChannelManager-to-MessageRouter bridge with session affinity — 7 tests
+- **Parallel Tool Execution**: `execute_parallel()` and `execute_with_timeout()` in SkillRegistry — 6 tests
+
+#### Phase 10 — Observability & MCP Server
+- **Prometheus Metrics**: `AgentMetricsCollector` with text exposition format export, endpoint `/metrics` — 14 tests
+- **Token Counter**: Per-provider estimation with cost calculation (`ModelPricing`, `UsageTracker`) — 12 tests
+- **MCP Server Mode**: Expose skills as MCP tools via JSON-RPC 2.0 stdio protocol — 15 tests
+- **Progressive Tool Disclosure**: Tool groups filter skills per agent role (~98% token reduction)
+
+#### Phase 11 — Deployment Infrastructure & Code Generation
+- **API Scaffold Generator**: Generate complete projects (Rust/Axum, Python/FastAPI, Node/Express) from JSON specs — 19 tests
+- **IaC Generator**: Generate Docker, docker-compose, Helm charts, Terraform AWS/GCP, GitHub Actions — 14 tests
+- **DatabaseSessionStore**: Database-backed sessions with metadata queries and expiration cleanup — 14 tests
+- **JWT/OAuth2 Authentication**: HMAC-SHA256 JWT, API key hashing, OAuth2 provider config, axum middleware — 25 tests
+- **Prometheus Gateway Integration**: `/metrics` endpoint on gateway, `/api/v1/metrics/prometheus` on REST API
+
+#### Documentation
+- **Clippy hardening**: Strict workspace-level lints (unwrap_used, expect_used, uninlined_format_args, etc.)
 - **Crate documentation**: `//!` crate-level docs and `///` module docs for all 13 crates
-- **Core type docs**: Full `///` documentation on ArgentorError, Message, Role, ToolCall, ToolResult and all fields/variants
-- **Integration tests**: 52 new tests across 5 files (builtins, memory, mcp, core, compliance)
+- **Integration tests**: 461 new tests (total: 944, was 483)
 - **CHANGELOG.md**: This file
+- **ARCHITECTURE.md**: Updated with all 11 phases
+- **Website**: Updated landing page with full feature showcase
 
 ### Changed
 - **CI**: `cargo clippy --workspace --all-targets -- -D warnings -A missing-docs`
-- **README**: Updated test count to 483, added new features list, Docker section, updated crate table
+- **README**: Complete rewrite with current stats (944 tests, 54K LOC, 13 crates)
+- **GatewayServer**: `build_with_middleware()` now accepts optional `AgentMetricsCollector`
+- **RestApiState**: Added optional `AgentMetricsCollector` for observability data
+- **MetricsResponse**: Expanded with tool_calls, tokens, active_agents, security_events fields
 
 ### Fixed
 - Eliminated all `.unwrap()` / `.expect()` in production code (~30 files)

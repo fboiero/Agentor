@@ -74,6 +74,11 @@ impl LlmClient {
         Self { backend }
     }
 
+    /// Return a short name identifying the backend provider (for metrics/circuit breaker).
+    pub fn provider_name(&self) -> &str {
+        self.backend.provider_name()
+    }
+
     /// Non-streaming chat completion.
     pub async fn chat(
         &self,

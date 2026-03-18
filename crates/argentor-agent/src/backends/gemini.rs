@@ -102,6 +102,10 @@ impl GeminiBackend {
 
 #[async_trait]
 impl LlmBackend for GeminiBackend {
+    fn provider_name(&self) -> &str {
+        "gemini"
+    }
+
     async fn chat(
         &self,
         system_prompt: Option<&str>,

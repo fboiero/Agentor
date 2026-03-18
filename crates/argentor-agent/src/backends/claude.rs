@@ -27,6 +27,10 @@ impl ClaudeBackend {
 
 #[async_trait]
 impl LlmBackend for ClaudeBackend {
+    fn provider_name(&self) -> &str {
+        "claude"
+    }
+
     async fn chat(
         &self,
         system_prompt: Option<&str>,

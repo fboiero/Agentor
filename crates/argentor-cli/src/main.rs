@@ -5,10 +5,13 @@
 //! - `serve` — Start the HTTP/WebSocket gateway server.
 //! - `skill list` — List all registered skills and their capabilities.
 //! - `compliance report` — Generate a compliance report across all frameworks.
+//! - `a2a` — Interact with remote A2A agents (discover, send, status, cancel, list).
 //! - `orchestrate` — Run multi-agent orchestration on a task description.
 
 /// Configuration file hot-reload watcher.
 mod config_watcher;
+/// Interactive REPL for agent debugging.
+pub mod repl;
 
 use argentor_agent::{AgentRunner, ModelConfig};
 use argentor_gateway::{AuthConfig, GatewayServer};
@@ -56,6 +59,14 @@ enum Commands {
         #[command(subcommand)]
         action: ComplianceAction,
     },
+    /// Interact with remote A2A agents
+    A2a {
+        /// Remote agent URL (e.g., http://localhost:3000)
+        #[arg(long)]
+        url: String,
+        #[command(subcommand)]
+        action: A2aAction,
+    },
     /// Run multi-agent orchestration on a task
     Orchestrate {
         /// The task description for the orchestrator to decompose and execute
@@ -82,6 +93,37 @@ enum SkillAction {
 enum ComplianceAction {
     /// Generate a compliance report for all frameworks
     Report,
+}
+
+/// Actions available when interacting with a remote A2A agent.
+#[derive(Subcommand)]
+enum A2aAction {
+    /// Discover a remote agent's capabilities (fetches the agent card)
+    Discover,
+    /// Send a task to a remote agent
+    Send {
+        /// The message to send
+        message: String,
+        /// Optional session ID to reuse
+        #[arg(long)]
+        session_id: Option<String>,
+    },
+    /// Get the status of a task
+    Status {
+        /// Task ID to check
+        id: String,
+    },
+    /// Cancel a running task
+    Cancel {
+        /// Task ID to cancel
+        id: String,
+    },
+    /// List tasks, optionally filtered by session
+    List {
+        /// Filter by session ID
+        #[arg(long)]
+        session_id: Option<String>,
+    },
 }
 
 #[derive(Deserialize)]
@@ -261,6 +303,65 @@ fn load_tool_groups(config: &ArgentorConfig, registry: &mut SkillRegistry) {
     }
 }
 
+/// Handle the `a2a` subcommand by dispatching to the appropriate A2A client method.
+async fn handle_a2a(url: &str, action: A2aAction) -> anyhow::Result<()> {
+    let client = argentor_a2a::A2AClient::new(url);
+
+    match action {
+        A2aAction::Discover => {
+            let card = client
+                .get_agent_card()
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to discover agent: {e}"))?;
+            let pretty = serde_json::to_string_pretty(&card)
+                .map_err(|e| anyhow::anyhow!("Failed to format agent card: {e}"))?;
+            println!("{pretty}");
+        }
+        A2aAction::Send {
+            message,
+            session_id,
+        } => {
+            let task_msg = argentor_a2a::TaskMessage::user_text(&message);
+            let task = client
+                .send_task(task_msg, session_id)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to send task: {e}"))?;
+            let pretty = serde_json::to_string_pretty(&task)
+                .map_err(|e| anyhow::anyhow!("Failed to format task: {e}"))?;
+            println!("{pretty}");
+        }
+        A2aAction::Status { id } => {
+            let task = client
+                .get_task(&id)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to get task status: {e}"))?;
+            let pretty = serde_json::to_string_pretty(&task)
+                .map_err(|e| anyhow::anyhow!("Failed to format task: {e}"))?;
+            println!("{pretty}");
+        }
+        A2aAction::Cancel { id } => {
+            let task = client
+                .cancel_task(&id)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to cancel task: {e}"))?;
+            let pretty = serde_json::to_string_pretty(&task)
+                .map_err(|e| anyhow::anyhow!("Failed to format task: {e}"))?;
+            println!("{pretty}");
+        }
+        A2aAction::List { session_id } => {
+            let tasks = client
+                .list_tasks(session_id.as_deref())
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to list tasks: {e}"))?;
+            let pretty = serde_json::to_string_pretty(&tasks)
+                .map_err(|e| anyhow::anyhow!("Failed to format tasks: {e}"))?;
+            println!("{pretty}");
+        }
+    }
+
+    Ok(())
+}
+
 /// Wait for a shutdown signal (Ctrl+C or SIGTERM).
 async fn shutdown_signal() {
     // Signal handlers cannot propagate errors — if OS signal registration
@@ -297,10 +398,13 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    // For orchestrate command, suppress JSON logs to stderr unless RUST_LOG is explicitly set.
+    // For orchestrate and a2a commands, suppress JSON logs to stderr unless RUST_LOG is explicitly set.
     // This keeps the output clean for piping.
-    let is_orchestrate = matches!(cli.command, Commands::Orchestrate { .. });
-    let default_level = if is_orchestrate && std::env::var("RUST_LOG").is_err() {
+    let suppress_logs = matches!(
+        cli.command,
+        Commands::Orchestrate { .. } | Commands::A2a { .. }
+    );
+    let default_level = if suppress_logs && std::env::var("RUST_LOG").is_err() {
         "warn"
     } else {
         "info"
@@ -313,6 +417,11 @@ async fn main() -> anyhow::Result<()> {
         .json()
         .with_writer(std::io::stderr)
         .init();
+
+    // Handle A2A subcommand early — it doesn't require a config file
+    if let Commands::A2a { url, action } = cli.command {
+        return handle_a2a(&url, action).await;
+    }
 
     // Load config with environment variable expansion
     let config_str = tokio::fs::read_to_string(&cli.config).await.map_err(|e| {
@@ -419,6 +528,7 @@ async fn main() -> anyhow::Result<()> {
                 Some(rate_limiter),
                 auth_config,
                 None,
+                None,
             );
 
             let addr = format!("{host}:{port}");
@@ -488,6 +598,7 @@ async fn main() -> anyhow::Result<()> {
 
             info!("Argentor gateway stopped");
         }
+        Commands::A2a { .. } => unreachable!("handled above"),
         Commands::Skill { action } => match action {
             SkillAction::List => {
                 // Load all skills: builtins + config + markdown

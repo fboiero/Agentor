@@ -117,6 +117,10 @@ impl FailoverBackend {
 
 #[async_trait]
 impl LlmBackend for FailoverBackend {
+    fn provider_name(&self) -> &str {
+        "failover"
+    }
+
     async fn chat(
         &self,
         system_prompt: Option<&str>,

@@ -12,6 +12,8 @@
 //! - [`Sanitizer`] — Input sanitization utilities.
 //! - [`TlsConfig`] — TLS and mutual-TLS configuration.
 
+/// Alert rule engine for production monitoring.
+pub mod alert_engine;
 /// Audit logging module.
 pub mod audit;
 /// Audit log query and filtering.
@@ -28,6 +30,8 @@ pub mod rate_limit;
 pub mod rbac;
 /// Input sanitization utilities.
 pub mod sanitizer;
+/// SLA compliance tracking with uptime, availability, and incident windows.
+pub mod sla_tracker;
 /// TLS and mutual-TLS configuration.
 pub mod tls;
 
@@ -43,3 +47,9 @@ pub use rate_limit::RateLimiter;
 pub use rbac::{RbacDecision, RbacPolicy, Role};
 pub use sanitizer::Sanitizer;
 pub use tls::TlsConfig;
+pub use alert_engine::{
+    Alert, AlertCondition, AlertEngine, AlertEngineStats, AlertRule, AlertSeverity,
+};
+pub use sla_tracker::{
+    Incident, SlaComplianceReport, SlaDefinition, SlaStatus, SlaTracker,
+};

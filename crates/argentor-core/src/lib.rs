@@ -14,6 +14,14 @@
 
 /// Approval types for human-in-the-loop workflows.
 pub mod approval;
+/// Distributed correlation context for request tracing across agent boundaries.
+pub mod correlation;
+/// Error aggregation, deduplication, and trending for production diagnostics.
+pub mod error_aggregator;
+/// Pub/sub event bus for decoupled component communication.
+pub mod event_bus;
+/// Multi-format metrics export for monitoring integration.
+pub mod metrics_export;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

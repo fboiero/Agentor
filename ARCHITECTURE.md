@@ -191,11 +191,151 @@ Siguiendo las recomendaciones de Anthropic (2025-2026):
 
 ---
 
+## Fase 4: Multi-Agent Clusters (Session 6-7)
+
+### MessageBus A2A
+- `MessageBus` con send/receive/peek/subscribe/broadcast
+- `AgentMessage` con sender, recipient (unicast/broadcast), `MessageType` (TaskAssignment, StatusUpdate, DataShare, Approval, Custom)
+- 12 tests
+
+### Replanner
+- `Replanner` con análisis de contexto de fallo y selección automática de estrategia
+- 6 `RecoveryStrategy`: Retry, Reassign, Decompose, Skip, Abort, Escalate
+- `ReplanHistory` para auditoría completa
+- Reasignación heurística por rol (Coder→Architect, Tester→Coder, etc.)
+- 15 tests
+
+### Budget Tracker
+- `BudgetTracker` con `TokenBudget` por agente y `AgentUsage` tracking
+- `BudgetStatus`: WithinBudget, Warning (>80%), Exceeded
+- Estimación de costos por provider y presupuestos default por rol
+- 12 tests
+
+### Persistent Artifacts
+- `FileArtifactBackend` implementando `ArtifactBackend` trait
+- Layout: `base_dir/artifacts/{key}/content.dat` + `metadata.json`
+- Protección contra path traversal, async I/O
+- 11 tests
+
+### Collaboration Patterns
+- 6 patrones: Pipeline, MapReduce, Debate, Ensemble, Supervisor, Swarm
+- Builder API con `PatternConfigBuilder` + validación
+- Estimación de costo por patrón
+- 22 tests
+
+---
+
+## Fase 5: REST API & Gateway (Session 8-9)
+
+### REST API
+- 10 endpoints bajo `/api/v1/`: sessions CRUD, skills list/detail, agent chat, connections, metrics
+- `RestApiState` con MessageRouter, ConnectionManager, SessionStore, SkillRegistry
+- `ApiError` con HTTP status codes apropiados
+- 9 tests
+
+### Channel Bridge
+- `ChannelBridge` conectando ChannelManager al MessageRouter
+- Afinidad de sesión por canal + sender
+- 7 tests
+
+### Parallel Tool Execution
+- `execute_parallel()` en SkillRegistry — ejecución concurrente de tool calls
+- `execute_with_timeout()` — wrapper con timeout
+- 6 tests
+
+---
+
+## Fase 6: Observability & Security Avanzada (Session 10)
+
+### Prometheus Metrics
+- `AgentMetricsCollector` con export en formato texto Prometheus
+- Métricas: tool_calls, errors, tokens, latency, active_agents, security_events, compliance_checks
+- Endpoint `/metrics` en el gateway (scrape-ready para Prometheus/Grafana)
+- Endpoint `/api/v1/metrics/prometheus` en REST API
+- 14 tests
+
+### Token Counter
+- Estimación heurística por provider (Claude 4.5 chars/token, OpenAI 4 chars/token, Gemini 4 chars/token)
+- `ModelPricing` con precios default por modelo
+- `UsageTracker` para acumulación de uso y costo
+- 12 tests
+
+### MCP Server Mode
+- `McpServer` exponiendo skills como tools MCP via JSON-RPC 2.0 stdio
+- Handlers: initialize, tools/list, tools/call, ping
+- 15 tests
+
+### Progressive Tool Disclosure
+- Tool groups que filtran skills por rol de agente
+- ~98% reducción de tokens en prompts
+
+---
+
+## Fase 7: Infraestructura de Despliegue & Code Generation (Session 11)
+
+### API Scaffold Generator
+- Skill `api_scaffold` que genera proyectos completos desde especificaciones JSON
+- 3 frameworks: Rust/Axum, Python/FastAPI, Node/Express
+- Genera: manifest (Cargo.toml/requirements.txt/package.json), entry point con server setup, route handlers, modelos DB, Dockerfile, README
+- Soporte para SQLite y PostgreSQL
+- Validación de permisos FileWrite en output_dir
+- 19 tests
+
+### IaC Generator
+- Skill `iac_generator` para generación de Infrastructure-as-Code
+- 6 targets:
+  - **Docker**: Dockerfile multi-stage (builder + runtime), non-root user, health check
+  - **docker-compose**: app + postgres + redis, volumes, networks
+  - **Helm**: Chart.yaml, values.yaml, 7 templates (deployment, service, ingress, hpa, configmap, secrets, _helpers.tpl)
+  - **Terraform AWS**: ECS Fargate, ALB, RDS, VPC, security groups, IAM, CloudWatch
+  - **Terraform GCP**: Cloud Run, Cloud SQL, VPC, private services access
+  - **GitHub Actions**: CI (check, test, clippy, fmt) + Deploy (build, push, deploy, smoke test)
+- 14 tests
+
+### Database Abstraction
+- `DatabaseSessionStore` implementando `SessionStore` trait
+- `DatabaseConfig` con variantes Sqlite y Postgres (API diseñada para drop-in de sqlx)
+- Implementación actual: JSON files con directory layout database-like + `Arc<RwLock<>>` index
+- Métodos adicionales: `query_by_metadata()`, `cleanup_expired()`, `count()`
+- 14 tests
+
+### JWT/OAuth2 Authentication
+- `AuthService` con JWT HMAC-SHA256 (implementación manual, sin dependencia jsonwebtoken)
+- `AuthConfig` con `AuthMode`: None, ApiKey, Jwt, OAuth2, Combined
+- `ApiKeyConfig` con SHA-256 hash (nunca plaintext), permisos, rate limit, expiración
+- `OAuth2ProviderConfig` para GitHub, Google, custom
+- `JwtClaims` con sub, exp, iat, iss, aud, permissions, agent_roles
+- Middleware axum: extrae Bearer/X-Api-Key, valida, inyecta `AuthenticatedUser`
+- Comparación constant-time contra timing attacks
+- API keys prefijadas con `agtr_` y dominio separado SHA-256
+- 25 tests
+
+---
+
 ## Verificación
 
 ```bash
 cargo build --workspace          # Compila 13 crates
-cargo test --workspace           # 483 tests
+cargo test --workspace           # 944 tests
 cargo clippy --workspace         # 0 warnings (strict lints enabled)
 cargo fmt --all -- --check       # 0 diffs
 ```
+
+---
+
+## Estadísticas del Proyecto
+
+| Métrica | Valor |
+|---------|-------|
+| Crates | 13 |
+| Líneas de código | ~54,000 |
+| Tests | 944 |
+| Tests fallidos | 0 |
+| Clippy warnings | 0 |
+| Archivos .rs | 140+ |
+| Skills built-in | 13 (shell, file_read, file_write, http_fetch, browser, git, code_analysis, test_runner, memory_store, memory_search, human_approval, api_scaffold, iac_generator) |
+| Roles de agente | 10 |
+| Patrones de colaboración | 6 |
+| Providers LLM | 12+ |
+| Módulos de compliance | 4 (GDPR, ISO 27001, ISO 42001, DPGA) |
+| Licencia | AGPL-3.0-only |

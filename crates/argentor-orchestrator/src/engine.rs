@@ -4,6 +4,8 @@ use crate::task_queue::TaskQueue;
 use crate::types::{AgentProfile, AgentRole, Artifact, ArtifactKind, Task, TaskStatus};
 use argentor_agent::{AgentRunner, ModelConfig};
 use argentor_compliance::{ComplianceEvent, ComplianceHookChain};
+use argentor_core::event_bus::{Event, EventBus};
+use argentor_core::error_aggregator::{ErrorAggregator, ErrorCategory, ErrorSeverity};
 use argentor_core::{ArgentorError, ArgentorResult};
 use argentor_mcp::{McpProxy, ToolDiscovery};
 use argentor_security::{AuditLog, PermissionSet};
@@ -36,6 +38,8 @@ struct WorkerContext {
     on_progress: Option<ProgressCallback>,
     backend_factory: Option<BackendFactory>,
     compliance_hooks: Option<Arc<ComplianceHookChain>>,
+    event_bus: EventBus,
+    error_aggregator: ErrorAggregator,
 }
 
 /// The multi-agent orchestrator engine.
@@ -53,6 +57,8 @@ pub struct Orchestrator {
     on_progress: Option<ProgressCallback>,
     backend_factory: Option<BackendFactory>,
     compliance_hooks: Option<Arc<ComplianceHookChain>>,
+    event_bus: EventBus,
+    error_aggregator: ErrorAggregator,
 }
 
 impl Orchestrator {
@@ -82,6 +88,8 @@ impl Orchestrator {
             on_progress: None,
             backend_factory: None,
             compliance_hooks: None,
+            event_bus: EventBus::default(),
+            error_aggregator: ErrorAggregator::default(),
         }
     }
 
@@ -109,6 +117,8 @@ impl Orchestrator {
             on_progress: None,
             backend_factory: None,
             compliance_hooks: None,
+            event_bus: EventBus::default(),
+            error_aggregator: ErrorAggregator::default(),
         }
     }
 
@@ -137,6 +147,16 @@ impl Orchestrator {
     pub fn with_compliance(mut self, hooks: Arc<ComplianceHookChain>) -> Self {
         self.compliance_hooks = Some(hooks);
         self
+    }
+
+    /// Get the event bus for subscribing to orchestration events.
+    pub fn event_bus(&self) -> &EventBus {
+        &self.event_bus
+    }
+
+    /// Get the error aggregator for querying error groups.
+    pub fn error_aggregator(&self) -> &ErrorAggregator {
+        &self.error_aggregator
     }
 
     #[allow(dead_code)]
@@ -385,6 +405,8 @@ impl Orchestrator {
             on_progress: self.on_progress.clone(),
             backend_factory: self.backend_factory.clone(),
             compliance_hooks: self.compliance_hooks.clone(),
+            event_bus: self.event_bus.clone(),
+            error_aggregator: self.error_aggregator.clone(),
         }
     }
 
@@ -410,6 +432,12 @@ impl Orchestrator {
         ctx: &WorkerContext,
     ) -> ArgentorResult<()> {
         info!(task_id = %task_id, role = %role, "Executing task");
+
+        // Emit event: task started
+        ctx.event_bus.publish(Event::new(
+            "orchestrator.task.started",
+            serde_json::json!({"task_id": task_id.to_string(), "role": role.to_string(), "description": description}),
+        ).with_source(format!("{role}")));
 
         // Mark as running
         {
@@ -584,6 +612,17 @@ impl Orchestrator {
                         );
                     }
                 }
+                // Emit event: task completed
+                ctx.event_bus.publish(Event::new(
+                    "orchestrator.task.completed",
+                    serde_json::json!({
+                        "task_id": task_id.to_string(),
+                        "role": role.to_string(),
+                        "duration_ms": duration.as_millis() as u64,
+                        "needs_review": needs_review,
+                    }),
+                ).with_source(format!("{role}")));
+
                 info!(task_id = %task_id, role = %role, needs_review = needs_review, "Task completed");
                 Ok(())
             }
@@ -591,6 +630,26 @@ impl Orchestrator {
                 if let Some(cb) = &ctx.on_progress {
                     cb(role.clone(), &format!("FAILED: {e}"));
                 }
+
+                // Record error in aggregator
+                ctx.error_aggregator.record(
+                    e.to_string(),
+                    ErrorSeverity::Error,
+                    ErrorCategory::LlmProvider,
+                    Some(role.to_string()),
+                    Some(task_id.to_string()),
+                );
+
+                // Emit event: task failed
+                ctx.event_bus.publish(Event::new(
+                    "orchestrator.task.failed",
+                    serde_json::json!({
+                        "task_id": task_id.to_string(),
+                        "role": role.to_string(),
+                        "error": e.to_string(),
+                    }),
+                ).with_source(format!("{role}")));
+
                 error!(task_id = %task_id, role = %role, error = %e, "Task failed");
                 {
                     let mut q = ctx.queue.write().await;

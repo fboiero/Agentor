@@ -2,9 +2,12 @@
 
 **Secure multi-agent AI framework in Rust with WASM sandboxed plugins, MCP integration, and compliance modules.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-483-green.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-1833%20passing-brightgreen.svg)]()
+[![Clippy](https://img.shields.io/badge/Clippy-0%20warnings-brightgreen.svg)]()
+[![LOC](https://img.shields.io/badge/LOC-96K%2B-informational.svg)]()
+[![Crates](https://img.shields.io/badge/Crates-14-informational.svg)]()
 
 ---
 
@@ -33,76 +36,198 @@ The agent executes 8 real tools: `shell` (git stats, LOC, annotations, security 
 
 Argentor is an autonomous AI agent framework designed for **security**, **compliance**, and **multi-agent orchestration**. Built from scratch in Rust, it addresses critical vulnerabilities found in existing frameworks (RCE, sandbox escape, SSRF, path traversal) while providing a complete multi-agent system following [Anthropic's recommended patterns](https://docs.anthropic.com/en/docs/build-with-claude/agentic-systems).
 
-### Key Features
+Unlike frameworks that bolt on security as an afterthought, Argentor makes it foundational: every skill runs in a WASM sandbox with capability-based permissions, every tool call is audit-logged, and every agent operates within a strict permission boundary. The result is a framework you can trust with production workloads where security and regulatory compliance matter.
 
-- **WASM Sandboxed Plugins** — Skills run in WebAssembly (wasmtime + WASI) with capability-based permissions
-- **Multi-Agent Orchestration** — Orchestrator-Workers pattern with specialized agents (Spec, Coder, Tester, Reviewer)
-- **MCP Centralized Proxy** — All tool calls routed through a central control plane with logging, metrics, and progressive tool disclosure
-- **Human-in-the-Loop (HITL)** — Mandatory approval for high-risk operations
-- **Compliance Built-in** — GDPR, ISO 27001, ISO 42001, DPGA modules
-- **Capability-based Security** — Fine-grained permissions per skill (FileRead, NetworkAccess, etc.)
-- **Vector Memory** — Local embedding-based memory with JSONL persistence
-- **Multi-Provider LLM** — Claude, OpenAI, OpenRouter (200+ models)
-- **Failover** — Automatic LLM backend failover across providers
-- **Transcripts** — Full conversation transcript capture and replay
-- **Hybrid Search** — BM25 + embedding similarity for semantic memory retrieval
-- **Webhooks** — Inbound/outbound webhook support in the gateway
-- **Docker Sandbox** — Run untrusted code in isolated Docker containers
-- **Browser Automation** — Headless browser skill for web scraping and interaction
-- **Scheduler** — Cron-like task scheduling for recurring agent jobs
-- **Query Expansion** — Automatic query rewriting for improved search recall
-- **Config Hot-Reload** — Live configuration updates without server restart
-- **Markdown Skills** — Define skills declaratively in Markdown files
+Argentor also provides a complete platform for building multi-agent systems — from code generation pipelines to DevOps automation — with built-in observability, token budget tracking, and support for 12+ LLM providers. Whether you are deploying a single agent or orchestrating a team of specialized workers, Argentor handles the complexity while keeping everything auditable and secure.
+
+---
+
+## Key Features
+
+### Core Runtime
+- **Rust 1.75+** with strict clippy lints (`unwrap_used`, `expect_used`, etc.) — zero warnings
+- **Multi-provider LLM support** — Claude, OpenAI, Gemini, OpenRouter, Groq, Ollama, Mistral, XAi, Azure OpenAI, Cerebras, Together, DeepSeek, and more (14 providers)
+- **Automatic failover** across LLM backends with `RetryPolicy` (exponential backoff, error classification)
+- **Circuit breaker** per LLM provider (Closed→Open→HalfOpen state machine) — integrated into AgentRunner
+- **LLM response cache** — In-memory LRU with TTL expiration, hit/miss metrics, token savings tracking
+- **Streaming responses** (SSE) with `StreamEvent` types
+- **Config hot-reload** via file watcher (`notify` crate, 500ms debounce)
+- **Token estimation** per provider with cost calculation
+- **Batch processor** for grouping multiple LLM requests with priority queuing
+
+### Security (Key Differentiator)
+- **WASM sandboxed plugins** via wasmtime + WASI
+- **Capability-based permissions** (FileRead, FileWrite, ShellExec, NetworkAccess, etc.)
+- **SSRF prevention** — blocks localhost, link-local, and private network ranges
+- **Path traversal protection** — canonicalization + blocklist
+- **Shell injection blocking** — detects `rm -rf`, fork bombs, and other dangerous patterns
+- **Input sanitizer** — strips control characters, prevents log poisoning
+- **Rate limiting** — token bucket algorithm
+- **TLS/mTLS support**
+- **JWT authentication** (HMAC-SHA256) with API key hashing
+- **OAuth2 provider configuration** (GitHub, Google, custom)
+- **Encrypted credential store** (AES-256-GCM with PBKDF2 key derivation)
+- **RBAC policy engine** — Admin, Operator, Viewer, Custom roles with per-role permissions
+- **Audit logging** — append-only JSONL with structured querying and statistics
+
+### Multi-Agent Orchestration
+- **Orchestrator-Workers pattern** (Anthropic recommended)
+- **10 agent roles** — Orchestrator, Spec, Coder, Tester, Reviewer, Architect, SecurityAuditor, DevOps, DocumentWriter, Custom
+- **TaskQueue with DAG resolution** — topological sort with cycle detection
+- **Inter-agent messaging** — MessageBus with send, receive, and broadcast
+- **Dynamic replanning** with 6 recovery strategies: Retry, Reassign, Decompose, Skip, Abort, Escalate
+- **Token budget tracking** per agent with cost estimation
+- **AgentMonitor** with real-time metrics (turns, tool calls, tokens, errors)
+- **Progressive tool disclosure** — ~98% token reduction
+- **6 collaboration patterns** — Pipeline, MapReduce, Debate, Ensemble, Supervisor, Swarm
+- **Sub-agent spawning** with configurable depth limits
+
+### Code Generation and DevOps Skills
+- **API Scaffold Generator** — generates complete projects (Rust/Axum, Python/FastAPI, Node/Express) with routes, models, Dockerfile, and tests
+- **IaC Generator** — Docker multi-stage builds, docker-compose, Helm charts, Terraform (AWS/GCP), GitHub Actions CI/CD
+- **Code Analysis skill** — language-aware AST analysis
+- **Test Runner skill** — multi-language test execution with result parsing
+- **Git operations skill** — libgit2-based, no shell commands
+
+### Gateway and API
+- **HTTP/WebSocket gateway** (axum-based)
+- **REST API** — 40+ endpoints (10 core + 17 control plane + 13 proxy management)
+- **Control Plane API** — 17 endpoints for deployment management, agent registry, and health monitoring
+- **Web Dashboard** — dark-themed SPA at `/dashboard` with deployment management, agent catalog, health monitoring
+- **OpenAPI 3.0 spec** — auto-generated at `/openapi.json`
+- **Prometheus-compatible `/metrics` endpoint** for observability
+- **Rate limit headers** — X-RateLimit-*, IETF draft RateLimit, Retry-After
+- **Webhook support** — inbound/outbound with HMAC-SHA256 validation
+- **Channel bridge** — Slack, Discord, Telegram, and Webchat adapters
+- **WebSocket-based human approval channel**
+
+### A2A Protocol (Agent-to-Agent)
+- **Google A2A interop** — JSON-RPC 2.0 over HTTP
+- **Agent discovery** via `/.well-known/agent.json` (AgentCard)
+- **A2AServer** with `TaskHandler` trait for custom task processing
+- **A2AClient** for communicating with remote A2A-compliant agents
+- **Full task lifecycle** — send, get, cancel, list tasks
+
+### Memory and Search
+- **Vector memory** with local embeddings (bag-of-words FNV, 256 dimensions)
+- **Hybrid search** — BM25 + embedding similarity with Reciprocal Rank Fusion
+- **Query expansion** with synonym groups
+- **JSONL persistence** for vector stores
+- **File-based and database-backed session stores**
+
+### Compliance
+- **GDPR** — consent tracking, right to erasure (Art. 17), data portability (Art. 20)
+- **ISO 27001** — access control logging, incident response, risk assessment
+- **ISO 42001** — AI system inventory, bias monitoring, transparency logging, HITL
+- **DPGA** — all 9 indicators assessed
+
+### MCP Integration
+- **MCP Client** (JSON-RPC 2.0 over stdio)
+- **MCP Server mode** — expose skills as MCP tools
+- **MCP Proxy** — centralized control plane with logging, metrics, and rate limiting
+- **Proxy Orchestrator** — multi-proxy coordination with routing rules, circuit breaker, and failover
+- **Credential Vault** — centralized API token management with rotation, quotas, and provider grouping
+- **Token Pool** — per-provider token pool with sliding-window rate limiting and tier priority
+- **Tool discovery** and auto-reconnect
+
+### Production Hardening
+- **Graceful shutdown** — 4-phase ordered shutdown (PreDrain→Drain→Cleanup→Final) with timeout enforcement
+- **Distributed correlation** — W3C traceparent propagation, span hierarchy, baggage across agents
+- **Error aggregation** — Fingerprinting, deduplication, severity escalation, trend analysis
+- **Alert engine** — 8 condition types, cooldown suppression, batch evaluation, acknowledge workflow
+- **SLA tracker** — Uptime %, response time compliance, incident lifecycle, compliance reports
+- **Multi-format metrics export** — JSON, CSV, OpenMetrics (Prometheus), InfluxDB Line Protocol
+- **Event bus** — Pub/sub for decoupled component communication (orchestrator events)
+- **Structured output parser** — JSON schema extraction from LLM text with auto-pattern fallback
+- **Debug recorder** — Step-by-step reasoning traces for agent debugging
+
+### Code Intelligence
+- **CodeGraph** — Regex-based AST analysis for Rust, Python, TypeScript, Go
+- **DiffEngine** — Precise diff generation via LCS, unified diff format
+- **TestOracle** — Parsing cargo test, pytest, jest, go test with TDD cycle automation
+- **CodePlanner** — Implementation planning with DAG ordering and risk assessment
+- **ReviewEngine** — 25+ rules across 7 dimensions (security, performance, style, correctness)
+- **DevTeam** — Pre-configured teams with 8 workflow templates and quality gates
+
+### Additional Capabilities
+- **Docker sandbox** for untrusted code execution
+- **Browser automation** — navigate, screenshot, extract_text, fill_form, click
+- **Cron-like task scheduling** for recurring agent jobs
+- **Artifact storage** — in-memory and file-system backends
+- **Human-in-the-loop approval** — auto-approve, callback, stdin, and WebSocket channels
+- **Session transcripts** — append-only JSONL
+- **Markdown-based skill definitions**
+- **Agent personality system** — name, role, instructions, style, constraints, expertise, thinking level
+- **Skill vetting pipeline** — checksum verification, size limits, ed25519 signature validation, WASM static analysis
+- **CLI REPL** — Interactive agent debugging shell with 12 commands
 
 ---
 
 ## Architecture
 
 ```
-                    ┌─────────────────┐
-                    │   Orchestrator  │
-                    │   (Opus model)  │
-                    └────────┬────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-        ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
-        │   Spec    │ │   Coder   │ │  Tester   │
-        │  Worker   │ │  Worker   │ │  Worker   │
-        └─────┬─────┘ └─────┬─────┘ └─────┬─────┘
-              │              │              │
-              └──────────────┼──────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │   MCP Proxy     │  ← Centralized control plane
-                    │  (argentor-mcp)  │
-                    └────────┬────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-        ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
-        │   Skills  │ │  External │ │  Audit    │
-        │   (WASM)  │ │MCP Servers│ │   Log     │
-        └───────────┘ └───────────┘ └───────────┘
+                         ┌──────────────────┐
+                         │   Orchestrator   │
+                         │   (Opus model)   │
+                         └────────┬─────────┘
+                                  │
+          ┌───────────┬───────────┼───────────┬───────────┐
+          │           │           │           │           │
+    ┌─────▼─────┐┌────▼─────┐┌───▼────┐┌─────▼────┐┌────▼─────┐
+    │   Spec    ││  Coder   ││ Tester ││ Reviewer ││ Architect│
+    │  Worker   ││  Worker  ││ Worker ││  Worker  ││  Worker  │
+    └─────┬─────┘└────┬─────┘└───┬────┘└─────┬────┘└────┬─────┘
+          │           │          │            │          │
+          └───────────┴──────────┼────────────┴──────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │       MCP Proxy         │  <-- Centralized control plane
+                    │     (argentor-mcp)      │
+                    └────────────┬────────────┘
+                                 │
+          ┌──────────────────────┼──────────────────────┐
+          │                      │                      │
+    ┌─────▼──────┐    ┌──────────▼──────────┐    ┌──────▼──────┐
+    │   Skills   │    │  External MCP       │    │   Audit     │
+    │   (WASM)   │    │  Servers + Tools    │    │   Log       │
+    └────────────┘    └─────────────────────┘    └─────────────┘
+          │                                            │
+    ┌─────▼──────┐                              ┌──────▼──────┐
+    │ Capability │                              │ Compliance  │
+    │   Check    │                              │  Modules    │
+    └────────────┘                              └─────────────┘
 ```
 
-### Crates
+### Data Flow
+
+1. **Ingest** — Requests arrive via REST API, WebSocket, or channel adapters (Slack, Discord, Telegram)
+2. **Route** — The gateway authenticates, rate-limits, and routes to the appropriate agent or orchestrator
+3. **Plan** — The orchestrator decomposes the task into a DAG of subtasks with dependency resolution
+4. **Execute** — Specialized workers execute subtasks in parallel (respecting dependencies), each with isolated context
+5. **Proxy** — All tool calls pass through the MCP Proxy for permission validation, logging, and progressive disclosure
+6. **Synthesize** — The orchestrator collects artifacts, validates consistency, and produces the final output
+7. **Audit** — Every action is logged to the append-only audit trail for compliance
+
+---
+
+## Crates
 
 | Crate | Description |
 |-------|-------------|
-| `argentor-core` | Core types, errors, and message definitions |
-| `argentor-security` | Capabilities, permissions, rate limiting, audit, TLS |
-| `argentor-session` | Session management and persistence |
-| `argentor-skills` | Skill system with WASM sandbox, plugins, and registry |
-| `argentor-agent` | Agent runner, LLM backends, failover, streaming |
-| `argentor-channels` | Multi-platform communication channels |
-| `argentor-gateway` | HTTP/WebSocket gateway with auth and webhooks |
-| `argentor-builtins` | Built-in skills (shell, file I/O, HTTP, memory, browser, Docker) |
-| `argentor-memory` | Semantic memory with hybrid search and query expansion |
-| `argentor-mcp` | Model Context Protocol client, proxy, and discovery |
-| `argentor-orchestrator` | Multi-agent orchestration, scheduling, monitoring |
-| `argentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance |
-| `argentor-cli` | CLI binary (serve, skill list) |
+| `argentor-core` | Core types, errors, correlation context, event bus, error aggregator, metrics export |
+| `argentor-security` | Capabilities, RBAC, rate limiting, audit, TLS/mTLS, JWT, encrypted store, alerts, SLA tracking |
+| `argentor-session` | Session management, `FileSessionStore`, persistence |
+| `argentor-skills` | Skill trait, `SkillRegistry`, WASM sandbox runtime, vetting pipeline, ed25519 signing |
+| `argentor-agent` | Agent runner, 14 LLM backends, failover, streaming, circuit breaker, cache, code intelligence |
+| `argentor-channels` | Multi-platform channel adapters (Slack, Discord, Telegram, Webchat) |
+| `argentor-gateway` | HTTP/WebSocket gateway with auth, webhooks, Prometheus metrics, control plane, dashboard, OpenAPI |
+| `argentor-builtins` | Built-in skills: shell, file I/O, HTTP, memory, browser, Docker, code generation |
+| `argentor-memory` | Vector memory, hybrid search (BM25 + embeddings), query expansion |
+| `argentor-mcp` | MCP client/server/proxy, proxy orchestrator, credential vault, token pool |
+| `argentor-orchestrator` | Multi-agent engine, TaskQueue with DAG, AgentMonitor, DeploymentManager, HealthChecker |
+| `argentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance modules |
+| `argentor-a2a` | Google A2A protocol: AgentCard, A2AServer, A2AClient, JSON-RPC 2.0 interop |
+| `argentor-cli` | CLI binary (`serve`, `deploy`, `agents`, `health`, `skill list`) with config hot-reload |
 
 ---
 
@@ -111,7 +236,7 @@ Argentor is an autonomous AI agent framework designed for **security**, **compli
 ### Prerequisites
 
 - Rust 1.75+ (`rustup update stable`)
-- An API key from Claude, OpenAI, or OpenRouter
+- An API key from Claude, OpenAI, Gemini, or another supported provider
 
 ### Build
 
@@ -162,8 +287,8 @@ cargo run --bin argentor -- compliance report
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 483 tests
-cargo clippy --workspace         # 0 warnings
+cargo test --workspace           # Run all 1833 tests
+cargo clippy --workspace         # 0 warnings (strict lints)
 cargo fmt --all -- --check       # Check formatting
 ```
 
@@ -176,12 +301,17 @@ Argentor uses defense-in-depth with capability-based security:
 | Threat | Defense |
 |--------|---------|
 | RCE via gateway | Origin validation + mTLS |
-| Sandbox escape | WASM isolation (wasmtime) |
-| SSRF | NetworkAccess capability with allowlist |
-| Path traversal | FileRead/FileWrite scoped to directories |
-| Auth bypass | API key middleware |
+| Sandbox escape | WASM isolation (wasmtime + WASI) |
+| SSRF | NetworkAccess capability with allowlist, blocks private/link-local ranges |
+| Path traversal | FileRead/FileWrite scoped to directories, canonicalization + blocklist |
+| Auth bypass | JWT authentication (HMAC-SHA256) + API key middleware |
+| Credential theft | Encrypted credential store (AES-256-GCM, PBKDF2 key derivation) |
+| Privilege escalation | RBAC policy engine (Admin/Operator/Viewer/Custom roles) |
 | Log poisoning | Sanitizer strips control characters |
-| Supply chain (plugins) | WASM isolation + capability audit |
+| Supply chain (plugins) | WASM isolation + capability audit + ed25519 signature verification |
+| Shell injection | Command sanitizer blocks `rm -rf`, fork bombs, dangerous patterns |
+| Brute force | Token bucket rate limiting per agent/endpoint |
+| Man-in-the-middle | TLS/mTLS support |
 
 ### Capabilities
 
@@ -196,23 +326,78 @@ path = "skills/file-reader.wasm"
 file_read = ["/tmp", "/home/user/docs"]
 ```
 
+### Authentication and Authorization
+
+```toml
+# JWT authentication
+[auth]
+jwt_secret = "${JWT_SECRET}"
+algorithm = "HS256"
+
+# OAuth2 providers
+[[auth.oauth2]]
+provider = "github"
+client_id = "${GITHUB_CLIENT_ID}"
+client_secret = "${GITHUB_CLIENT_SECRET}"
+
+# RBAC roles
+[[rbac.roles]]
+name = "operator"
+permissions = ["execute_skills", "read_sessions"]
+allowed_skills = ["shell", "file_read", "file_write"]
+rate_limit = { requests_per_minute = 100 }
+```
+
 ---
 
 ## Multi-Agent Orchestration
 
 The orchestrator follows Anthropic's recommended **Orchestrator-Workers** pattern:
 
-1. **Plan** — Orchestrator decomposes the task into subtasks with a dependency graph
-2. **Execute** — Specialized workers execute in parallel (respecting dependencies)
-3. **Synthesize** — Orchestrator collects artifacts, validates consistency, produces final output
+1. **Plan** -- Orchestrator decomposes the task into subtasks with a dependency graph (DAG)
+2. **Execute** -- Specialized workers execute in parallel (respecting dependencies), each with an isolated context window
+3. **Synthesize** -- Orchestrator collects artifacts, validates consistency, produces final output
 
 ### Agent Roles
 
-- **Orchestrator** — Decomposes tasks, delegates, synthesizes results
-- **Spec** — Analyzes requirements, generates specifications
-- **Coder** — Generates secure, idiomatic Rust code
-- **Tester** — Writes and validates tests
-- **Reviewer** — Reviews code for security and compliance
+| Role | Responsibility |
+|------|---------------|
+| **Orchestrator** | Decomposes tasks, delegates to workers, synthesizes results |
+| **Spec** | Analyzes requirements, generates specifications |
+| **Coder** | Generates secure, idiomatic code |
+| **Tester** | Writes and validates tests |
+| **Reviewer** | Reviews code for security and compliance |
+| **Architect** | Designs system architecture and makes structural decisions |
+| **SecurityAuditor** | Performs security analysis and vulnerability assessment |
+| **DevOps** | Handles deployment, infrastructure, and CI/CD |
+| **DocumentWriter** | Generates documentation and reports |
+| **Custom** | User-defined role with custom instructions |
+
+### Collaboration Patterns
+
+| Pattern | Description |
+|---------|-------------|
+| **Pipeline** | Sequential processing through a chain of agents |
+| **MapReduce** | Parallel execution with result aggregation |
+| **Debate** | Multiple agents argue positions, best response wins |
+| **Ensemble** | Multiple agents produce outputs, results are merged |
+| **Supervisor** | A supervisor agent monitors and corrects worker agents |
+| **Swarm** | Autonomous agents self-organize around tasks |
+
+### Recovery Strategies
+
+When a subtask fails, the orchestrator can apply dynamic replanning:
+
+- **Retry** -- Re-execute the failed task
+- **Reassign** -- Assign to a different worker
+- **Decompose** -- Break the task into smaller subtasks
+- **Skip** -- Skip the task and continue
+- **Abort** -- Stop the entire pipeline
+- **Escalate** -- Escalate to human review
+
+### Token Budget Tracking
+
+Each agent operates within a configurable token budget. The orchestrator tracks cumulative token usage and cost estimation across all workers, enabling cost-aware task allocation.
 
 ### Human-in-the-Loop
 
@@ -220,6 +405,85 @@ High-risk operations require human approval:
 
 ```rust
 TaskStatus::NeedsHumanReview  // Pauses execution until approved
+```
+
+Approval channels: auto-approve (testing), stdin (CLI), WebSocket (gateway), callback (custom).
+
+---
+
+## Code Generation and DevOps Skills
+
+Argentor includes built-in skills for code generation and infrastructure automation.
+
+### API Scaffold Generator
+
+Generate complete project scaffolds from a specification:
+
+```toml
+[[skills]]
+name = "api_scaffold"
+type = "builtin"
+```
+
+Supported targets:
+
+| Framework | What Gets Generated |
+|-----------|-------------------|
+| **Rust / Axum** | Routes, models, handlers, Cargo.toml, Dockerfile, tests |
+| **Python / FastAPI** | Routes, models, schemas, requirements.txt, Dockerfile, tests |
+| **Node / Express** | Routes, models, middleware, package.json, Dockerfile, tests |
+
+### IaC Generator
+
+Generate infrastructure-as-code artifacts:
+
+| Output | Details |
+|--------|---------|
+| **Docker** | Multi-stage builds with security hardening |
+| **docker-compose** | Service definitions with resource limits, read-only fs |
+| **Helm charts** | Full chart with templates (Deployment, Service, Ingress, HPA, PVC) |
+| **Terraform** | AWS and GCP provider configurations |
+| **GitHub Actions** | CI/CD workflows (check, test, clippy, fmt) |
+
+### Additional Development Skills
+
+- **Code Analysis** -- language-aware AST analysis for code understanding
+- **Test Runner** -- multi-language test execution with structured result parsing
+- **Git Operations** -- repository operations via libgit2 (no shell commands, no injection risk)
+
+---
+
+## Observability
+
+### Prometheus Metrics
+
+Argentor exposes a `/metrics` endpoint compatible with Prometheus:
+
+```
+GET /metrics
+```
+
+Available metrics include request counts, latency histograms, active connections, and agent-level statistics.
+
+### Token Tracking
+
+Per-agent and per-session token usage tracking with cost estimation by provider:
+
+- Input/output token counts per turn
+- Cumulative cost per agent and per orchestration run
+- Budget enforcement with configurable limits
+
+### Audit Logging
+
+Append-only JSONL audit logs with structured querying:
+
+```rust
+let results = query_audit_log(&log, AuditFilter {
+    action: Some("tool_call".into()),
+    agent_id: Some("coder-01".into()),
+    from: Some(start_time),
+    ..Default::default()
+});
 ```
 
 ---
@@ -247,21 +511,25 @@ TaskStatus::NeedsHumanReview  // Pauses execution until approved
 
 Argentor targets all 9 DPGA indicators:
 
-1. **Open Source** — AGPL-3.0-only
-2. **SDG Relevance** — SDG 9 (Innovation), SDG 16 (Institutions)
-3. **Open Data** — MCP interoperability with open datasets
-4. **Privacy** — GDPR compliance module
-5. **Documentation** — Comprehensive docs (EN/ES)
-6. **Open Standards** — MCP (AAIF/Linux Foundation), WASM, WIT
-7. **Ownership** — Clear governance
-8. **Do No Harm** — ISO 42001, HITL, bias monitoring
-9. **Interoperability** — MCP + A2A protocol support
+1. **Open Source** -- AGPL-3.0-only
+2. **SDG Relevance** -- SDG 9 (Innovation), SDG 16 (Institutions)
+3. **Open Data** -- MCP interoperability with open datasets
+4. **Privacy** -- GDPR compliance module
+5. **Documentation** -- Comprehensive docs (EN/ES)
+6. **Open Standards** -- MCP (AAIF/Linux Foundation), WASM, WIT
+7. **Ownership** -- Clear governance
+8. **Do No Harm** -- ISO 42001, HITL, bias monitoring
+9. **Interoperability** -- MCP + A2A protocol support
 
 ---
 
 ## MCP Integration
 
-Argentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration:
+Argentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration.
+
+### Client Mode
+
+Connect to external MCP servers:
 
 ```toml
 [[mcp_servers]]
@@ -269,20 +537,59 @@ command = "npx"
 args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
 ```
 
-The MCP Proxy centralizes all tool calls with:
-- Logging of every invocation
-- Permission validation
+### Server Mode
+
+Expose Argentor skills as MCP tools for other agents and clients to consume:
+
+```toml
+[mcp_server]
+enabled = true
+transport = "stdio"
+```
+
+### Proxy Mode
+
+The MCP Proxy acts as a centralized control plane:
+
+- Logging of every tool invocation
+- Permission validation against capability policies
 - Rate limiting per agent
 - Progressive tool disclosure (~98% token reduction)
+- Auto-reconnect with health checks
+- Tool discovery across multiple backends
 
 ---
 
 ## Docker
 
+### Build and Run
+
 ```bash
 docker build -t argentor .
 docker run -p 3000:3000 argentor serve
 ```
+
+### Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+The included `docker-compose.yml` provides security hardening:
+- Resource limits (memory and CPU)
+- Read-only filesystem
+- Dropped capabilities (`cap_drop: ALL`)
+- Non-root user
+
+### Helm Chart
+
+Deploy to Kubernetes:
+
+```bash
+helm install argentor deploy/helm/argentor/
+```
+
+The Helm chart includes templates for Deployment, Service, Ingress, HPA, PVC, and ServiceAccount.
 
 ---
 
@@ -294,13 +601,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-This project is licensed under the **GNU Affero General Public License v3.0** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3.0** -- see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## Acknowledgments
 
-- [Anthropic](https://anthropic.com) — Claude models and MCP protocol
-- [wasmtime](https://wasmtime.dev) — WebAssembly runtime
-- [Axum](https://github.com/tokio-rs/axum) — Web framework
-- [DPGA](https://digitalpublicgoods.net) — Digital Public Goods Alliance
+- [Anthropic](https://anthropic.com) -- Claude models and MCP protocol
+- [wasmtime](https://wasmtime.dev) -- WebAssembly runtime
+- [Axum](https://github.com/tokio-rs/axum) -- Web framework
+- [DPGA](https://digitalpublicgoods.net) -- Digital Public Goods Alliance
+- [wiremock](https://github.com/LukeMathWalker/wiremock-rs) -- HTTP mocking for integration tests
+- [criterion](https://github.com/bheisler/criterion.rs) -- Benchmarking framework

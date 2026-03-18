@@ -14,6 +14,7 @@ members = [
     "crates/argentor-mcp",
     "crates/argentor-orchestrator",
     "crates/argentor-compliance",
+    "crates/argentor-a2a",
 ]
 exclude = [
     "skills/*",
@@ -78,6 +79,9 @@ argentor-memory = { path = "crates/argentor-memory" }
 argentor-mcp = { path = "crates/argentor-mcp" }
 argentor-orchestrator = { path = "crates/argentor-orchestrator" }
 argentor-compliance = { path = "crates/argentor-compliance" }
+argentor-a2a = { path = "crates/argentor-a2a" }
+futures-util = "0.3"
+tokio-stream = "0.1"
 
 [workspace.lints.clippy]
 unwrap_used = "warn"

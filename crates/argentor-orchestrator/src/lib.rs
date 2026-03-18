@@ -14,8 +14,12 @@
 
 /// Token and resource budgeting per agent.
 pub mod budget;
+/// Agent deployment lifecycle management.
+pub mod deployment;
 /// Orchestration engine and pipeline execution.
 pub mod engine;
+/// Agent health monitoring with state machine transitions.
+pub mod health;
 /// Inter-agent message bus for A2A communication.
 pub mod message_bus;
 /// Agent health and metrics monitoring.
@@ -24,6 +28,8 @@ pub mod monitor;
 pub mod patterns;
 /// Default agent profiles and role definitions.
 pub mod profiles;
+/// Agent registry with catalog management.
+pub mod registry;
 /// Dynamic re-planning and failure recovery strategies.
 pub mod replanner;
 /// Cron-based job scheduler.
@@ -34,6 +40,8 @@ pub mod spawner;
 pub mod task_queue;
 /// Shared orchestration types (Task, AgentProfile, Artifact, etc.).
 pub mod types;
+/// Pre-configured development team orchestration with workflows and quality gates.
+pub mod dev_team;
 
 pub use budget::{
     default_budget, AgentUsage, AgentUsageEntry, BudgetStatus, BudgetSummary, BudgetTracker,
@@ -56,4 +64,13 @@ pub use task_queue::TaskQueue;
 pub use types::{
     AgentMetrics, AgentProfile, AgentRole, AgentState, Artifact, ArtifactKind, Task, TaskStatus,
     WorkerStatus,
+};
+pub use deployment::{
+    DeploymentConfig, DeploymentManager, DeploymentStatus, IssueSeverity, ResourceLimits,
+};
+pub use health::{HealthCheckConfig, HealthChecker, HealthEvent};
+pub use registry::{default_agent_definitions, AgentRegistry};
+pub use dev_team::{
+    DevRole, DevTeam, DevTeamConfig, DevWorkflow, QualityGate, WorkflowArtifact, WorkflowResult,
+    WorkflowStep, WorkflowStatus,
 };

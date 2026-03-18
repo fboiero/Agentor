@@ -95,6 +95,10 @@ impl OpenAiBackend {
 
 #[async_trait]
 impl LlmBackend for OpenAiBackend {
+    fn provider_name(&self) -> &str {
+        "openai"
+    }
+
     async fn chat(
         &self,
         system_prompt: Option<&str>,

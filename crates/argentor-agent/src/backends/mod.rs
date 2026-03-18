@@ -31,6 +31,13 @@ pub trait LlmBackend: Send + Sync {
         tools: &[SkillDescriptor],
     ) -> ArgentorResult<LlmResponse>;
 
+    /// Return a short name identifying this backend provider.
+    ///
+    /// Used for circuit breaker keys, cache keys, and metrics labels.
+    fn provider_name(&self) -> &str {
+        "unknown"
+    }
+
     /// Streaming chat completion.
     ///
     /// Returns a receiver for stream events and a join handle that resolves

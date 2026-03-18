@@ -23,6 +23,7 @@ argentor-mcp.workspace = true
 argentor-memory.workspace = true
 argentor-compliance.workspace = true
 argentor-orchestrator.workspace = true
+argentor-a2a.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 clap.workspace = true
@@ -49,3 +50,7 @@ path = "examples/demo_team.rs"
 [[example]]
 name = "demo_security_challenge"
 path = "examples/demo_security_challenge.rs"
+
+[[example]]
+name = "demo_dev_team_video"
+path = "examples/demo_dev_team_video.rs"

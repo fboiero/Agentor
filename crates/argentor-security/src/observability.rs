@@ -245,7 +245,7 @@ impl AgentMetricsCollector {
         let mut inner = self
             .inner
             .write()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         match event {
             MetricEvent::ToolCallStarted {
@@ -374,7 +374,7 @@ impl AgentMetricsCollector {
         let inner = self
             .inner
             .read()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let uptime_seconds = inner.start_time.elapsed().as_secs();
 
@@ -439,7 +439,7 @@ impl AgentMetricsCollector {
         let inner = self
             .inner
             .read()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let mut out = String::with_capacity(2048);
 
@@ -546,7 +546,7 @@ impl AgentMetricsCollector {
         let mut inner = self
             .inner
             .write()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *inner = Inner::new();
     }
 }
