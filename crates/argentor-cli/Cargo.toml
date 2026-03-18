@@ -54,3 +54,7 @@ path = "examples/demo_security_challenge.rs"
 [[example]]
 name = "demo_dev_team_video"
 path = "examples/demo_dev_team_video.rs"
+
+[[example]]
+name = "demo_xcapitsff"
+path = "examples/demo_xcapitsff.rs"
