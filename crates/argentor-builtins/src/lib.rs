@@ -47,6 +47,8 @@ pub mod stdin_approval;
 pub mod task_status;
 /// Test runner skill for multi-language test execution and result parsing.
 pub mod test_runner;
+/// XcapitSFF backend integration skills.
+pub mod xcapitsff_skills;
 
 pub use agent_delegate::{AgentDelegateSkill, TaskInfo, TaskQueueHandle, TaskSummary};
 pub use artifact_store::{ArtifactBackend, ArtifactStoreSkill, InMemoryArtifactBackend};
@@ -67,6 +69,10 @@ pub use shell::{CommandPolicy, ShellSkill};
 pub use stdin_approval::StdinApprovalChannel;
 pub use task_status::TaskStatusSkill;
 pub use test_runner::TestRunnerSkill;
+pub use xcapitsff_skills::{
+    register_xcapitsff_skills, XcapitCustomer360Skill, XcapitKbSearchSkill, XcapitLeadInfoSkill,
+    XcapitSearchSkill, XcapitTicketInfoSkill,
+};
 
 pub use docker_sandbox::{DockerSandboxConfig, ExecResult};
 
