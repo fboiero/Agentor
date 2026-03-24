@@ -1,5 +1,5 @@
 # Argentor — Session Context
-> Last updated: 2026-03-18 (session 23)
+> Last updated: 2026-03-24 (session 28)
 
 ## Current Goal
 Production-grade autonomous AI agent framework — full-stack platform with A2A interop, web dashboard, and OpenTelemetry.
@@ -183,3 +183,47 @@ Production-grade autonomous AI agent framework — full-stack platform with A2A 
 | GatewayServer | OpenApiGenerator | `/openapi.json` route |
 | Orchestrator | EventBus, ErrorAggregator | Task lifecycle events, error fingerprinting |
 | LlmBackend trait | CircuitBreaker, ResponseCache | `provider_name()` for keying |
+
+### XcapitSFF Integration (Phase 1+2)
+- POST /api/v1/agent/run-task — single agent execution by role
+- POST /api/v1/agent/run-task-stream — SSE streaming
+- POST /api/v1/agent/batch — parallel batch execution
+- POST /api/v1/agent/evaluate — response quality scoring
+- POST /api/v1/agent/personas — per-tenant persona management
+- POST /api/v1/proxy/webhook — HMAC-validated webhook proxy
+- GET /api/v1/usage/tenant/{id} — cost tracking per tenant
+- GET /api/v1/health — cross-check with XcapitSFF
+- 5 xcapitsff_* skills (search, lead_info, ticket_info, kb_search, customer360)
+- 4 agent profiles (sales_qualifier, outreach_composer, support_responder, ticket_router)
+- TenantUsageTracker, PersonaConfig, model routing (fast_cheap/balanced/quality_max)
+
+### Phase 24 — Persistent Storage
+- SqliteSessionStore: JSON-file + index with in-memory cache, atomic writes — 25 tests
+- PersistentUsageStore: append-only JSONL per tenant — tested
+- PersistentPersonaStore: JSON files for per-tenant personas — tested
+
+### Phase 25 — Conversation Memory
+- ConversationMemory: cross-session context per customer — 30 tests
+- CustomerProfile: topic extraction, sentiment trend, interaction history
+- ConversationSummarizer: token-budgeted context for system prompt injection
+
+### Phase 26 — RAG Pipeline
+- RagPipeline: ingest → chunk → embed → store → query → format context — 27 tests
+- 4 chunking strategies: FixedSize, Paragraph, Sentence, Semantic
+- ScoredChunk with relevance filtering and document metadata
+
+### Phase 27 — Workflow Engine
+- WorkflowEngine: register → start → advance → complete with conditions — 40 tests
+- 6 step types: AgentTask, HttpCall, Condition, Delay, Notification, AssignToHuman
+- 2 pre-built templates: lead_qualification_workflow, support_ticket_workflow
+
+### Phase 28 — Analytics Endpoints
+- AnalyticsEngine: interactions, quality, funnel events — 28 tests
+- 4 REST endpoints: dashboard, agent performance, conversion funnel, trends
+- CSAT estimation, cost per interaction, daily trend aggregation
+
+## Build Health
+- `cargo test --workspace` — **2045 tests passing**, 0 failures
+- `cargo check --workspace` — 0 errors
+- `cargo clippy --workspace` — 0 errors
+- ~102,000+ LOC across 14 crates

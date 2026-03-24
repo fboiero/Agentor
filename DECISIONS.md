@@ -657,3 +657,22 @@
 - EventBus in orchestrator = real-time observability for dashboards
 
 **Results:** 1833 tests, 0 failures, 0 clippy errors
+
+---
+
+## 2026-03-24 — Phase 24-28: Vertical Features for XcapitSFF SaaS
+
+**Asked:** Implement all 5 phases (persistence, conversation memory, RAG, workflows, analytics).
+
+**Decision:** Ran 5 agents in parallel, each on a different crate to avoid conflicts.
+
+**Modules built:**
+1. **Phase 24 — SqliteSessionStore** (argentor-session): JSON-file persistence with index + cache + atomic writes. PersistentUsageStore (JSONL per tenant). PersistentPersonaStore (JSON per tenant+role) — 25 tests
+2. **Phase 25 — ConversationMemory** (argentor-memory): Cross-session per-customer context. CustomerProfile with topics + sentiment. ConversationSummarizer for token-budgeted prompt injection — 30 tests
+3. **Phase 26 — RagPipeline** (argentor-memory): Document ingestion → 4 chunking strategies → embed → store → query → context formatting. ScoredChunk with relevance filtering — 27 tests
+4. **Phase 27 — WorkflowEngine** (argentor-orchestrator): Configurable multi-step workflows with 6 step types, 5 conditions, expression evaluator. Pre-built lead_qualification + support_ticket templates — 40 tests
+5. **Phase 28 — AnalyticsEngine** (argentor-gateway): 4 REST endpoints for dashboard, agent performance, conversion funnel, daily trends. CSAT estimation, cost tracking — 28 tests
+
+**Why parallel agents:** Each phase targets a different crate (session, memory, orchestrator, gateway) so no file conflicts. Total build time ~5 minutes vs ~25 minutes sequential.
+
+**Results:** 1895 → 2045 (+150 tests), 0 failures, 0 clippy errors, +5714 lines
