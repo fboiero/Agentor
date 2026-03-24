@@ -47,6 +47,8 @@ pub mod graceful_shutdown;
 pub mod openapi;
 /// X-RateLimit-* response headers for API consumers.
 pub mod rate_limit_headers;
+/// Trace visualization system for debugging agent execution.
+pub mod trace_viewer;
 
 pub use auth::{
     AuthConfig as JwtAuthConfig, AuthMiddlewareState, AuthMode, AuthService, AuthenticatedUser,
@@ -77,4 +79,9 @@ pub use analytics::{
     analytics_router, AnalyticsEngine, AnalyticsState,
     InteractionEvent, InteractionOutcome, QualityEvent, FunnelStage,
     AnalyticsDashboard, AgentPerformance, ConversionFunnel, DailyMetric,
+};
+pub use trace_viewer::{
+    trace_viewer_router, TraceViewerState, TraceStore,
+    TraceSummary as TraceViewerSummary, TraceFilter, CostBreakdown, StepCost,
+    TraceTimeline, TimelineLane,
 };

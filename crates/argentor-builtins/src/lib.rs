@@ -47,6 +47,8 @@ pub mod stdin_approval;
 pub mod task_status;
 /// Test runner skill for multi-language test execution and result parsing.
 pub mod test_runner;
+/// SDK client code generator for Python and TypeScript.
+pub mod sdk_generator;
 /// XcapitSFF backend integration skills.
 pub mod xcapitsff_skills;
 
@@ -65,6 +67,7 @@ pub use human_approval::{
     CallbackApprovalChannel, HumanApprovalSkill, RiskLevel,
 };
 pub use memory::{MemorySearchSkill, MemoryStoreSkill};
+pub use sdk_generator::SdkGenerator;
 pub use shell::{CommandPolicy, ShellSkill};
 pub use stdin_approval::StdinApprovalChannel;
 pub use task_status::TaskStatusSkill;

@@ -61,6 +61,12 @@ pub mod debug_recorder;
 pub mod response_cache;
 /// Structured output parsing and validation for LLM responses.
 pub mod structured_output;
+/// Production-grade guardrails for filtering, validating, and sanitizing LLM inputs/outputs.
+pub mod guardrails;
+/// Versioned prompt template management with A/B testing and chains.
+pub mod prompt_manager;
+/// Standardized evaluation framework for benchmarking agent performance.
+pub mod eval_framework;
 
 pub use backends::LlmBackend;
 pub use config::{LlmProvider, ModelConfig};
@@ -116,4 +122,19 @@ pub use response_cache::{CacheKey, CacheMessage, CacheStats, ResponseCache};
 pub use structured_output::{
     ExtractedOutput, ExtractionPattern, FieldDefinition, FieldType, OutputSchema,
     StructuredOutputParser, ValidationError,
+};
+pub use guardrails::{
+    ContentPolicy, GuardrailEngine, GuardrailResult, GuardrailRule, PiiMatch, RuleSeverity,
+    RuleType, Violation, redact_pii,
+};
+pub use prompt_manager::{
+    ChainStep, PromptChain, PromptError, PromptManager, PromptTemplate, TemplateSummary,
+    TemplateVariable, VarType, register_xcapit_templates, outreach_composer_v1,
+    sales_qualifier_v1, support_responder_v1, ticket_router_v1,
+};
+pub use eval_framework::{
+    CaseResult, CategoryResult, ComparisonReport, CompositeEvaluator, ContainsEvaluator,
+    EvalCase, EvalFramework, EvalReport, EvalSuite, Evaluator, ExactMatchEvaluator,
+    HeuristicEvaluator, JsonSchemaEvaluator, SimilarityEvaluator,
+    lead_qualification_suite, support_quality_suite, ticket_routing_suite,
 };
