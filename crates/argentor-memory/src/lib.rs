@@ -12,20 +12,31 @@
 //! - [`HybridSearcher`] — Combines embedding similarity with BM25 keyword scoring.
 //! - [`Bm25Index`] — BM25 inverted index for keyword-based retrieval.
 //! - [`QueryExpander`] — Trait for expanding queries to improve search recall.
+//! - [`RagPipeline`] — Retrieval-Augmented Generation pipeline for knowledge base search.
 
 /// BM25 inverted index for keyword-based retrieval.
 pub mod bm25;
+/// Conversation memory for cross-session customer context.
+pub mod conversation;
 /// Embedding provider trait and local implementation.
 pub mod embedding;
 /// Hybrid search combining embeddings and BM25.
 pub mod hybrid;
 /// Query expansion for improved recall.
 pub mod query_expansion;
+/// Retrieval-Augmented Generation pipeline.
+pub mod rag;
 /// Vector store trait and file-backed implementation.
 pub mod store;
 
 pub use bm25::Bm25Index;
+pub use conversation::{
+    ConversationMemory, ConversationSummarizer, ConversationTurn, CustomerProfile,
+};
 pub use embedding::{EmbeddingProvider, LocalEmbedding};
 pub use hybrid::HybridSearcher;
 pub use query_expansion::{QueryExpander, RuleBasedExpander};
+pub use rag::{
+    ChunkingStrategy, Document, DocumentChunk, RagConfig, RagPipeline, RagResult, ScoredChunk,
+};
 pub use store::{FileVectorStore, InMemoryVectorStore, MemoryEntry, SearchResult, VectorStore};

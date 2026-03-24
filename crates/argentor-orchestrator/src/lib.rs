@@ -42,6 +42,8 @@ pub mod task_queue;
 pub mod types;
 /// Pre-configured development team orchestration with workflows and quality gates.
 pub mod dev_team;
+/// Configurable workflow engine for automating business pipelines.
+pub mod workflow;
 
 pub use budget::{
     default_budget, AgentUsage, AgentUsageEntry, BudgetStatus, BudgetSummary, BudgetTracker,
@@ -73,4 +75,9 @@ pub use registry::{default_agent_definitions, AgentRegistry};
 pub use dev_team::{
     DevRole, DevTeam, DevTeamConfig, DevWorkflow, QualityGate, WorkflowArtifact, WorkflowResult,
     WorkflowStep, WorkflowStatus,
+};
+pub use workflow::{
+    lead_qualification_workflow, support_ticket_workflow, FailureAction, RunStatus, StepCondition,
+    StepResult, StepStatus, StepType, WorkflowDefinition, WorkflowEngine, WorkflowRun,
+    WorkflowStepDef, WorkflowTrigger,
 };

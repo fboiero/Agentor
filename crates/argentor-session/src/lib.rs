@@ -8,16 +8,24 @@
 //! - [`Session`] — Represents a single conversation session with metadata.
 //! - [`SessionStore`] — Trait for session persistence backends.
 //! - [`FileSessionStore`] — File-system-backed session store.
+//! - [`SqliteSessionStore`] — Atomic JSON-file-per-table session store with index.
+//! - [`PersistentUsageStore`] — Append-only JSONL usage tracking per tenant.
+//! - [`PersistentPersonaStore`] — JSON-file persona configuration store.
 //! - [`TranscriptStore`] — Trait for transcript persistence.
 //! - [`FileTranscriptStore`] — File-system-backed transcript store.
 
 /// Core session type and lifecycle.
 pub mod session;
+/// SQLite-style persistence layer for sessions, usage, and personas.
+pub mod sqlite_store;
 /// Session persistence backends.
 pub mod store;
 /// Structured transcript storage.
 pub mod transcript;
 
 pub use session::Session;
+pub use sqlite_store::{
+    PersistentPersonaStore, PersistentUsageStore, PersonaConfig, SqliteSessionStore, UsageRecord,
+};
 pub use store::{FileSessionStore, SessionStore};
 pub use transcript::{FileTranscriptStore, TranscriptEntry, TranscriptEvent, TranscriptStore};

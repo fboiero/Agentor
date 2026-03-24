@@ -39,6 +39,8 @@ pub mod webhook;
 pub mod ws_approval;
 /// XcapitSFF integration — agent execution, webhook proxy, health checks.
 pub mod xcapitsff;
+/// Business analytics endpoints for the SaaS dashboard.
+pub mod analytics;
 /// Graceful shutdown manager with cleanup hooks and connection draining.
 pub mod graceful_shutdown;
 /// OpenAPI 3.0 specification generator for Argentor REST API.
@@ -70,4 +72,9 @@ pub use rate_limit_headers::{RateLimitHeaders, RateLimitInfo};
 pub use xcapitsff::{
     XcapitConfig, XcapitState, xcapitsff_router, default_xcapit_profiles,
     RunTaskRequest, RunTaskResponse, BatchRequest, BatchResponse,
+};
+pub use analytics::{
+    analytics_router, AnalyticsEngine, AnalyticsState,
+    InteractionEvent, InteractionOutcome, QualityEvent, FunnelStage,
+    AnalyticsDashboard, AgentPerformance, ConversionFunnel, DailyMetric,
 };
