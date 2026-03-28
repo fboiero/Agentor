@@ -21,6 +21,8 @@ pub mod connection;
 pub mod control_plane;
 /// Embedded web dashboard for monitoring and management.
 pub mod dashboard;
+/// Interactive web-based agent playground for testing agents in a browser.
+pub mod playground;
 /// Authentication and rate-limiting middleware.
 pub mod middleware;
 /// JSON file-based persistence for control plane state.
@@ -49,6 +51,8 @@ pub mod openapi;
 pub mod rate_limit_headers;
 /// Trace visualization system for debugging agent execution.
 pub mod trace_viewer;
+/// Outbound webhook notification system.
+pub mod webhook_outbound;
 
 pub use auth::{
     AuthConfig as JwtAuthConfig, AuthMiddlewareState, AuthMode, AuthService, AuthenticatedUser,
@@ -57,6 +61,7 @@ pub use auth::{
 pub use channel_bridge::ChannelBridge;
 pub use control_plane::{control_plane_router, ControlPlaneState};
 pub use dashboard::dashboard_router;
+pub use playground::playground_router;
 pub use middleware::AuthConfig;
 pub use persistence::PersistentStore;
 pub use proxy_management::{proxy_management_router, ProxyManagementState};

@@ -32,6 +32,8 @@ pub mod rbac;
 pub mod sanitizer;
 /// SLA compliance tracking with uptime, availability, and incident windows.
 pub mod sla_tracker;
+/// Per-tenant rate limiting and quota enforcement for multi-tenant SaaS.
+pub mod tenant_limits;
 /// TLS and mutual-TLS configuration.
 pub mod tls;
 

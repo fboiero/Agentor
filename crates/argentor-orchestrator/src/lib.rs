@@ -44,6 +44,8 @@ pub mod types;
 pub mod dev_team;
 /// Configurable workflow engine for automating business pipelines.
 pub mod workflow;
+/// Agent version management with deploy, rollback, and A/B traffic split.
+pub mod agent_versioning;
 
 pub use budget::{
     default_budget, AgentUsage, AgentUsageEntry, BudgetStatus, BudgetSummary, BudgetTracker,

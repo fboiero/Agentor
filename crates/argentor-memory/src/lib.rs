@@ -20,6 +20,8 @@ pub mod bm25;
 pub mod conversation;
 /// Embedding provider trait and local implementation.
 pub mod embedding;
+/// Multiple embedding provider backends (OpenAI, Cohere, Voyage, cached, batch, factory).
+pub mod embeddings_providers;
 /// Hybrid search combining embeddings and BM25.
 pub mod hybrid;
 /// Query expansion for improved recall.
@@ -34,6 +36,10 @@ pub use conversation::{
     ConversationMemory, ConversationSummarizer, ConversationTurn, CustomerProfile,
 };
 pub use embedding::{EmbeddingProvider, LocalEmbedding};
+pub use embeddings_providers::{
+    BatchEmbeddingProvider, CacheStats, CachedEmbeddingProvider, CohereEmbeddingProvider,
+    EmbeddingConfig, EmbeddingProviderFactory, OpenAiEmbeddingProvider, VoyageEmbeddingProvider,
+};
 pub use hybrid::HybridSearcher;
 pub use query_expansion::{QueryExpander, RuleBasedExpander};
 pub use rag::{
