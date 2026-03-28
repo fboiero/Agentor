@@ -811,9 +811,12 @@ pub fn xcapitsff_router(state: Arc<XcapitState>) -> Router {
         .route("/api/v1/agent/evaluate", post(evaluate_handler))
         .route("/api/v1/agent/personas", post(create_persona_handler))
         .route("/api/v1/agent/personas/{tenant_id}", get(list_personas_handler))
+        .route("/api/v1/agent/profiles", get(list_profiles_handler))
         .route("/api/v1/proxy/webhook", post(webhook_proxy_handler))
         .route("/api/v1/usage/tenant/{tenant_id}", get(tenant_usage_handler))
         .route("/api/v1/health", get(extended_health_handler))
+        .route("/api/v1/tenants/{tenant_id}/register", post(register_tenant_handler))
+        .route("/api/v1/tenants/{tenant_id}/status", get(tenant_status_handler))
         .with_state(state)
 }
 
@@ -1213,7 +1216,31 @@ async fn batch_handler(
 
         let handle = tokio::spawn(async move {
             let _permit = sem.acquire().await;
-            let _task_start = Instant::now();
+
+            // Input guardrails
+            let input_check = state.guardrails.check_input(&task.context);
+            if !input_check.passed {
+                let blocking: Vec<String> = input_check
+                    .violations
+                    .iter()
+                    .filter(|v| v.severity == GuardrailSeverity::Block)
+                    .map(|v| v.message.clone())
+                    .collect();
+                if !blocking.is_empty() {
+                    return BatchResultItem {
+                        index,
+                        success: false,
+                        response: String::new(),
+                        error: Some(format!("Guardrail blocked: {}", blocking.join("; "))),
+                        tokens_input: 0,
+                        tokens_output: 0,
+                    };
+                }
+            }
+
+            let safe_context = input_check
+                .sanitized_text
+                .unwrap_or_else(|| task.context.clone());
 
             let profile = match state.profiles.get(&task.agent_role) {
                 Some(p) => p.clone(),
@@ -1248,9 +1275,15 @@ async fn batch_handler(
             .with_system_prompt(&system_prompt);
 
             let mut session = Session::new();
-            match runner.run(&mut session, &task.context).await {
-                Ok(response) => {
-                    let ti = (task.context.len() / 4) as u64;
+            match runner.run(&mut session, &safe_context).await {
+                Ok(mut response) => {
+                    // Output guardrails
+                    let output_check = state.guardrails.check_output(&response, Some(&safe_context));
+                    if let Some(sanitized) = output_check.sanitized_text {
+                        response = sanitized;
+                    }
+
+                    let ti = (safe_context.len() / 4) as u64;
                     let to = (response.len() / 4) as u64;
                     BatchResultItem {
                         index,
@@ -1965,6 +1998,106 @@ async fn list_personas_handler(
         Json(serde_json::to_value(response).unwrap_or_default()),
     )
         .into_response()
+}
+
+// ---------------------------------------------------------------------------
+// New endpoint handlers (Phase 40)
+// ---------------------------------------------------------------------------
+
+/// GET /api/v1/agent/profiles — List all available agent profiles.
+async fn list_profiles_handler(
+    State(state): State<Arc<XcapitState>>,
+) -> impl IntoResponse {
+    let profiles: Vec<serde_json::Value> = state
+        .profiles
+        .iter()
+        .map(|(role, profile)| {
+            serde_json::json!({
+                "role": role,
+                "model": profile.model.model_id,
+                "temperature": profile.model.temperature,
+                "max_tokens": profile.model.max_tokens,
+                "system_prompt_preview": &profile.system_prompt[..profile.system_prompt.len().min(100)],
+                "has_fallback": !profile.model.fallback_models.is_empty(),
+            })
+        })
+        .collect();
+
+    (StatusCode::OK, Json(serde_json::json!({
+        "profiles": profiles,
+        "total": profiles.len(),
+    }))).into_response()
+}
+
+/// POST /api/v1/tenants/{tenant_id}/register — Register a tenant with a plan.
+async fn register_tenant_handler(
+    State(state): State<Arc<XcapitState>>,
+    Path(tenant_id): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let plan_name = body["plan"].as_str().unwrap_or("free");
+    let plan = match plan_name {
+        "free" => TenantPlan::Free,
+        "pro" => TenantPlan::Pro,
+        "enterprise" => TenantPlan::Enterprise,
+        _ => TenantPlan::Free,
+    };
+
+    state.tenant_limits.register_tenant(&tenant_id, plan);
+
+    state.audit.log_action(
+        Uuid::new_v4(),
+        "tenant_registered",
+        None,
+        serde_json::json!({"tenant_id": &tenant_id, "plan": plan_name}),
+        AuditOutcome::Success,
+    );
+
+    info!(tenant_id = %tenant_id, plan = %plan_name, "Tenant registered");
+
+    (StatusCode::CREATED, Json(serde_json::json!({
+        "tenant_id": tenant_id,
+        "plan": plan_name,
+        "status": "active",
+    }))).into_response()
+}
+
+/// GET /api/v1/tenants/{tenant_id}/status — Get tenant usage status and limits.
+async fn tenant_status_handler(
+    State(state): State<Arc<XcapitState>>,
+    Path(tenant_id): Path<String>,
+) -> impl IntoResponse {
+    let limit_status = state.tenant_limits.get_status(&tenant_id);
+    let usage = state.usage_tracker.get_usage(&tenant_id, &UsagePeriod::All).await;
+
+    match limit_status {
+        Some(status) => {
+            (StatusCode::OK, Json(serde_json::json!({
+                "tenant_id": tenant_id,
+                "plan": status.plan,
+                "limits": {
+                    "daily_requests": format!("{}/{}", status.daily_requests, status.daily_limit),
+                    "monthly_tokens": format!("{}/{}", status.monthly_tokens, status.monthly_limit),
+                    "monthly_cost": format!("${:.4}/${:.2}", status.monthly_cost_usd, status.monthly_budget_usd),
+                    "utilization_percent": status.utilization_percent,
+                    "is_throttled": status.is_throttled,
+                },
+                "usage": {
+                    "total_requests": usage.request_count,
+                    "total_tokens": usage.total_tokens_in + usage.total_tokens_out,
+                    "total_cost_usd": usage.total_cost_usd,
+                    "by_agent": usage.by_agent,
+                    "by_model": usage.by_model,
+                },
+            }))).into_response()
+        }
+        None => {
+            (StatusCode::NOT_FOUND, Json(serde_json::json!({
+                "error": format!("Tenant '{}' not registered", tenant_id),
+                "hint": "POST /api/v1/tenants/{tenant_id}/register to register",
+            }))).into_response()
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
