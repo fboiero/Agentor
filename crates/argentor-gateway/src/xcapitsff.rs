@@ -12,7 +12,11 @@
 
 use argentor_agent::{AgentRunner, ModelConfig, StreamEvent};
 use argentor_agent::evaluator::ResponseEvaluator;
+use argentor_agent::guardrails::{GuardrailEngine, RuleSeverity as GuardrailSeverity};
+use argentor_agent::prompt_manager::PromptManager;
+use argentor_memory::conversation::{ConversationMemory, ConversationSummarizer};
 use argentor_security::audit::AuditOutcome;
+use argentor_security::tenant_limits::{TenantLimitManager, TenantPlan};
 use argentor_security::{AuditLog, PermissionSet};
 use argentor_session::Session;
 use argentor_skills::SkillRegistry;
@@ -267,6 +271,16 @@ pub struct XcapitState {
     pub usage_tracker: TenantUsageTracker,
     /// Per-tenant agent personas, keyed by (tenant_id, agent_role).
     pub personas: Arc<RwLock<HashMap<(String, String), PersonaConfig>>>,
+    /// AI guardrails engine for input/output validation.
+    pub guardrails: GuardrailEngine,
+    /// Per-tenant rate limit enforcement.
+    pub tenant_limits: TenantLimitManager,
+    /// Conversation memory for cross-session context.
+    pub conversation_memory: ConversationMemory,
+    /// Prompt template manager.
+    pub prompt_manager: PromptManager,
+    /// Analytics engine for business metrics.
+    pub analytics: crate::analytics::AnalyticsEngine,
 }
 
 impl XcapitState {
@@ -297,6 +311,15 @@ impl XcapitState {
                 .unwrap_or_default(),
             usage_tracker: TenantUsageTracker::new(),
             personas: Arc::new(RwLock::new(HashMap::new())),
+            guardrails: GuardrailEngine::new(),
+            tenant_limits: TenantLimitManager::new(),
+            conversation_memory: ConversationMemory::new(),
+            prompt_manager: {
+                let mut pm = PromptManager::new();
+                argentor_agent::prompt_manager::register_xcapit_templates(&mut pm);
+                pm
+            },
+            analytics: crate::analytics::AnalyticsEngine::new(),
         }
     }
 
@@ -832,14 +855,27 @@ fn estimate_cost_usd(model_id: &str, tokens_in: u64, tokens_out: u64) -> f64 {
 }
 
 /// POST /api/v1/agent/run-task — Execute a single agent task.
+///
+/// Full integrated pipeline:
+///   1. Tenant rate limit check
+///   2. Input guardrails (PII, prompt injection, toxicity)
+///   3. Profile lookup + model routing
+///   4. Persona injection
+///   5. Conversation memory injection
+///   6. Agent execution (with circuit breaker + cache)
+///   7. Output guardrails
+///   8. Quality scoring
+///   9. Conversation memory recording
+///  10. Usage tracking + analytics + audit
 async fn run_task_handler(
     State(state): State<Arc<XcapitState>>,
     headers: HeaderMap,
     Json(req): Json<RunTaskRequest>,
 ) -> impl IntoResponse {
     let start = Instant::now();
+    let mut compliance_flags: Vec<String> = Vec::new();
 
-    // Resolve tenant ID from request body or X-Tenant-ID header
+    // ── Step 0: Resolve tenant ──────────────────────────────────
     let tenant_id = req.tenant_id.clone().or_else(|| {
         headers
             .get("X-Tenant-ID")
@@ -847,7 +883,65 @@ async fn run_task_handler(
             .map(String::from)
     });
 
-    // Look up profile
+    // ── Step 1: Tenant rate limit check ─────────────────────────
+    if let Some(ref tid) = tenant_id {
+        let check = state.tenant_limits.check_request(tid);
+        if !check.allowed {
+            let reason = check.reason.unwrap_or_else(|| "rate_limited".to_string());
+            compliance_flags.push(format!("rate_limited:{reason}"));
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(serde_json::json!({
+                    "error": format!("Rate limit exceeded: {reason}"),
+                    "tenant_id": tid,
+                    "retry_after_seconds": 60,
+                })),
+            )
+                .into_response();
+        }
+    }
+
+    // ── Step 2: Input guardrails ────────────────────────────────
+    let input_check = state.guardrails.check_input(&req.context);
+    if !input_check.passed {
+        let blocking: Vec<String> = input_check
+            .violations
+            .iter()
+            .filter(|v| v.severity == GuardrailSeverity::Block)
+            .map(|v| format!("{}: {}", v.rule_name, v.message))
+            .collect();
+
+        if !blocking.is_empty() {
+            compliance_flags.push("input_blocked".to_string());
+            state.audit.log_action(
+                Uuid::new_v4(),
+                "guardrail_blocked",
+                Some(req.agent_role.clone()),
+                serde_json::json!({"violations": blocking}),
+                AuditOutcome::Error,
+            );
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({
+                    "error": "Input blocked by guardrails",
+                    "violations": blocking,
+                })),
+            )
+                .into_response();
+        }
+
+        // Warnings are noted but don't block
+        for v in &input_check.violations {
+            compliance_flags.push(format!("input_warn:{}", v.rule_name));
+        }
+    }
+
+    // Use sanitized input if guardrails cleaned it
+    let safe_context = input_check
+        .sanitized_text
+        .unwrap_or_else(|| req.context.clone());
+
+    // ── Step 3: Profile lookup + model routing ──────────────────
     let profile = match state.profiles.get(&req.agent_role) {
         Some(p) => p.clone(),
         None => {
@@ -862,7 +956,6 @@ async fn run_task_handler(
         }
     };
 
-    // Build model config with overrides
     let mut model_config = profile.model.clone();
     resolve_api_keys(&mut model_config);
 
@@ -873,7 +966,6 @@ async fn run_task_handler(
         model_config.temperature = temp;
     }
 
-    // Apply routing hint to override model selection
     if let Some(ref hint) = req.routing_hint {
         if let Some((model_id, provider)) = resolve_routing_hint(hint) {
             model_config.model_id = model_id;
@@ -882,7 +974,7 @@ async fn run_task_handler(
         }
     }
 
-    // Build system prompt with optional persona injection
+    // ── Step 4: Persona injection ───────────────────────────────
     let mut system_prompt = req
         .system_prompt
         .unwrap_or_else(|| profile.system_prompt.clone());
@@ -898,9 +990,27 @@ async fn run_task_handler(
         }
     }
 
+    // ── Step 5: Conversation memory injection ───────────────────
+    let customer_id = headers
+        .get("X-Customer-ID")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+
+    if let Some(ref cid) = customer_id {
+        let context_str = ConversationSummarizer::build_context(
+            &state.conversation_memory,
+            cid,
+            500, // max tokens for history injection
+        )
+        .await;
+        if !context_str.is_empty() {
+            system_prompt = format!("{system_prompt}\n\n{context_str}");
+        }
+    }
+
     let model_id = model_config.model_id.clone();
 
-    // Build runner with circuit breaker
+    // ── Step 6: Agent execution ─────────────────────────────────
     let runner = AgentRunner::new(
         model_config,
         state.skills.clone(),
@@ -909,40 +1019,108 @@ async fn run_task_handler(
     )
     .with_system_prompt(&system_prompt);
 
-    // Create or reuse session
     let mut session = Session::new();
     let session_id = req
         .session_id
         .unwrap_or_else(|| session.id.to_string());
 
-    // Audit: task started
     state.audit.log_action(
         session.id,
         "xcapitsff_run_task",
         Some(req.agent_role.clone()),
-        serde_json::json!({"role": req.agent_role, "context_len": req.context.len()}),
+        serde_json::json!({
+            "role": req.agent_role,
+            "context_len": safe_context.len(),
+            "tenant_id": tenant_id,
+            "customer_id": customer_id,
+            "model": model_id,
+        }),
         AuditOutcome::Success,
     );
 
-    info!(role = %req.agent_role, session_id = %session_id, "XcapitSFF run-task started");
+    info!(role = %req.agent_role, session_id = %session_id, "XcapitSFF run-task started (full pipeline)");
 
-    // Execute
-    let result = runner.run(&mut session, &req.context).await;
-
+    let result = runner.run(&mut session, &safe_context).await;
     let duration_ms = start.elapsed().as_millis() as u64;
 
     match result {
-        Ok(response) => {
-            let tokens_input = (req.context.len() / 4) as u64;
+        Ok(mut response) => {
+            // ── Step 7: Output guardrails ────────────────────────
+            let output_check = state.guardrails.check_output(&response, Some(&safe_context));
+            if !output_check.passed {
+                for v in &output_check.violations {
+                    compliance_flags.push(format!("output_{:?}:{}", v.severity, v.rule_name));
+                }
+                // Use sanitized output if available
+                if let Some(sanitized) = output_check.sanitized_text {
+                    response = sanitized;
+                }
+            }
+
+            let tokens_input = (safe_context.len() / 4) as u64;
             let tokens_output = (response.len() / 4) as u64;
 
-            // Track usage per tenant
+            // ── Step 8: Quality scoring ─────────────────────────
+            let evaluator = ResponseEvaluator::with_defaults();
+            let quality_score = evaluator.evaluate_heuristic(&safe_context, &response, &[]);
+            let quality = quality_score.overall;
+
+            if quality < 0.5 {
+                compliance_flags.push(format!("low_quality:{quality:.2}"));
+            }
+
+            // ── Step 9: Conversation memory recording ───────────
+            if let Some(ref cid) = customer_id {
+                state.conversation_memory.record_turn(
+                    cid,
+                    &session_id,
+                    "user",
+                    &safe_context,
+                    HashMap::new(),
+                )
+                .await;
+                let mut meta = HashMap::new();
+                meta.insert("agent_role".to_string(), req.agent_role.clone());
+                meta.insert("model".to_string(), model_id.clone());
+                meta.insert("quality".to_string(), format!("{quality:.2}"));
+                state.conversation_memory.record_turn(
+                    cid,
+                    &session_id,
+                    "assistant",
+                    &response,
+                    meta,
+                )
+                .await;
+            }
+
+            // ── Step 10: Usage + analytics + audit ──────────────
             if let Some(ref tid) = tenant_id {
                 let cost = estimate_cost_usd(&model_id, tokens_input, tokens_output);
                 state
                     .usage_tracker
                     .record(tid, &req.agent_role, &model_id, tokens_input, tokens_output, cost)
                     .await;
+
+                state.tenant_limits.record_usage(tid, tokens_input, tokens_output, cost);
+
+                state.analytics.record_interaction(crate::analytics::InteractionEvent {
+                    tenant_id: tid.clone(),
+                    agent_role: req.agent_role.clone(),
+                    channel: "api".to_string(),
+                    customer_id: customer_id.clone(),
+                    outcome: crate::analytics::InteractionOutcome::Resolved,
+                    duration_ms,
+                    tokens_used: tokens_input + tokens_output,
+                    timestamp: Utc::now(),
+                }).await;
+
+                state.analytics.record_quality_score(crate::analytics::QualityEvent {
+                    tenant_id: tid.clone(),
+                    agent_role: req.agent_role.clone(),
+                    overall_score: quality,
+                    criteria_scores: HashMap::new(),
+                    timestamp: Utc::now(),
+                }).await;
             }
 
             state.audit.log_action(
@@ -953,11 +1131,13 @@ async fn run_task_handler(
                     "duration_ms": duration_ms,
                     "tokens_input": tokens_input,
                     "tokens_output": tokens_output,
+                    "quality_score": quality,
+                    "compliance_flags": compliance_flags,
                 }),
                 AuditOutcome::Success,
             );
 
-            info!(role = %req.agent_role, duration_ms, "XcapitSFF run-task completed");
+            info!(role = %req.agent_role, duration_ms, quality, "XcapitSFF run-task completed (full pipeline)");
 
             (
                 StatusCode::OK,
@@ -968,7 +1148,7 @@ async fn run_task_handler(
                     tokens_input,
                     tokens_output,
                     tool_calls: vec![],
-                    compliance_flags: vec![],
+                    compliance_flags,
                     duration_ms,
                 })
                 .unwrap_or_default()),
@@ -977,6 +1157,20 @@ async fn run_task_handler(
         }
         Err(e) => {
             error!(role = %req.agent_role, error = %e, "XcapitSFF run-task failed");
+
+            // Record failure in analytics
+            if let Some(ref tid) = tenant_id {
+                state.analytics.record_interaction(crate::analytics::InteractionEvent {
+                    tenant_id: tid.clone(),
+                    agent_role: req.agent_role.clone(),
+                    channel: "api".to_string(),
+                    customer_id: customer_id.clone(),
+                    outcome: crate::analytics::InteractionOutcome::Escalated,
+                    duration_ms,
+                    tokens_used: 0,
+                    timestamp: Utc::now(),
+                }).await;
+            }
 
             state.audit.log_action(
                 session.id,

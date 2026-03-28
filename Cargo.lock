@@ -290,6 +290,7 @@ dependencies = [
  "argentor-channels",
  "argentor-core",
  "argentor-mcp",
+ "argentor-memory",
  "argentor-security",
  "argentor-session",
  "argentor-skills",
