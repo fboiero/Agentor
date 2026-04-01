@@ -1,5 +1,5 @@
 {
-  "name": "argentor_client",
+  "name": "@argentor/client",
   "version": "0.1.0",
   "description": "TypeScript SDK client for the Argentor API",
   "main": "dist/index.js",

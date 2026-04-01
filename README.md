@@ -2,12 +2,14 @@
 
 **Secure multi-agent AI framework in Rust with WASM sandboxed plugins, MCP integration, and compliance modules.**
 
+[![CI](https://github.com/fboiero/Argentor/actions/workflows/ci.yml/badge.svg)](https://github.com/fboiero/Argentor/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-2395%20passing-brightgreen.svg)]()
-[![Clippy](https://img.shields.io/badge/Clippy-0%20warnings-brightgreen.svg)]()
-[![LOC](https://img.shields.io/badge/LOC-120K%2B-informational.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-2525%20passing-brightgreen.svg)]()
+[![LOC](https://img.shields.io/badge/LOC-125K%2B-informational.svg)]()
 [![Crates](https://img.shields.io/badge/Crates-14-informational.svg)]()
+[![PyPI](https://img.shields.io/badge/PyPI-argentor--client-blue.svg)](https://pypi.org/project/argentor-client/)
+[![npm](https://img.shields.io/badge/npm-%40argentor%2Fclient-red.svg)](https://www.npmjs.com/package/@argentor/client)
 
 ---
 
@@ -284,10 +286,36 @@ cargo run --bin argentor -- skill list
 cargo run --bin argentor -- compliance report
 ```
 
+### Client SDKs
+
+```bash
+# Python
+pip install argentor-client
+
+# TypeScript
+npm install @argentor/client
+```
+
+```python
+from argentor_client import ArgentorClient
+
+client = ArgentorClient(base_url="http://localhost:3000", tenant_id="my-tenant")
+result = client.run_task("sales_qualifier", "Lead: Acme Corp, LATAM, CFO, Score 75")
+print(result["response"])
+```
+
+```typescript
+import { ArgentorClient } from '@argentor/client';
+
+const client = new ArgentorClient({ baseUrl: 'http://localhost:3000', tenantId: 'my-tenant' });
+const result = await client.runTask('support_responder', 'Customer needs help with withdrawal');
+console.log(result.response);
+```
+
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 2395 tests
+cargo test --workspace           # Run all 2525 tests
 cargo clippy --workspace         # 0 warnings (strict lints)
 cargo fmt --all -- --check       # Check formatting
 ```
