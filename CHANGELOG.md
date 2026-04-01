@@ -161,8 +161,91 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Orchestrator integration**: EventBus emitting `orchestrator.task.started`, `orchestrator.task.completed`, `orchestrator.task.failed` events with structured JSON payloads (task_id, role, duration_ms, error). ErrorAggregator collecting worker failures with LlmProvider category and role/task_id correlation. Accessors: `event_bus()`, `error_aggregator()`
 - **LlmBackend trait**: Added `provider_name()` method with default `"unknown"`. Implemented for all 5 backends: `claude`, `openai`, `gemini`, `claude-code`, `failover`
 
+#### XcapitSFF Integration (Phase 1+2)
+- POST /api/v1/agent/run-task — single agent execution by role with failover
+- POST /api/v1/agent/run-task-stream — SSE streaming token by token
+- POST /api/v1/agent/batch — parallel batch execution with semaphore
+- POST /api/v1/agent/evaluate — response quality scoring (heuristic)
+- POST /api/v1/agent/personas — per-tenant persona management
+- POST /api/v1/proxy/webhook — HMAC-validated webhook proxy with audit
+- GET /api/v1/usage/tenant/{id} — cost tracking per tenant/agent/model
+- GET /api/v1/health — extended health with XcapitSFF cross-check
+- 5 xcapitsff_* skills (search, lead_info, ticket_info, kb_search, customer360)
+- 4 agent profiles (sales_qualifier, outreach_composer, support_responder, ticket_router)
+- TenantUsageTracker, PersonaConfig, model routing (fast_cheap/balanced/quality_max)
+
+#### Phase 24 — Persistent Storage (argentor-session)
+- SqliteSessionStore: JSON-file + index with in-memory cache, atomic writes — 25 tests
+- PersistentUsageStore: append-only JSONL per tenant
+- PersistentPersonaStore: JSON files for per-tenant personas
+
+#### Phase 25 — Conversation Memory (argentor-memory)
+- ConversationMemory: cross-session context per customer — 30 tests
+- CustomerProfile: topic extraction, sentiment trend
+- ConversationSummarizer: token-budgeted context for system prompt injection
+
+#### Phase 26 — RAG Pipeline (argentor-memory)
+- RagPipeline: ingest → chunk → embed → store → query → context — 27 tests
+- 4 chunking strategies: FixedSize, Paragraph, Sentence, Semantic
+
+#### Phase 27 — Workflow Engine (argentor-orchestrator)
+- WorkflowEngine with 6 step types, 5 conditions, expression evaluator — 40 tests
+- Pre-built templates: lead_qualification_workflow, support_ticket_workflow
+
+#### Phase 28 — Analytics Endpoints (argentor-gateway)
+- AnalyticsEngine with dashboard, agent performance, conversion funnel, trends — 28 tests
+- 4 REST endpoints under /api/v1/analytics/
+
+#### Phase 29 — AI Guardrails (argentor-agent)
+- GuardrailEngine with 10 rule types: PII (Luhn for CC), prompt injection (23 patterns), toxicity, content policy — 42 tests
+- PII sanitizer with redaction
+
+#### Phase 30 — Prompt Management (argentor-agent)
+- PromptManager: versioned templates with {{#if}}/{{#each}}, A/B variants, chains — 32 tests
+- 4 pre-built XcapitSFF templates
+
+#### Phase 31 — Eval Framework (argentor-agent)
+- EvalFramework with 6 evaluators (ExactMatch, Contains, JsonSchema, Similarity, Heuristic, Composite) — 45 tests
+- 3 pre-built XcapitSFF suites, ComparisonReport
+
+#### Phase 32 — Trace Viewer (argentor-gateway)
+- TraceStore + 5 REST endpoints for trace visualization with cost breakdown — 32 tests
+
+#### Phase 33 — Python/TypeScript SDK Generator (argentor-builtins)
+- SdkGenerator: generates complete Python (httpx+pydantic) and TypeScript (fetch) SDKs — 33 tests
+
+#### Phase 34 — Interactive Agent Playground (argentor-gateway)
+- Web SPA at /playground: chat interface, agent selector, trace panel, dark theme — 8 tests
+
+#### Phase 35 — Embedding Providers (argentor-memory)
+- CachedEmbeddingProvider, BatchEmbeddingProvider, EmbeddingProviderFactory — 24 tests
+- ApiEmbeddingConfig for OpenAI, Cohere, Voyage AI
+
+#### Phase 36 — Agent Versioning (argentor-orchestrator)
+- AgentVersionManager: deploy, rollback, canary, A/B traffic split — 28 tests
+
+#### Phase 37 — Outbound Webhooks (argentor-gateway)
+- WebhookDispatcher with HMAC signing, retry policy, delivery log, 10 event types — 26 tests
+
+#### Phase 38 — Tenant Rate Limiting (argentor-security)
+- TenantLimitManager: Free/Pro/Enterprise plans with daily/monthly/budget enforcement — 28 tests
+
+#### Phase 39 — Deep Integration Sprint
+- run-task pipeline: 11 steps (guardrails → limits → routing → persona → memory → execute → guardrails → quality → memory → analytics → workflow)
+- All modules wired into XcapitState constructor
+
+#### Phase 40 — Batch Guardrails + Tenant Management
+- Batch handler runs input/output guardrails
+- GET /api/v1/agent/profiles, POST/GET tenant registration and status
+
+#### Phase 41 — Integration Tests + Workflows + SDKs + Demo
+- 15 HTTP integration tests (real server, real requests)
+- Workflow engine auto-triggers on HOT leads and urgent tickets
+- SDK generation to disk (Python + TypeScript)
+- demo_full_pipeline.rs showing all 10 pipeline steps
+
 ### Changed
-- **README.md**: Updated badges (1833 tests, 96K+ LOC), added Production Hardening and Code Intelligence sections, updated crate descriptions
+- **README.md**: Updated badges (2395 tests, 120K+ LOC)
 - **GatewayServer**: `build_complete()` now mounts `/openapi.json` route
 - **Orchestrator**: Constructor initializes EventBus and ErrorAggregator, WorkerContext carries both for parallel tasks
 - **AgentRunner**: Constructor initializes disabled DebugRecorder and default CircuitBreakerRegistry

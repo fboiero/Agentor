@@ -6,3 +6,4 @@
 *.wasm
 !skills/**/*.wasm
 Cargo.lock
+/generated-sdks/

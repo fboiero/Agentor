@@ -4,9 +4,9 @@
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-2380%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-2395%20passing-brightgreen.svg)]()
 [![Clippy](https://img.shields.io/badge/Clippy-0%20warnings-brightgreen.svg)]()
-[![LOC](https://img.shields.io/badge/LOC-119K%2B-informational.svg)]()
+[![LOC](https://img.shields.io/badge/LOC-120K%2B-informational.svg)]()
 [![Crates](https://img.shields.io/badge/Crates-14-informational.svg)]()
 
 ---
@@ -287,7 +287,7 @@ cargo run --bin argentor -- compliance report
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 2380 tests
+cargo test --workspace           # Run all 2395 tests
 cargo clippy --workspace         # 0 warnings (strict lints)
 cargo fmt --all -- --check       # Check formatting
 ```
