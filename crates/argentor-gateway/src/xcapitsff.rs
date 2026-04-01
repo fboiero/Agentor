@@ -11,6 +11,7 @@
 //! - `GET /api/v1/health` — Extended health check including XcapitSFF status
 
 use argentor_agent::{AgentRunner, ModelConfig, StreamEvent};
+use argentor_orchestrator::workflow::{WorkflowEngine, lead_qualification_workflow, support_ticket_workflow};
 use argentor_agent::evaluator::ResponseEvaluator;
 use argentor_agent::guardrails::{GuardrailEngine, RuleSeverity as GuardrailSeverity};
 use argentor_agent::prompt_manager::PromptManager;
@@ -281,6 +282,8 @@ pub struct XcapitState {
     pub prompt_manager: PromptManager,
     /// Analytics engine for business metrics.
     pub analytics: crate::analytics::AnalyticsEngine,
+    /// Workflow engine for automated business pipelines.
+    pub workflow_engine: WorkflowEngine,
 }
 
 impl XcapitState {
@@ -320,7 +323,15 @@ impl XcapitState {
                 pm
             },
             analytics: crate::analytics::AnalyticsEngine::new(),
+            workflow_engine: WorkflowEngine::new(),
         }
+    }
+
+    /// Register default workflow definitions (lead qualification, support ticket).
+    /// Must be called after construction since workflow registration is async.
+    pub async fn init_workflows(&self) {
+        self.workflow_engine.register_workflow(lead_qualification_workflow()).await;
+        self.workflow_engine.register_workflow(support_ticket_workflow()).await;
     }
 
     /// Start the background health check loop for XcapitSFF.
@@ -817,6 +828,7 @@ pub fn xcapitsff_router(state: Arc<XcapitState>) -> Router {
         .route("/api/v1/health", get(extended_health_handler))
         .route("/api/v1/tenants/{tenant_id}/register", post(register_tenant_handler))
         .route("/api/v1/tenants/{tenant_id}/status", get(tenant_status_handler))
+        .route("/api/v1/workflows/runs", get(list_workflow_runs_handler))
         .with_state(state)
 }
 
@@ -1139,6 +1151,41 @@ async fn run_task_handler(
                 }),
                 AuditOutcome::Success,
             );
+
+            // ── Step 11: Workflow triggering ────────────────────────
+            // Auto-trigger workflows based on agent role and output
+            if req.agent_role == "sales_qualifier" {
+                // Check if the response contains HOT classification
+                let response_upper = response.to_uppercase();
+                if response_upper.contains("HOT") || response_upper.contains("\u{1f525}") {
+                    let trigger_data = serde_json::json!({
+                        "agent_role": "sales_qualifier",
+                        "tenant_id": tenant_id,
+                        "customer_id": customer_id,
+                        "qualification_result": &response,
+                        "session_id": &session_id,
+                    });
+                    if let Some(run_id) = state.workflow_engine.start("lead_qualification", trigger_data).await {
+                        info!(workflow = "lead_qualification", run_id = %run_id, "Auto-triggered lead qualification workflow");
+                        compliance_flags.push(format!("workflow_triggered:lead_qualification:{run_id}"));
+                    }
+                }
+            } else if req.agent_role == "ticket_router" {
+                // Auto-trigger support workflow for urgent tickets
+                let response_lower = response.to_lowercase();
+                if response_lower.contains("\"priority\":\"urgent\"") || response_lower.contains("\"priority\": \"urgent\"") {
+                    let trigger_data = serde_json::json!({
+                        "agent_role": "ticket_router",
+                        "tenant_id": tenant_id,
+                        "routing_result": &response,
+                        "session_id": &session_id,
+                    });
+                    if let Some(run_id) = state.workflow_engine.start("support_ticket", trigger_data).await {
+                        info!(workflow = "support_ticket", run_id = %run_id, "Auto-triggered support ticket workflow");
+                        compliance_flags.push(format!("workflow_triggered:support_ticket:{run_id}"));
+                    }
+                }
+            }
 
             info!(role = %req.agent_role, duration_ms, quality, "XcapitSFF run-task completed (full pipeline)");
 
@@ -2098,6 +2145,31 @@ async fn tenant_status_handler(
             }))).into_response()
         }
     }
+}
+
+/// GET /api/v1/workflows/runs — List all workflow runs.
+async fn list_workflow_runs_handler(
+    State(state): State<Arc<XcapitState>>,
+) -> impl IntoResponse {
+    let lead_runs = state.workflow_engine.list_runs("lead_qualification").await;
+    let support_runs = state.workflow_engine.list_runs("support_ticket").await;
+
+    (StatusCode::OK, Json(serde_json::json!({
+        "lead_qualification": lead_runs.iter().map(|r| serde_json::json!({
+            "run_id": r.run_id,
+            "status": format!("{:?}", r.status),
+            "created_at": r.created_at.to_rfc3339(),
+            "current_step": r.current_step_index,
+            "total_steps": r.step_results.len(),
+        })).collect::<Vec<_>>(),
+        "support_ticket": support_runs.iter().map(|r| serde_json::json!({
+            "run_id": r.run_id,
+            "status": format!("{:?}", r.status),
+            "created_at": r.created_at.to_rfc3339(),
+            "current_step": r.current_step_index,
+            "total_steps": r.step_results.len(),
+        })).collect::<Vec<_>>(),
+    }))).into_response()
 }
 
 // ---------------------------------------------------------------------------

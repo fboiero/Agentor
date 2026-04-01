@@ -62,3 +62,11 @@ path = "examples/demo_xcapitsff.rs"
 [[example]]
 name = "demo_saas_factory"
 path = "examples/demo_saas_factory.rs"
+
+[[example]]
+name = "generate_sdks"
+path = "examples/generate_sdks.rs"
+
+[[example]]
+name = "demo_full_pipeline"
+path = "examples/demo_full_pipeline.rs"

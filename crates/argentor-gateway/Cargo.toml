@@ -16,6 +16,7 @@ argentor-channels.workspace = true
 argentor-skills.workspace = true
 argentor-a2a.workspace = true
 argentor-memory.workspace = true
+argentor-orchestrator.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 async-trait.workspace = true

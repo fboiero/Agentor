@@ -291,6 +291,7 @@ dependencies = [
  "argentor-core",
  "argentor-mcp",
  "argentor-memory",
+ "argentor-orchestrator",
  "argentor-security",
  "argentor-session",
  "argentor-skills",
