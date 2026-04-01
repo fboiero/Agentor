@@ -3,6 +3,7 @@ use crate::control_plane::{control_plane_router, ControlPlaneState};
 use crate::dashboard::dashboard_router;
 use crate::middleware::{auth_middleware, rate_limit_middleware, AuthConfig, MiddlewareState};
 use crate::playground::playground_router;
+use crate::pricing_page::pricing_router;
 use crate::proxy_management::{proxy_management_router, ProxyManagementState};
 use crate::rest_api::{api_router, RestApiState};
 use crate::router::{InboundMessage, MessageRouter};
@@ -157,9 +158,10 @@ impl GatewayServer {
 
         let mut app = app.with_state(state);
 
-        // Merge the web dashboard and playground.
+        // Merge the web dashboard, playground, and pricing page.
         app = app.merge(dashboard_router());
         app = app.merge(playground_router());
+        app = app.merge(pricing_router());
 
         // Merge control-plane routes if the state is provided.
         if let Some(cp_state) = control_plane {

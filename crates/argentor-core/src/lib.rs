@@ -16,6 +16,8 @@
 pub mod approval;
 /// Distributed correlation context for request tracing across agent boundaries.
 pub mod correlation;
+/// Data residency configuration for multi-region compliance (GDPR, HIPAA, etc.).
+pub mod data_residency;
 /// Error aggregation, deduplication, and trending for production diagnostics.
 pub mod error_aggregator;
 /// Pub/sub event bus for decoupled component communication.

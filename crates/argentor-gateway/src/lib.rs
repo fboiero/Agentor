@@ -15,6 +15,8 @@
 pub mod analytics;
 /// JWT/OAuth2 authentication module.
 pub mod auth;
+/// Billing integration with webhook endpoints and plan enforcement.
+pub mod billing;
 /// Bridge between ChannelManager and the gateway pipeline.
 pub mod channel_bridge;
 /// WebSocket connection management.
@@ -33,6 +35,8 @@ pub mod openapi;
 pub mod persistence;
 /// Interactive web-based agent playground for testing agents in a browser.
 pub mod playground;
+/// SaaS pricing page for plan comparison and signup.
+pub mod pricing_page;
 /// REST API endpoints for managing credentials, token pools, and the proxy orchestrator.
 pub mod proxy_management;
 /// X-RateLimit-* response headers for API consumers.
@@ -54,6 +58,10 @@ pub mod ws_approval;
 /// XcapitSFF integration — agent execution, webhook proxy, health checks.
 pub mod xcapitsff;
 
+pub use billing::{
+    billing_router, BillingManager, BillingPlan, BillingState, Invoice, InvoiceLineItem,
+    InvoiceStatus, Subscription, SubscriptionStatus, WebhookProcessResult,
+};
 pub use analytics::{
     analytics_router, AgentPerformance, AnalyticsDashboard, AnalyticsEngine, AnalyticsState,
     ConversionFunnel, DailyMetric, FunnelStage, InteractionEvent, InteractionOutcome, QualityEvent,
@@ -74,6 +82,7 @@ pub use openapi::{
 };
 pub use persistence::PersistentStore;
 pub use playground::playground_router;
+pub use pricing_page::pricing_router;
 pub use proxy_management::{proxy_management_router, ProxyManagementState};
 pub use rate_limit_headers::{RateLimitHeaders, RateLimitInfo};
 pub use rest_api::{api_router, RestApiState};

@@ -16,6 +16,8 @@
 pub mod alert_engine;
 /// Audit logging module.
 pub mod audit;
+/// Audit log export to SIEM formats (Splunk, Elasticsearch, CEF, JSON-LD, CSV, Syslog).
+pub mod audit_export;
 /// Audit log query and filtering.
 pub mod audit_query;
 /// Capability and permission definitions.
@@ -41,6 +43,9 @@ pub use alert_engine::{
     Alert, AlertCondition, AlertEngine, AlertEngineStats, AlertRule, AlertSeverity,
 };
 pub use audit::AuditLog;
+pub use audit_export::{
+    AuditExportState, AuditExporter, ExportConfig, ExportFormat, ExportQuery, ExportResponse,
+};
 pub use audit_query::{query_audit_log, AuditFilter, AuditQueryResult};
 pub use capability::{is_private_ip, Capability, PermissionSet, ShellCheckResult};
 pub use encrypted_store::EncryptedStore;

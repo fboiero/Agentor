@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Argentor — Pricing</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #0d0d1a;
+    color: #e0e0e0;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  a { color: #7c6aef; text-decoration: none; transition: color .2s; }
+  a:hover { color: #a594ff; }
+
+  /* ── Header / Nav ─────────────────────────────────────────────── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1200px; margin: 0 auto; padding: 24px 32px;
+  }
+  .logo {
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #7c6aef, #00d4ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a {
+    font-size: 0.9rem; color: #a0a0b8; font-weight: 500; transition: color .2s;
+  }
+  .nav-links a:hover { color: #fff; }
+  .nav-links a.active { color: #fff; }
+
+  /* ── Hero Section ─────────────────────────────────────────────── */
+  .hero {
+    text-align: center; padding: 64px 32px 40px;
+    max-width: 720px; margin: 0 auto;
+  }
+  .hero h1 {
+    font-size: 2.8rem; font-weight: 800; letter-spacing: -1px;
+    color: #fff; margin-bottom: 16px;
+  }
+  .hero p { font-size: 1.15rem; color: #8888a8; max-width: 560px; margin: 0 auto; }
+
+  /* ── Billing Toggle ───────────────────────────────────────────── */
+  .billing-toggle {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin: 36px 0 48px; font-size: 0.95rem;
+  }
+  .billing-toggle span { color: #8888a8; font-weight: 500; transition: color .2s; }
+  .billing-toggle span.active-label { color: #fff; }
+  .toggle-track {
+    position: relative; width: 48px; height: 26px;
+    background: #2a2a44; border-radius: 13px; cursor: pointer;
+    transition: background .25s;
+  }
+  .toggle-track.annual { background: #7c6aef; }
+  .toggle-knob {
+    position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform .25s;
+  }
+  .toggle-track.annual .toggle-knob { transform: translateX(22px); }
+  .save-badge {
+    background: rgba(124, 106, 239, .15); color: #a594ff;
+    font-size: 0.75rem; font-weight: 600; padding: 3px 10px;
+    border-radius: 10px; letter-spacing: 0.3px;
+  }
+
+  /* ── Cards Grid ───────────────────────────────────────────────── */
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 24px; max-width: 1100px; margin: 0 auto; padding: 0 32px 80px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .pricing-grid { grid-template-columns: 1fr; max-width: 440px; }
+  }
+
+  .card {
+    background: #1a1a2e; border: 1px solid #2a2a44; border-radius: 16px;
+    padding: 36px 32px; display: flex; flex-direction: column;
+    transition: border-color .3s, transform .3s, box-shadow .3s;
+    position: relative;
+  }
+  .card:hover { border-color: #3a3a58; transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+
+  .card.recommended {
+    border: 2px solid transparent;
+    background-image: linear-gradient(#1a1a2e, #1a1a2e),
+                      linear-gradient(135deg, #7c6aef, #00d4ff);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    transform: scale(1.03);
+  }
+  .card.recommended:hover { transform: scale(1.03) translateY(-4px); }
+
+  .popular-badge {
+    position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #7c6aef, #00d4ff);
+    color: #fff; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;
+    padding: 4px 16px; border-radius: 10px; text-transform: uppercase;
+  }
+
+  .card-plan { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #8888a8; margin-bottom: 8px; }
+  .card-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+  .card-price .amount { font-size: 2.8rem; font-weight: 800; color: #fff; }
+  .card-price .period { font-size: 0.9rem; color: #666680; }
+  .card-subtitle { font-size: 0.85rem; color: #555570; margin-bottom: 24px; min-height: 20px; }
+
+  .card-features { list-style: none; flex: 1; margin-bottom: 28px; }
+  .card-features li {
+    position: relative; padding-left: 26px; margin-bottom: 12px;
+    font-size: 0.9rem; color: #b0b0c8;
+  }
+  .card-features li::before {
+    content: ''; position: absolute; left: 0; top: 6px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(124, 106, 239, .15);
+    border: 2px solid #7c6aef;
+  }
+  .card-features li::after {
+    content: ''; position: absolute; left: 4px; top: 10px;
+    width: 6px; height: 3px; border-left: 2px solid #7c6aef;
+    border-bottom: 2px solid #7c6aef; transform: rotate(-45deg);
+  }
+
+  .cta-btn {
+    display: block; width: 100%; text-align: center;
+    padding: 14px 0; border-radius: 10px; font-size: 0.95rem;
+    font-weight: 600; cursor: pointer; border: none; transition: all .25s;
+  }
+  .cta-btn.outline {
+    background: transparent; color: #e0e0e0;
+    border: 1px solid #3a3a58;
+  }
+  .cta-btn.outline:hover { border-color: #7c6aef; color: #fff; }
+  .cta-btn.primary {
+    background: linear-gradient(135deg, #7c6aef, #5a4ad4);
+    color: #fff; border: none;
+  }
+  .cta-btn.primary:hover { background: linear-gradient(135deg, #8b7bf5, #6b5ae0); box-shadow: 0 4px 24px rgba(124,106,239,.35); }
+  .cta-btn.enterprise {
+    background: transparent; color: #e0e0e0;
+    border: 1px solid #3a3a58;
+  }
+  .cta-btn.enterprise:hover { border-color: #00d4ff; color: #00d4ff; }
+
+  /* ── Comparison Table (below cards) ───────────────────────────── */
+  .comparison-divider {
+    text-align: center; max-width: 1100px; margin: 0 auto 48px;
+    padding: 0 32px;
+  }
+  .comparison-divider h2 { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .comparison-divider p { color: #8888a8; font-size: 0.95rem; }
+
+  /* ── FAQ Section ──────────────────────────────────────────────── */
+  .faq-section {
+    max-width: 720px; margin: 0 auto; padding: 0 32px 80px;
+  }
+  .faq-section h2 {
+    text-align: center; font-size: 1.8rem; font-weight: 700;
+    color: #fff; margin-bottom: 40px;
+  }
+  .faq-item {
+    border-bottom: 1px solid #2a2a44; padding: 20px 0;
+    cursor: pointer;
+  }
+  .faq-question {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 1rem; font-weight: 600; color: #d0d0e8;
+    transition: color .2s;
+  }
+  .faq-item:hover .faq-question { color: #fff; }
+  .faq-arrow {
+    font-size: 1.2rem; color: #555570; transition: transform .3s, color .3s;
+  }
+  .faq-item.open .faq-arrow { transform: rotate(180deg); color: #7c6aef; }
+  .faq-answer {
+    max-height: 0; overflow: hidden; transition: max-height .35s ease, padding .35s;
+    color: #8888a8; font-size: 0.9rem; line-height: 1.7;
+  }
+  .faq-item.open .faq-answer { max-height: 200px; padding-top: 14px; }
+
+  /* ── Footer ───────────────────────────────────────────────────── */
+  .footer {
+    border-top: 1px solid #1a1a2e; padding: 40px 32px;
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-left { font-size: 0.85rem; color: #555570; }
+  .footer-left .logo-small {
+    font-weight: 700;
+    background: linear-gradient(135deg, #7c6aef, #00d4ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 0.85rem; color: #555570; }
+  .footer-links a:hover { color: #a594ff; }
+
+  /* ── Selection highlight ──────────────────────────────────────── */
+  .card.selected { box-shadow: 0 0 0 2px #7c6aef, 0 12px 40px rgba(124,106,239,.2); }
+
+  /* ── Trust Bar ──────────────────────────────────────────────── */
+  .trust-bar {
+    text-align: center;
+    padding: 0 32px 64px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .trust-bar p {
+    font-size: 0.85rem;
+    color: #555570;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .trust-logos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .trust-item {
+    color: #444460;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    border: 1px solid #1a1a2e;
+    border-radius: 8px;
+    transition: color .2s, border-color .2s;
+  }
+  .trust-item:hover {
+    color: #8888a8;
+    border-color: #2a2a44;
+  }
+
+  /* ── Feature Comparison Table ───────────────────────────────── */
+  .comparison-section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+  }
+  .comparison-section h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .comparison-section .section-subtitle {
+    text-align: center;
+    color: #8888a8;
+    font-size: 0.95rem;
+    margin-bottom: 40px;
+  }
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .comparison-table thead th {
+    text-align: center;
+    padding: 14px 16px;
+    color: #8888a8;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #2a2a44;
+  }
+  .comparison-table thead th:first-child {
+    text-align: left;
+  }
+  .comparison-table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #16213e;
+    text-align: center;
+    color: #b0b0c8;
+  }
+  .comparison-table tbody td:first-child {
+    text-align: left;
+    color: #d0d0e8;
+    font-weight: 500;
+  }
+  .comparison-table tbody tr:hover {
+    background: rgba(124, 106, 239, .03);
+  }
+  .check-yes {
+    color: #7c6aef;
+    font-weight: 700;
+  }
+  .check-no {
+    color: #333348;
+  }
+  @media (max-width: 700px) {
+    .comparison-table { font-size: 0.8rem; }
+    .comparison-table thead th,
+    .comparison-table tbody td { padding: 10px 8px; }
+  }
+
+  /* ── CTA Banner ────────────────────────────────────────────── */
+  .cta-banner {
+    max-width: 800px;
+    margin: 0 auto 80px;
+    padding: 48px 40px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(124, 106, 239, .08), rgba(0, 212, 255, .06));
+    border: 1px solid #2a2a44;
+    border-radius: 20px;
+  }
+  .cta-banner h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .cta-banner p {
+    color: #8888a8;
+    font-size: 1rem;
+    margin-bottom: 28px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .cta-banner .cta-btn {
+    display: inline-block;
+    width: auto;
+    padding: 14px 40px;
+  }
+
+  /* ── Animations ────────────────────────────────────────────── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card {
+    animation: fadeInUp .5s ease both;
+  }
+  .card:nth-child(1) { animation-delay: .05s; }
+  .card:nth-child(2) { animation-delay: .15s; }
+  .card:nth-child(3) { animation-delay: .25s; }
+  .hero h1, .hero p {
+    animation: fadeInUp .6s ease both;
+  }
+  .hero p { animation-delay: .1s; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="logo">Argentor</div>
+  <nav class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/playground">Playground</a>
+    <a href="/pricing" class="active">Pricing</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+</header>
+
+<!-- ── Hero ─────────────────────────────────────────────────────── -->
+<section class="hero">
+  <h1>Simple, transparent pricing</h1>
+  <p>Start free and scale as your AI agents grow. No hidden fees, no surprises.</p>
+</section>
+
+<!-- ── Billing Toggle ──────────────────────────────────────────── -->
+<div class="billing-toggle">
+  <span class="label-monthly active-label">Monthly</span>
+  <div class="toggle-track" id="billingToggle" role="switch" aria-checked="false" tabindex="0">
+    <div class="toggle-knob"></div>
+  </div>
+  <span class="label-annual">Annual</span>
+  <span class="save-badge">Save 2 months</span>
+</div>
+
+<!-- ── Pricing Cards ───────────────────────────────────────────── -->
+<section class="pricing-grid" id="pricingGrid">
+
+  <!-- Free -->
+  <div class="card" data-plan="free">
+    <div class="card-plan">Free</div>
+    <div class="card-price">
+      <span class="amount" data-monthly="0" data-annual="0">$0</span>
+      <span class="period">/month</span>
+    </div>
+    <div class="card-subtitle">For experimentation and prototyping</div>
+    <ul class="card-features">
+      <li>100 requests/day</li>
+      <li>50K tokens/month</li>
+      <li>1 agent role (ticket_router)</li>
+      <li>gpt-4o-mini only</li>
+      <li>Community support</li>
+      <li>Basic analytics</li>
+    </ul>
+    <button class="cta-btn outline" onclick="selectPlan('free')">Get Started Free</button>
+  </div>
+
+  <!-- Pro (recommended) -->
+  <div class="card recommended" data-plan="pro">
+    <span class="popular-badge">Most Popular</span>
+    <div class="card-plan">Pro</div>
+    <div class="card-price">
+      <span class="amount" data-monthly="49" data-annual="41">$49</span>
+      <span class="period">/month</span>
+    </div>
+    <div class="card-subtitle annual-note" data-monthly="Billed monthly" data-annual="$490/year — 2 months free">Billed monthly</div>
+    <ul class="card-features">
+      <li>5,000 requests/day</li>
+      <li>2M tokens/month</li>
+      <li>4 agent roles</li>
+      <li>Claude Sonnet + GPT-4o-mini</li>
+      <li>Persona customization</li>
+      <li>Full analytics + dashboard</li>
+      <li>Conversation memory</li>
+      <li>Email support</li>
+    </ul>
+    <button class="cta-btn primary" onclick="selectPlan('pro')">Start Pro Trial</button>
+  </div>
+
+  <!-- Enterprise -->
+  <div class="card" data-plan="enterprise">
+    <div class="card-plan">Enterprise</div>
+    <div class="card-price">
+      <span class="amount" data-monthly="499" data-annual="416">$499</span>
+      <span class="period">/month</span>
+    </div>
+    <div class="card-subtitle annual-note" data-monthly="Billed monthly" data-annual="$4,990/year — 2 months free">Billed monthly</div>
+    <ul class="card-features">
+      <li>100K requests/day</li>
+      <li>50M tokens/month</li>
+      <li>Unlimited agent roles + custom</li>
+      <li>All models (Claude Opus included)</li>
+      <li>WASM plugin support</li>
+      <li>Full compliance suite (GDPR, ISO 27001, ISO 42001)</li>
+      <li>Audit export to SIEM</li>
+      <li>SSO/SAML integration</li>
+      <li>Dedicated support + SLA</li>
+      <li>Custom workflows</li>
+      <li>On-prem deployment option</li>
+    </ul>
+    <button class="cta-btn enterprise" onclick="selectPlan('enterprise')">Contact Sales</button>
+  </div>
+
+</section>
+
+<!-- ── Trust Bar ───────────────────────────────────────────────── -->
+<div class="trust-bar">
+  <p>Trusted by teams building with</p>
+  <div class="trust-logos">
+    <span class="trust-item">GDPR Compliant</span>
+    <span class="trust-item">ISO 27001</span>
+    <span class="trust-item">ISO 42001</span>
+    <span class="trust-item">SOC 2 Ready</span>
+    <span class="trust-item">DPGA Aligned</span>
+  </div>
+</div>
+
+<!-- ── Feature Comparison ──────────────────────────────────────── -->
+<section class="comparison-section">
+  <h2>Compare plans in detail</h2>
+  <p class="section-subtitle">Everything you need to know, side by side.</p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Free</th>
+        <th>Pro</th>
+        <th>Enterprise</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Daily requests</td>
+        <td>100</td>
+        <td>5,000</td>
+        <td>100,000</td>
+      </tr>
+      <tr>
+        <td>Monthly tokens</td>
+        <td>50K</td>
+        <td>2M</td>
+        <td>50M</td>
+      </tr>
+      <tr>
+        <td>Agent roles</td>
+        <td>1</td>
+        <td>4</td>
+        <td>Unlimited</td>
+      </tr>
+      <tr>
+        <td>Models available</td>
+        <td>gpt-4o-mini</td>
+        <td>Sonnet + mini</td>
+        <td>All (Opus incl.)</td>
+      </tr>
+      <tr>
+        <td>Persona customization</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">Yes</td>
+        <td class="check-yes">Yes</td>
+      </tr>
+      <tr>
+        <td>Conversation memory</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">Yes</td>
+        <td class="check-yes">Yes</td>
+      </tr>
+      <tr>
+        <td>Analytics dashboard</td>
+        <td>Basic</td>
+        <td>Full</td>
+        <td>Full + custom</td>
+      </tr>
+      <tr>
+        <td>WASM plugins</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">Yes</td>
+      </tr>
+      <tr>
+        <td>Compliance suite</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">GDPR, ISO</td>
+      </tr>
+      <tr>
+        <td>SIEM audit export</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">Yes</td>
+      </tr>
+      <tr>
+        <td>SSO / SAML</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">Yes</td>
+      </tr>
+      <tr>
+        <td>On-prem deployment</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-no">&mdash;</td>
+        <td class="check-yes">Yes</td>
+      </tr>
+      <tr>
+        <td>Support</td>
+        <td>Community</td>
+        <td>Email</td>
+        <td>Dedicated + SLA</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── CTA Banner ──────────────────────────────────────────────── -->
+<section class="cta-banner">
+  <h3>Ready to build smarter agents?</h3>
+  <p>Start with the Free plan today and upgrade when you need more power. No credit card required.</p>
+  <button class="cta-btn primary" onclick="selectPlan('pro')">Get Started Now</button>
+</section>
+
+<!-- ── FAQ ──────────────────────────────────────────────────────── -->
+<section class="faq-section" id="faq">
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <div class="faq-question">
+      <span>Can I switch plans?</span>
+      <span class="faq-arrow">&#9662;</span>
+    </div>
+    <div class="faq-answer">
+      Yes. You can upgrade or downgrade at any time from the dashboard. When upgrading, the price difference is prorated. When downgrading, the remaining balance is credited toward your next billing cycle.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">
+      <span>What happens when I exceed limits?</span>
+      <span class="faq-arrow">&#9662;</span>
+    </div>
+    <div class="faq-answer">
+      Free plan requests are rate-limited once you hit the daily cap. Pro and Enterprise plans include a soft-limit grace period. You will receive email alerts at 80% and 95% usage. If you consistently exceed limits, we recommend upgrading to the next tier.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">
+      <span>Do you offer annual billing?</span>
+      <span class="faq-arrow">&#9662;</span>
+    </div>
+    <div class="faq-answer">
+      Yes! Annual billing saves you 2 months per year. Toggle the billing switch above to see annual pricing. Annual plans are billed once per year and include the same features as the monthly equivalent.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">
+      <span>Is there a free trial for Pro?</span>
+      <span class="faq-arrow">&#9662;</span>
+    </div>
+    <div class="faq-answer">
+      Yes. Every Pro subscription starts with a 14-day free trial, no credit card required. You get full access to all Pro features during the trial period. If you decide not to continue, your account reverts to the Free plan automatically.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">
+      <span>What's included in Enterprise support?</span>
+      <span class="faq-arrow">&#9662;</span>
+    </div>
+    <div class="faq-answer">
+      Enterprise support includes a dedicated account manager, 24/7 priority response with a guaranteed SLA (< 1 hour for critical issues), Slack/Teams integration for direct communication, quarterly business reviews, and custom onboarding assistance.
+    </div>
+  </div>
+
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-left">
+    Powered by <span class="logo-small">Argentor</span> &mdash; Secure AI Agent Infrastructure
+  </div>
+  <div class="footer-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/playground">Playground</a>
+    <a href="https://github.com/fboiero/Agentor" target="_blank" rel="noopener">GitHub</a>
+    <a href="/openapi.json">API Docs</a>
+  </div>
+</footer>
+
+<!-- ── JavaScript ──────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Billing toggle ────────────────────────────────────────── */
+  const toggle = document.getElementById('billingToggle');
+  const labelMonthly = document.querySelector('.label-monthly');
+  const labelAnnual  = document.querySelector('.label-annual');
+  let isAnnual = false;
+
+  function updatePricing() {
+    const mode = isAnnual ? 'annual' : 'monthly';
+
+    /* Update toggle visual state */
+    toggle.classList.toggle('annual', isAnnual);
+    toggle.setAttribute('aria-checked', String(isAnnual));
+    labelMonthly.classList.toggle('active-label', !isAnnual);
+    labelAnnual.classList.toggle('active-label', isAnnual);
+
+    /* Update price amounts */
+    document.querySelectorAll('.card-price .amount').forEach(function (el) {
+      var val = el.getAttribute('data-' + mode);
+      el.textContent = '$' + val;
+    });
+
+    /* Update subtitles */
+    document.querySelectorAll('.annual-note').forEach(function (el) {
+      el.textContent = el.getAttribute('data-' + mode);
+    });
+  }
+
+  toggle.addEventListener('click', function () {
+    isAnnual = !isAnnual;
+    updatePricing();
+  });
+
+  toggle.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      isAnnual = !isAnnual;
+      updatePricing();
+    }
+  });
+
+  /* ── Plan selection highlight ──────────────────────────────── */
+  window.selectPlan = function (plan) {
+    document.querySelectorAll('.card').forEach(function (card) {
+      card.classList.remove('selected');
+    });
+    var target = document.querySelector('.card[data-plan="' + plan + '"]');
+    if (target) {
+      target.classList.add('selected');
+    }
+  };
+
+  /* ── FAQ accordion ─────────────────────────────────────────── */
+  document.querySelectorAll('.faq-item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      var wasOpen = item.classList.contains('open');
+      /* Close all first */
+      document.querySelectorAll('.faq-item').forEach(function (i) {
+        i.classList.remove('open');
+      });
+      /* Toggle clicked one */
+      if (!wasOpen) {
+        item.classList.add('open');
+      }
+    });
+  });
+
+  /* ── Smooth scroll for anchor links ──────────────────────────── */
+  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      var targetId = link.getAttribute('href').substring(1);
+      var targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        e.preventDefault();
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  /* ── Comparison table row highlight ────────────────────────── */
+  document.querySelectorAll('.comparison-table tbody tr').forEach(function (row) {
+    row.addEventListener('mouseenter', function () {
+      row.style.background = 'rgba(124, 106, 239, .04)';
+    });
+    row.addEventListener('mouseleave', function () {
+      row.style.background = '';
+    });
+  });
+
+  /* ── Intersection Observer for fade-in on scroll ───────────── */
+  if ('IntersectionObserver' in window) {
+    var observerOptions = { threshold: 0.15, rootMargin: '0px 0px -40px 0px' };
+
+    var fadeObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+          fadeObserver.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    /* Observe FAQ items */
+    document.querySelectorAll('.faq-item').forEach(function (item) {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(16px)';
+      item.style.transition = 'opacity .5s ease, transform .5s ease';
+      fadeObserver.observe(item);
+    });
+
+    /* Observe trust bar items */
+    document.querySelectorAll('.trust-item').forEach(function (item) {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(12px)';
+      item.style.transition = 'opacity .4s ease, transform .4s ease';
+      fadeObserver.observe(item);
+    });
+
+    /* Observe comparison table rows */
+    document.querySelectorAll('.comparison-table tbody tr').forEach(function (row, idx) {
+      row.style.opacity = '0';
+      row.style.transform = 'translateY(10px)';
+      row.style.transition = 'opacity .35s ease ' + (idx * 0.04) + 's, transform .35s ease ' + (idx * 0.04) + 's';
+      fadeObserver.observe(row);
+    });
+
+    /* Observe CTA banner */
+    var ctaBanner = document.querySelector('.cta-banner');
+    if (ctaBanner) {
+      ctaBanner.style.opacity = '0';
+      ctaBanner.style.transform = 'translateY(20px)';
+      ctaBanner.style.transition = 'opacity .6s ease, transform .6s ease';
+      fadeObserver.observe(ctaBanner);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
