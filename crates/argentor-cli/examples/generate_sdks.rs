@@ -5,8 +5,8 @@
 //!
 //! Outputs to `./generated-sdks/python/` and `./generated-sdks/typescript/`.
 
-use argentor_builtins::SdkGenerator;
 use argentor_builtins::sdk_generator::SdkConfig;
+use argentor_builtins::SdkGenerator;
 use std::path::Path;
 
 fn main() {
@@ -51,8 +51,16 @@ fn main() {
 
     println!();
     println!("SDKs generated:");
-    println!("  Python:     {}/python/ ({} files)", output_dir.display(), python.files.len());
-    println!("  TypeScript: {}/typescript/ ({} files)", output_dir.display(), typescript.files.len());
+    println!(
+        "  Python:     {}/python/ ({} files)",
+        output_dir.display(),
+        python.files.len()
+    );
+    println!(
+        "  TypeScript: {}/typescript/ ({} files)",
+        output_dir.display(),
+        typescript.files.len()
+    );
     println!();
     println!("Install Python SDK:");
     println!("  cd generated-sdks/python && pip install -e .");

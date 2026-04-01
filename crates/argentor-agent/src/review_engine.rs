@@ -383,8 +383,7 @@ impl ReviewEngine {
 
             // SEC001: Hardcoded secrets
             if !is_test_file {
-                let secret_re =
-                    Regex::new(r#"(?i)(password|api_key|secret|token)\s*=\s*""#).ok();
+                let secret_re = Regex::new(r#"(?i)(password|api_key|secret|token)\s*=\s*""#).ok();
                 if let Some(re) = &secret_re {
                     if re.is_match(line) {
                         findings.push(ReviewFinding {
@@ -428,7 +427,9 @@ impl ReviewEngine {
             }
 
             // SEC003: Path traversal
-            if (line.contains("Path::new") || line.contains("open(") || line.contains("read_to_string("))
+            if (line.contains("Path::new")
+                || line.contains("open(")
+                || line.contains("read_to_string("))
                 && line.contains("..")
             {
                 findings.push(ReviewFinding {
@@ -486,9 +487,7 @@ impl ReviewEngine {
                 let ip_re = Regex::new(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b").ok();
                 if let Some(re) = &ip_re {
                     // Exclude 127.0.0.1 and 0.0.0.0 as they are common development addresses
-                    if re.is_match(line)
-                        && !line.contains("127.0.0.1")
-                        && !line.contains("0.0.0.0")
+                    if re.is_match(line) && !line.contains("127.0.0.1") && !line.contains("0.0.0.0")
                     {
                         findings.push(ReviewFinding {
                             dimension: ReviewDimension::Security,
@@ -514,7 +513,9 @@ impl ReviewEngine {
                         message: "Hardcoded HTTP URL detected. Consider using HTTPS and \
                                   externalizing URLs to configuration."
                             .to_string(),
-                        suggestion: Some("Use https:// and load URLs from configuration.".to_string()),
+                        suggestion: Some(
+                            "Use https:// and load URLs from configuration.".to_string(),
+                        ),
                         rule_id: "SEC006".to_string(),
                     });
                 }
@@ -659,9 +660,7 @@ impl ReviewEngine {
                         message: "Blocking `std::thread::sleep` in async context. \
                                   This blocks the entire executor thread."
                             .to_string(),
-                        suggestion: Some(
-                            "Use `tokio::time::sleep` instead.".to_string(),
-                        ),
+                        suggestion: Some("Use `tokio::time::sleep` instead.".to_string()),
                         rule_id: "PERF003".to_string(),
                     });
                 }
@@ -674,9 +673,7 @@ impl ReviewEngine {
                         message: "Blocking `std::fs` operation in async context. \
                                   This can stall the async runtime."
                             .to_string(),
-                        suggestion: Some(
-                            "Use `tokio::fs` for async file operations.".to_string(),
-                        ),
+                        suggestion: Some("Use `tokio::fs` for async file operations.".to_string()),
                         rule_id: "PERF003".to_string(),
                     });
                 }
@@ -684,7 +681,9 @@ impl ReviewEngine {
 
             // PERF004: N+1 query pattern (database call inside loop)
             if loop_depth > 0
-                && (line.contains(".query(") || line.contains(".execute(") || line.contains("sqlx::query"))
+                && (line.contains(".query(")
+                    || line.contains(".execute(")
+                    || line.contains("sqlx::query"))
             {
                 findings.push(ReviewFinding {
                     dimension: ReviewDimension::Performance,
@@ -806,9 +805,7 @@ impl ReviewEngine {
                             "Function has {param_count} parameters (limit: 5). \
                              Consider using a config struct."
                         ),
-                        suggestion: Some(
-                            "Group related parameters into a struct.".to_string(),
-                        ),
+                        suggestion: Some("Group related parameters into a struct.".to_string()),
                         rule_id: "STY002".to_string(),
                     });
                 }
@@ -892,7 +889,8 @@ impl ReviewEngine {
                                   or `.context()` to provide actionable error messages."
                             .to_string(),
                         suggestion: Some(
-                            "Add .map_err(|e| ...) or use anyhow/thiserror for context.".to_string(),
+                            "Add .map_err(|e| ...) or use anyhow/thiserror for context."
+                                .to_string(),
                         ),
                         rule_id: "STY005".to_string(),
                     });
@@ -962,8 +960,9 @@ impl ReviewEngine {
                     severity: FindingSeverity::Warning,
                     file: file.to_string(),
                     line: Some(ln),
-                    message: "`.expect()` in production code. Prefer returning errors over panicking."
-                        .to_string(),
+                    message:
+                        "`.expect()` in production code. Prefer returning errors over panicking."
+                            .to_string(),
                     suggestion: Some(
                         "Use `?` with a custom error type or `.map_err()` for context.".to_string(),
                     ),
@@ -1181,9 +1180,7 @@ impl ReviewEngine {
         let lines: Vec<&str> = content.lines().collect();
 
         // DOC003: Module without module-level doc comment
-        let has_module_doc = lines
-            .iter()
-            .any(|l| l.trim().starts_with("//!"));
+        let has_module_doc = lines.iter().any(|l| l.trim().starts_with("//!"));
         if !has_module_doc {
             findings.push(ReviewFinding {
                 dimension: ReviewDimension::Documentation,
@@ -1216,8 +1213,7 @@ impl ReviewEngine {
                         .any(|l| l.trim().starts_with("///"));
 
                 if !has_doc {
-                    let fn_name =
-                        extract_fn_name(trimmed).unwrap_or_else(|| "unknown".to_string());
+                    let fn_name = extract_fn_name(trimmed).unwrap_or_else(|| "unknown".to_string());
                     findings.push(ReviewFinding {
                         dimension: ReviewDimension::Documentation,
                         severity: FindingSeverity::Warning,
@@ -1313,7 +1309,9 @@ impl ReviewEngine {
 
         for dim in &self.config.dimensions {
             let w = weights.get(dim).copied().unwrap_or(0.10);
-            let dim_findings = dimension_findings.get(dim).map_or(&[][..], |v| v.as_slice());
+            let dim_findings = dimension_findings
+                .get(dim)
+                .map_or(&[][..], |v| v.as_slice());
 
             let mut score = 1.0_f32;
             for f in dim_findings {
@@ -1379,7 +1377,9 @@ impl ReviewEngine {
             ReviewVerdict::RequestChanges => {
                 "Code has issues that should be addressed before merging."
             }
-            ReviewVerdict::Block => "Code has critical issues that must be resolved before merging.",
+            ReviewVerdict::Block => {
+                "Code has critical issues that must be resolved before merging."
+            }
         };
 
         if findings.is_empty() {
@@ -1930,11 +1930,7 @@ fn insecure_query(user_input: &str) {
             report.total_score
         );
         // Should find SQL injection, hardcoded secret, unwrap, todo, etc.
-        let rule_ids: HashSet<&str> = report
-            .findings
-            .iter()
-            .map(|f| f.rule_id.as_str())
-            .collect();
+        let rule_ids: HashSet<&str> = report.findings.iter().map(|f| f.rule_id.as_str()).collect();
         assert!(rule_ids.contains("SEC002"), "Should detect SQL injection");
         assert!(rule_ids.contains("ERR001"), "Should detect unwrap");
     }

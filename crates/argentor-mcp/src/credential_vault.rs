@@ -55,7 +55,6 @@ pub struct CredentialPolicy {
     pub fallback_credential_id: Option<String>,
 }
 
-
 /// A single stored credential with metadata and usage tracking.
 ///
 /// Credentials are identified by a unique [`id`](Credential::id) and grouped
@@ -234,9 +233,9 @@ impl CredentialVault {
             .write()
             .map_err(|e| ArgentorError::Security(format!("Lock poisoned: {e}")))?;
 
-        let cred = store.get_mut(id).ok_or_else(|| {
-            ArgentorError::Security(format!("Credential '{id}' not found"))
-        })?;
+        let cred = store
+            .get_mut(id)
+            .ok_or_else(|| ArgentorError::Security(format!("Credential '{id}' not found")))?;
 
         cred.usage_count += 1;
         cred.last_used = Some(Utc::now());
@@ -273,9 +272,9 @@ impl CredentialVault {
             .write()
             .map_err(|e| ArgentorError::Security(format!("Lock poisoned: {e}")))?;
 
-        let cred = store.get_mut(id).ok_or_else(|| {
-            ArgentorError::Security(format!("Credential '{id}' not found"))
-        })?;
+        let cred = store
+            .get_mut(id)
+            .ok_or_else(|| ArgentorError::Security(format!("Credential '{id}' not found")))?;
 
         cred.value = new_value.into();
         cred.usage_count = 0;
@@ -362,9 +361,9 @@ impl CredentialVault {
             .write()
             .map_err(|e| ArgentorError::Security(format!("Lock poisoned: {e}")))?;
 
-        let cred = store.get_mut(id).ok_or_else(|| {
-            ArgentorError::Security(format!("Credential '{id}' not found"))
-        })?;
+        let cred = store
+            .get_mut(id)
+            .ok_or_else(|| ArgentorError::Security(format!("Credential '{id}' not found")))?;
 
         cred.enabled = enabled;
 
@@ -386,9 +385,9 @@ impl CredentialVault {
             .write()
             .map_err(|e| ArgentorError::Security(format!("Lock poisoned: {e}")))?;
 
-        let cred = store.get_mut(id).ok_or_else(|| {
-            ArgentorError::Security(format!("Credential '{id}' not found"))
-        })?;
+        let cred = store
+            .get_mut(id)
+            .ok_or_else(|| ArgentorError::Security(format!("Credential '{id}' not found")))?;
 
         cred.expires_at = expires_at;
 
@@ -414,10 +413,7 @@ impl CredentialVault {
     ///     CredentialPolicy::default(),
     /// );
     /// ```
-    pub fn from_env(
-        mappings: &[(&str, &str, &str)],
-        policy: CredentialPolicy,
-    ) -> Self {
+    pub fn from_env(mappings: &[(&str, &str, &str)], policy: CredentialPolicy) -> Self {
         let vault = Self::new();
 
         for &(provider, key_name, env_var) in mappings {
@@ -472,8 +468,14 @@ mod tests {
     /// Helper: create a vault with one credential.
     fn vault_with_one() -> CredentialVault {
         let v = CredentialVault::new();
-        v.add("k1", "openai", "api_key", "sk-abc", CredentialPolicy::default())
-            .unwrap();
+        v.add(
+            "k1",
+            "openai",
+            "api_key",
+            "sk-abc",
+            CredentialPolicy::default(),
+        )
+        .unwrap();
         v
     }
 
@@ -561,7 +563,9 @@ mod tests {
     fn test_resolve_picks_least_used() {
         let vault = CredentialVault::new();
         let policy = CredentialPolicy::default();
-        vault.add("a1", "openai", "key", "v1", policy.clone()).unwrap();
+        vault
+            .add("a1", "openai", "key", "v1", policy.clone())
+            .unwrap();
         vault.add("a2", "openai", "key", "v2", policy).unwrap();
 
         // Use a1 three times, a2 once.
@@ -578,7 +582,9 @@ mod tests {
     fn test_resolve_skips_expired() {
         let vault = CredentialVault::new();
         let policy = CredentialPolicy::default();
-        vault.add("e1", "anthropic", "key", "v1", policy.clone()).unwrap();
+        vault
+            .add("e1", "anthropic", "key", "v1", policy.clone())
+            .unwrap();
         vault.add("e2", "anthropic", "key", "v2", policy).unwrap();
 
         let past = Utc::now() - Duration::hours(1);
@@ -635,7 +641,9 @@ mod tests {
         let unlimited = CredentialPolicy::default();
 
         vault.add("lim", "provider", "key", "v1", limited).unwrap();
-        vault.add("unlim", "provider", "key", "v2", unlimited).unwrap();
+        vault
+            .add("unlim", "provider", "key", "v2", unlimited)
+            .unwrap();
 
         vault.record_usage("lim").unwrap();
         // lim is over quota; resolve should pick unlim.
@@ -734,7 +742,11 @@ mod tests {
     fn test_from_env_skips_missing_vars() {
         // Use a very unlikely env var name to ensure it's not set.
         let vault = CredentialVault::from_env(
-            &[("test_prov", "key", "ARGENTOR_TEST_CREDENTIAL_MISSING_XYZ_42")],
+            &[(
+                "test_prov",
+                "key",
+                "ARGENTOR_TEST_CREDENTIAL_MISSING_XYZ_42",
+            )],
             CredentialPolicy::default(),
         );
         assert_eq!(vault.stats().total_credentials, 0);

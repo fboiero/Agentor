@@ -169,7 +169,10 @@ impl SdkGenerator {
 
     /// Generate SDKs for all supported languages.
     pub fn generate_all(&self, config: &SdkConfig) -> Vec<SdkOutput> {
-        vec![self.generate_python(config), self.generate_typescript(config)]
+        vec![
+            self.generate_python(config),
+            self.generate_typescript(config),
+        ]
     }
 }
 
@@ -1641,7 +1644,9 @@ mod tests {
             .iter()
             .find(|f| f.path.ends_with("__init__.py"))
             .unwrap();
-        assert!(init.content.contains("from argentor_client.client import ArgentorClient"));
+        assert!(init
+            .content
+            .contains("from argentor_client.client import ArgentorClient"));
         assert!(init.content.contains("__version__"));
     }
 
@@ -1719,25 +1724,33 @@ mod tests {
         assert!(models.content.contains("class BatchRequest(BaseModel):"));
         assert!(models.content.contains("class BatchResponse(BaseModel):"));
         assert!(models.content.contains("class EvaluateRequest(BaseModel):"));
-        assert!(models.content.contains("class EvaluateResponse(BaseModel):"));
-        assert!(models.content.contains("class CreatePersonaRequest(BaseModel):"));
-        assert!(models.content.contains("class CreatePersonaResponse(BaseModel):"));
-        assert!(models.content.contains("class ListPersonasResponse(BaseModel):"));
+        assert!(models
+            .content
+            .contains("class EvaluateResponse(BaseModel):"));
+        assert!(models
+            .content
+            .contains("class CreatePersonaRequest(BaseModel):"));
+        assert!(models
+            .content
+            .contains("class CreatePersonaResponse(BaseModel):"));
+        assert!(models
+            .content
+            .contains("class ListPersonasResponse(BaseModel):"));
         assert!(models.content.contains("class UsageBreakdown(BaseModel):"));
         assert!(models.content.contains("class HealthResponse(BaseModel):"));
-        assert!(models.content.contains("class WebhookProxyRequest(BaseModel):"));
-        assert!(models.content.contains("class WebhookProxyResponse(BaseModel):"));
+        assert!(models
+            .content
+            .contains("class WebhookProxyRequest(BaseModel):"));
+        assert!(models
+            .content
+            .contains("class WebhookProxyResponse(BaseModel):"));
     }
 
     #[test]
     fn test_python_setup_has_package_metadata() {
         let gen = SdkGenerator::new();
         let output = gen.generate_python(&default_config());
-        let setup = output
-            .files
-            .iter()
-            .find(|f| f.path == "setup.py")
-            .unwrap();
+        let setup = output.files.iter().find(|f| f.path == "setup.py").unwrap();
         assert!(setup.content.contains("name=\"argentor_client\""));
         assert!(setup.content.contains("version=\"0.1.0\""));
         assert!(setup.content.contains("httpx"));
@@ -1847,13 +1860,23 @@ mod tests {
         assert!(types.content.contains("export interface BatchResponse"));
         assert!(types.content.contains("export interface EvaluateRequest"));
         assert!(types.content.contains("export interface EvaluateResponse"));
-        assert!(types.content.contains("export interface CreatePersonaRequest"));
-        assert!(types.content.contains("export interface CreatePersonaResponse"));
-        assert!(types.content.contains("export interface ListPersonasResponse"));
+        assert!(types
+            .content
+            .contains("export interface CreatePersonaRequest"));
+        assert!(types
+            .content
+            .contains("export interface CreatePersonaResponse"));
+        assert!(types
+            .content
+            .contains("export interface ListPersonasResponse"));
         assert!(types.content.contains("export interface UsageBreakdown"));
         assert!(types.content.contains("export interface HealthResponse"));
-        assert!(types.content.contains("export interface WebhookProxyRequest"));
-        assert!(types.content.contains("export interface WebhookProxyResponse"));
+        assert!(types
+            .content
+            .contains("export interface WebhookProxyRequest"));
+        assert!(types
+            .content
+            .contains("export interface WebhookProxyResponse"));
     }
 
     #[test]

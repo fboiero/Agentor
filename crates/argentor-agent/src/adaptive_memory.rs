@@ -370,8 +370,18 @@ fn format_recall_context(memories: &[(MemoryEntry, f32)]) -> String {
 fn contains_factual_indicator(text: &str) -> bool {
     let lower = text.to_lowercase();
     let indicators = [
-        "is ", "are ", "was ", "were ", "has ", "have ", "contains ", "returns ", "produces ",
-        "costs ", "takes ", "requires ",
+        "is ",
+        "are ",
+        "was ",
+        "were ",
+        "has ",
+        "have ",
+        "contains ",
+        "returns ",
+        "produces ",
+        "costs ",
+        "takes ",
+        "requires ",
     ];
     indicators.iter().any(|ind| lower.contains(ind))
 }
@@ -599,15 +609,39 @@ mod tests {
         });
 
         // Store 5 entries; only 3 should survive
-        mem.store(MemoryEntry::new(MemoryKind::Fact, "low importance entry one", 0.1));
-        mem.store(MemoryEntry::new(MemoryKind::Fact, "low importance entry two", 0.1));
-        mem.store(MemoryEntry::new(MemoryKind::Fact, "high importance entry here", 0.9));
-        mem.store(MemoryEntry::new(MemoryKind::Fact, "medium importance entry data", 0.5));
-        mem.store(MemoryEntry::new(MemoryKind::Fact, "very high importance entry value", 0.95));
+        mem.store(MemoryEntry::new(
+            MemoryKind::Fact,
+            "low importance entry one",
+            0.1,
+        ));
+        mem.store(MemoryEntry::new(
+            MemoryKind::Fact,
+            "low importance entry two",
+            0.1,
+        ));
+        mem.store(MemoryEntry::new(
+            MemoryKind::Fact,
+            "high importance entry here",
+            0.9,
+        ));
+        mem.store(MemoryEntry::new(
+            MemoryKind::Fact,
+            "medium importance entry data",
+            0.5,
+        ));
+        mem.store(MemoryEntry::new(
+            MemoryKind::Fact,
+            "very high importance entry value",
+            0.95,
+        ));
 
         assert!(mem.memory_count() <= 3);
         // The high-importance entries should survive
-        let contents: Vec<&str> = mem.all_memories().iter().map(|e| e.content.as_str()).collect();
+        let contents: Vec<&str> = mem
+            .all_memories()
+            .iter()
+            .map(|e| e.content.as_str())
+            .collect();
         assert!(contents.iter().any(|c| c.contains("very high")));
     }
 
@@ -658,8 +692,16 @@ mod tests {
 
     #[test]
     fn test_keyword_overlap() {
-        let query = vec!["rust".to_string(), "compiler".to_string(), "fast".to_string()];
-        let entry = vec!["rust".to_string(), "fast".to_string(), "language".to_string()];
+        let query = vec![
+            "rust".to_string(),
+            "compiler".to_string(),
+            "fast".to_string(),
+        ];
+        let entry = vec![
+            "rust".to_string(),
+            "fast".to_string(),
+            "language".to_string(),
+        ];
         let score = keyword_overlap(&query, &entry);
         // 2 out of 3 query keywords match
         assert!((score - 2.0 / 3.0).abs() < f32::EPSILON);

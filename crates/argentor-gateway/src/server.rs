@@ -1,8 +1,8 @@
 use crate::connection::{Connection, ConnectionManager};
 use crate::control_plane::{control_plane_router, ControlPlaneState};
 use crate::dashboard::dashboard_router;
-use crate::playground::playground_router;
 use crate::middleware::{auth_middleware, rate_limit_middleware, AuthConfig, MiddlewareState};
+use crate::playground::playground_router;
 use crate::proxy_management::{proxy_management_router, ProxyManagementState};
 use crate::rest_api::{api_router, RestApiState};
 use crate::router::{InboundMessage, MessageRouter};

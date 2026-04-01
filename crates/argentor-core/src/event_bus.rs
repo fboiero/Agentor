@@ -9,11 +9,11 @@
 //! - [`Event`] — A typed event with topic and payload.
 //! - [`Subscription`] — A handle to a topic subscription.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
-use chrono::{DateTime, Utc};
 
 // ---------------------------------------------------------------------------
 // Event
@@ -82,9 +82,7 @@ struct Subscriber {
 
 impl std::fmt::Debug for Subscriber {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Subscriber")
-            .field("id", &self.id)
-            .finish()
+        f.debug_struct("Subscriber").field("id", &self.id).finish()
     }
 }
 
@@ -189,11 +187,7 @@ impl EventBus {
             .inner
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        inner
-            .subscribers
-            .entry(topic)
-            .or_default()
-            .push(subscriber);
+        inner.subscribers.entry(topic).or_default().push(subscriber);
 
         id
     }

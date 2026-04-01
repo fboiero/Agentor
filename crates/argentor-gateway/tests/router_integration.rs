@@ -4,11 +4,11 @@
 //! The goal is to prove that when all optional subsystems are provided, every
 //! expected route is reachable (not 404) and returns the correct status code.
 
-use argentor_a2a::{A2AServerState, A2ATask, AgentCapabilities, AgentCard, TaskHandler, TaskMessage, TaskStatus};
-use argentor_agent::{AgentRunner, LlmProvider, ModelConfig};
-use argentor_gateway::{
-    ControlPlaneState, GatewayServer, ProxyManagementState, RestApiState,
+use argentor_a2a::{
+    A2AServerState, A2ATask, AgentCapabilities, AgentCard, TaskHandler, TaskMessage, TaskStatus,
 };
+use argentor_agent::{AgentRunner, LlmProvider, ModelConfig};
+use argentor_gateway::{ControlPlaneState, GatewayServer, ProxyManagementState, RestApiState};
 use argentor_mcp::credential_vault::CredentialVault;
 use argentor_mcp::token_pool::{SelectionStrategy, TokenPool};
 use argentor_security::{AuditLog, PermissionSet};
@@ -128,10 +128,10 @@ async fn build_full_gateway() -> (axum::Router, tempfile::TempDir) {
     let app = GatewayServer::build_complete(
         agent,
         sessions,
-        None,                        // rate_limiter
+        None,                                      // rate_limiter
         argentor_gateway::AuthConfig::new(vec![]), // no auth
-        None,                        // webhooks
-        None,                        // metrics collector
+        None,                                      // webhooks
+        None,                                      // metrics collector
         Some(control_plane),
         Some(rest_api),
         Some(proxy_management),
@@ -160,8 +160,12 @@ async fn get(app: &axum::Router, uri: &str) -> (StatusCode, Vec<u8>) {
 /// Send a GET request and parse the body as JSON.
 async fn get_json(app: &axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {
     let (status, body) = get(app, uri).await;
-    let json: serde_json::Value = serde_json::from_slice(&body)
-        .unwrap_or_else(|_| panic!("Failed to parse JSON from {uri}: {}", String::from_utf8_lossy(&body)));
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap_or_else(|_| {
+        panic!(
+            "Failed to parse JSON from {uri}: {}",
+            String::from_utf8_lossy(&body)
+        )
+    });
     (status, json)
 }
 
@@ -185,7 +189,11 @@ async fn test_metrics_route_mounted() {
     // No metrics collector configured, so the handler returns 503 — but the
     // route itself is mounted (not 404).
     let (status, _body) = get(&app, "/metrics").await;
-    assert_ne!(status, StatusCode::NOT_FOUND, "GET /metrics must not be 404");
+    assert_ne!(
+        status,
+        StatusCode::NOT_FOUND,
+        "GET /metrics must not be 404"
+    );
     // Without a collector we expect 503 SERVICE_UNAVAILABLE.
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
 }
@@ -285,8 +293,7 @@ async fn test_proxy_management_tokens_stats_route() {
 #[tokio::test]
 async fn test_proxy_management_orchestrator_metrics_route() {
     let (app, _tmp) = build_full_gateway().await;
-    let (status, json) =
-        get_json(&app, "/api/v1/proxy-management/orchestrator/metrics").await;
+    let (status, json) = get_json(&app, "/api/v1/proxy-management/orchestrator/metrics").await;
     assert_eq!(status, StatusCode::OK);
     // No orchestrator snapshot configured, should still return a JSON object
     // with zero values.

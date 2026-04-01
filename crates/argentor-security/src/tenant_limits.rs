@@ -204,11 +204,7 @@ impl TenantState {
     /// Prune the sliding window to only keep entries within the last second.
     fn prune_sliding_window(&mut self, now: DateTime<Utc>) {
         let cutoff = now - chrono::Duration::seconds(1);
-        while self
-            .recent_requests
-            .front()
-            .map_or(false, |t| *t < cutoff)
-        {
+        while self.recent_requests.front().map_or(false, |t| *t < cutoff) {
             self.recent_requests.pop_front();
         }
     }

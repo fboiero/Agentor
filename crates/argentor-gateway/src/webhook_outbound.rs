@@ -110,8 +110,8 @@ impl Default for RetryPolicy {
 impl RetryPolicy {
     /// Calculate the delay for the given attempt number (0-indexed).
     pub fn delay_for_attempt(&self, attempt: u32) -> u64 {
-        let delay = self.initial_delay_ms as f64
-            * (self.backoff_multiplier as f64).powi(attempt as i32);
+        let delay =
+            self.initial_delay_ms as f64 * (self.backoff_multiplier as f64).powi(attempt as i32);
         (delay as u64).min(self.max_delay_ms)
     }
 }
@@ -315,8 +315,7 @@ pub struct WebhookDispatcher {
 impl WebhookDispatcher {
     /// Create a new dispatcher with the given configuration.
     pub fn new(config: WebhookDispatcherConfig) -> Self {
-        let timeout =
-            std::time::Duration::from_millis(config.delivery_timeout_ms);
+        let timeout = std::time::Duration::from_millis(config.delivery_timeout_ms);
         let http_client = reqwest::Client::builder()
             .timeout(timeout)
             .build()
@@ -391,9 +390,7 @@ impl WebhookDispatcher {
             .subscriptions
             .values()
             .filter(|s| {
-                s.enabled
-                    && s.tenant_id == event.tenant_id
-                    && s.events.contains(&event.event_type)
+                s.enabled && s.tenant_id == event.tenant_id && s.events.contains(&event.event_type)
             })
             .cloned()
             .collect();
@@ -429,9 +426,7 @@ impl WebhookDispatcher {
 
         for attempt in 0..max_attempts {
             let start = std::time::Instant::now();
-            let result = self
-                .send_request(subscription, &payload, &signature)
-                .await;
+            let result = self.send_request(subscription, &payload, &signature).await;
             let duration_ms = start.elapsed().as_millis() as u64;
 
             let delivery = match &result {
@@ -650,9 +645,7 @@ async fn create_subscription(
     )
 }
 
-async fn list_subscriptions(
-    State(state): State<Arc<WebhookOutboundState>>,
-) -> impl IntoResponse {
+async fn list_subscriptions(State(state): State<Arc<WebhookOutboundState>>) -> impl IntoResponse {
     let subs = state.dispatcher.list_subscriptions().await;
     Json(serde_json::json!({ "subscriptions": subs, "count": subs.len() }))
 }
@@ -718,10 +711,7 @@ async fn send_test_event(
     // Deliver synchronously (single subscription) so the caller gets immediate feedback.
     state.dispatcher.deliver(&sub, &event).await;
 
-    let log = state
-        .dispatcher
-        .get_delivery_log(&subscription_id, 1)
-        .await;
+    let log = state.dispatcher.get_delivery_log(&subscription_id, 1).await;
     let last = log.first();
 
     (
@@ -770,11 +760,7 @@ mod tests {
     }
 
     fn test_event(tenant: &str, event_type: WebhookEventType) -> WebhookEvent {
-        WebhookEvent::new(
-            event_type,
-            tenant,
-            serde_json::json!({"key": "value"}),
-        )
+        WebhookEvent::new(event_type, tenant, serde_json::json!({"key": "value"}))
     }
 
     // -- WebhookSigner tests ------------------------------------------------

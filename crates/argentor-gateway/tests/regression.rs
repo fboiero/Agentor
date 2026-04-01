@@ -58,7 +58,8 @@ async fn start_full_server(api_keys: Vec<String>) -> (String, tempfile::TempDir)
 
     let rate_limiter = Arc::new(RateLimiter::new(100.0, 100.0));
     let auth = AuthConfig::new(api_keys);
-    let app = GatewayServer::build_with_middleware(agent, sessions, Some(rate_limiter), auth, None, None);
+    let app =
+        GatewayServer::build_with_middleware(agent, sessions, Some(rate_limiter), auth, None, None);
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -257,7 +258,8 @@ async fn test_rate_limiting_burst_and_recovery() {
     // Tight rate limit: burst of 3, very slow refill
     let rate_limiter = Arc::new(RateLimiter::new(3.0, 0.1));
     let auth = AuthConfig::new(vec![]);
-    let app = GatewayServer::build_with_middleware(agent, sessions, Some(rate_limiter), auth, None, None);
+    let app =
+        GatewayServer::build_with_middleware(agent, sessions, Some(rate_limiter), auth, None, None);
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = format!("127.0.0.1:{}", listener.local_addr().unwrap().port());

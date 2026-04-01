@@ -87,7 +87,9 @@ mod tests {
     async fn test_playground_contains_agent_selector() {
         let (_status, body) = get_playground().await;
         assert!(
-            body.contains("agent-selector") || body.contains("agent_selector") || body.contains("agentSelector"),
+            body.contains("agent-selector")
+                || body.contains("agent_selector")
+                || body.contains("agentSelector"),
             "Playground HTML should contain an agent selector element"
         );
     }
@@ -96,7 +98,9 @@ mod tests {
     async fn test_playground_contains_chat_container() {
         let (_status, body) = get_playground().await;
         assert!(
-            body.contains("chat-container") || body.contains("chat-messages") || body.contains("chatContainer"),
+            body.contains("chat-container")
+                || body.contains("chat-messages")
+                || body.contains("chatContainer"),
             "Playground HTML should contain a chat container element"
         );
     }
@@ -114,7 +118,9 @@ mod tests {
     async fn test_playground_contains_trace_panel() {
         let (_status, body) = get_playground().await;
         assert!(
-            body.contains("trace-panel") || body.contains("trace_panel") || body.contains("tracePanel"),
+            body.contains("trace-panel")
+                || body.contains("trace_panel")
+                || body.contains("tracePanel"),
             "Playground HTML should contain a trace panel"
         );
     }
@@ -127,7 +133,10 @@ mod tests {
             "Playground should have a DOCTYPE declaration"
         );
         assert!(body.contains("<html"), "Playground should have an html tag");
-        assert!(body.contains("</html>"), "Playground should have a closing html tag");
+        assert!(
+            body.contains("</html>"),
+            "Playground should have a closing html tag"
+        );
     }
 
     #[tokio::test]

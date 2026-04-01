@@ -53,7 +53,10 @@ async fn test_health_endpoint() {
     assert!(body["status"].is_string(), "Expected status field");
     assert!(body["version"].is_string(), "Expected version field");
     assert!(body["checks"].is_object(), "Expected checks object");
-    assert!(body["xcapitsff"].is_object(), "Expected xcapitsff health object");
+    assert!(
+        body["xcapitsff"].is_object(),
+        "Expected xcapitsff health object"
+    );
     // The xcapitsff status starts as "unknown" since no health loop ran.
     assert_eq!(body["xcapitsff"]["status"], "unknown");
 }
@@ -86,9 +89,18 @@ async fn test_list_profiles() {
         .iter()
         .map(|p| p["role"].as_str().unwrap())
         .collect();
-    assert!(roles.contains(&"sales_qualifier"), "Missing sales_qualifier");
-    assert!(roles.contains(&"outreach_composer"), "Missing outreach_composer");
-    assert!(roles.contains(&"support_responder"), "Missing support_responder");
+    assert!(
+        roles.contains(&"sales_qualifier"),
+        "Missing sales_qualifier"
+    );
+    assert!(
+        roles.contains(&"outreach_composer"),
+        "Missing outreach_composer"
+    );
+    assert!(
+        roles.contains(&"support_responder"),
+        "Missing support_responder"
+    );
     assert!(roles.contains(&"ticket_router"), "Missing ticket_router");
 
     // Each profile should have key fields.
@@ -467,7 +479,9 @@ async fn test_tenant_status_not_found() {
     let client = reqwest::Client::new();
 
     let resp = client
-        .get(format!("{base_url}/api/v1/tenants/nonexistent-tenant/status"))
+        .get(format!(
+            "{base_url}/api/v1/tenants/nonexistent-tenant/status"
+        ))
         .send()
         .await
         .unwrap();

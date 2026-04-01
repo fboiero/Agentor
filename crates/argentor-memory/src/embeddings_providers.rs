@@ -524,11 +524,7 @@ impl EmbeddingConfig {
         let mut provider: Box<dyn EmbeddingProvider> = match self.provider.as_str() {
             "openai" => {
                 let mut p = if let Some(ref url) = self.base_url {
-                    OpenAiEmbeddingProvider::with_base_url(
-                        &self.api_key,
-                        self.model.clone(),
-                        url,
-                    )
+                    OpenAiEmbeddingProvider::with_base_url(&self.api_key, self.model.clone(), url)
                 } else {
                     OpenAiEmbeddingProvider::new(&self.api_key, self.model.clone())
                 };
@@ -648,8 +644,7 @@ mod tests {
 
     #[test]
     fn test_cohere_provider_query_input_type() {
-        let p = CohereEmbeddingProvider::new("key", None)
-            .with_input_type("search_query");
+        let p = CohereEmbeddingProvider::new("key", None).with_input_type("search_query");
         assert_eq!(p.input_type(), "search_query");
     }
 
@@ -760,7 +755,10 @@ mod tests {
         let local = Arc::new(LocalEmbedding::new(64));
         let batch = BatchEmbeddingProvider::new(local);
 
-        let results = batch.embed_batch(&["hello", "world", "test"]).await.unwrap();
+        let results = batch
+            .embed_batch(&["hello", "world", "test"])
+            .await
+            .unwrap();
         assert_eq!(results.len(), 3);
         for v in &results {
             assert_eq!(v.len(), 64);

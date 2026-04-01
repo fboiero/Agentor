@@ -66,7 +66,11 @@ pub struct EvalCase {
 
 impl EvalCase {
     /// Create a minimal case with only an id, input, and category.
-    pub fn new(id: impl Into<String>, input: impl Into<String>, category: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        input: impl Into<String>,
+        category: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             input: input.into(),
@@ -355,7 +359,10 @@ impl Evaluator for JsonSchemaEvaluator {
         // Step 2: schema matching (lightweight)
         if let Some(ref schema) = case.expected_json_schema {
             let schema_ok = validate_schema(&value, schema);
-            details.insert("schema_match".to_string(), if schema_ok { 1.0 } else { 0.0 });
+            details.insert(
+                "schema_match".to_string(),
+                if schema_ok { 1.0 } else { 0.0 },
+            );
             if !schema_ok {
                 errors.push("Output does not match expected JSON schema".to_string());
             }
@@ -444,7 +451,9 @@ impl HeuristicEvaluator {
 impl Evaluator for HeuristicEvaluator {
     fn evaluate(&self, case: &EvalCase, actual_output: &str) -> CaseResult {
         let start = Instant::now();
-        let quality = self.evaluator.evaluate_heuristic(&case.input, actual_output, &[]);
+        let quality = self
+            .evaluator
+            .evaluate_heuristic(&case.input, actual_output, &[]);
 
         let mut details = HashMap::new();
         details.insert("relevance".to_string(), quality.relevance);
@@ -673,11 +682,17 @@ pub fn ticket_routing_suite() -> EvalSuite {
         "Ticket Routing Accuracy",
         "Tests classification accuracy for support ticket routing",
     );
-    suite.metadata.insert("domain".to_string(), "xcapit_sff".to_string());
+    suite
+        .metadata
+        .insert("domain".to_string(), "xcapit_sff".to_string());
 
     suite.cases = vec![
         {
-            let mut c = EvalCase::new("tr-001", "Mi tarjeta no funciona, no puedo hacer compras", "routing");
+            let mut c = EvalCase::new(
+                "tr-001",
+                "Mi tarjeta no funciona, no puedo hacer compras",
+                "routing",
+            );
             c.expected_contains = vec!["tarjeta".to_string(), "soporte".to_string()];
             c.expected_not_contains = vec!["inversiones".to_string()];
             c.reference_answer = Some("Redirigir al equipo de soporte de tarjetas para revisión de bloqueo o falla técnica.".to_string());
@@ -685,33 +700,58 @@ pub fn ticket_routing_suite() -> EvalSuite {
             c
         },
         {
-            let mut c = EvalCase::new("tr-002", "Quiero invertir en un fondo de renta fija", "routing");
+            let mut c = EvalCase::new(
+                "tr-002",
+                "Quiero invertir en un fondo de renta fija",
+                "routing",
+            );
             c.expected_contains = vec!["inversiones".to_string()];
             c.expected_not_contains = vec!["tarjeta".to_string()];
-            c.reference_answer = Some("Redirigir al equipo de inversiones para asesoría en fondos de renta fija.".to_string());
+            c.reference_answer = Some(
+                "Redirigir al equipo de inversiones para asesoría en fondos de renta fija."
+                    .to_string(),
+            );
             c.tags = vec!["investment".to_string()];
             c
         },
         {
-            let mut c = EvalCase::new("tr-003", "No puedo acceder a mi cuenta, olvidé la contraseña", "routing");
+            let mut c = EvalCase::new(
+                "tr-003",
+                "No puedo acceder a mi cuenta, olvidé la contraseña",
+                "routing",
+            );
             c.expected_contains = vec!["cuenta".to_string()];
             c.expected_not_contains = vec!["inversiones".to_string()];
-            c.reference_answer = Some("Redirigir al equipo de acceso y seguridad para recuperación de contraseña.".to_string());
+            c.reference_answer = Some(
+                "Redirigir al equipo de acceso y seguridad para recuperación de contraseña."
+                    .to_string(),
+            );
             c.tags = vec!["access".to_string(), "security".to_string()];
             c
         },
         {
-            let mut c = EvalCase::new("tr-004", "Quiero dar de baja mi cuenta y que me devuelvan el saldo", "routing");
+            let mut c = EvalCase::new(
+                "tr-004",
+                "Quiero dar de baja mi cuenta y que me devuelvan el saldo",
+                "routing",
+            );
             c.expected_contains = vec!["baja".to_string()];
             c.reference_answer = Some("Redirigir al equipo de retención y cierre de cuentas para gestionar la baja y devolución.".to_string());
             c.tags = vec!["churn".to_string(), "refund".to_string()];
             c
         },
         {
-            let mut c = EvalCase::new("tr-005", "¿Cuánto me cobran de comisión por transferencia internacional?", "routing");
+            let mut c = EvalCase::new(
+                "tr-005",
+                "¿Cuánto me cobran de comisión por transferencia internacional?",
+                "routing",
+            );
             c.expected_contains = vec!["comisión".to_string()];
             c.expected_not_contains = vec!["tarjeta".to_string()];
-            c.reference_answer = Some("Redirigir al equipo de operaciones internacionales para detalle de comisiones.".to_string());
+            c.reference_answer = Some(
+                "Redirigir al equipo de operaciones internacionales para detalle de comisiones."
+                    .to_string(),
+            );
             c.tags = vec!["fees".to_string(), "international".to_string()];
             c
         },
@@ -727,11 +767,17 @@ pub fn support_quality_suite() -> EvalSuite {
         "Support Response Quality",
         "Tests empathy, accuracy, and escalation logic in support responses",
     );
-    suite.metadata.insert("domain".to_string(), "xcapit_sff".to_string());
+    suite
+        .metadata
+        .insert("domain".to_string(), "xcapit_sff".to_string());
 
     suite.cases = vec![
         {
-            let mut c = EvalCase::new("sq-001", "Llevo 3 días esperando una transferencia y no llega, estoy muy enojado", "quality");
+            let mut c = EvalCase::new(
+                "sq-001",
+                "Llevo 3 días esperando una transferencia y no llega, estoy muy enojado",
+                "quality",
+            );
             c.expected_contains = vec!["disculpa".to_string(), "transferencia".to_string()];
             c.expected_not_contains = vec!["no es nuestro problema".to_string()];
             c.reference_answer = Some("Lamentamos la demora en su transferencia. Vamos a revisar el estado de inmediato y le daremos una actualización en las próximas horas. Entendemos su frustración.".to_string());
@@ -755,18 +801,30 @@ pub fn support_quality_suite() -> EvalSuite {
             c
         },
         {
-            let mut c = EvalCase::new("sq-004", "¿Cómo activo las notificaciones push de mi app?", "quality");
+            let mut c = EvalCase::new(
+                "sq-004",
+                "¿Cómo activo las notificaciones push de mi app?",
+                "quality",
+            );
             c.expected_contains = vec!["notificaciones".to_string(), "configuración".to_string()];
             c.reference_answer = Some("Para activar notificaciones push, vaya a Configuración > Notificaciones dentro de la app y active la opción correspondiente.".to_string());
             c.tags = vec!["self-service".to_string(), "accuracy".to_string()];
             c
         },
         {
-            let mut c = EvalCase::new("sq-005", "Creo que alguien accedió a mi cuenta sin autorización", "quality");
+            let mut c = EvalCase::new(
+                "sq-005",
+                "Creo que alguien accedió a mi cuenta sin autorización",
+                "quality",
+            );
             c.expected_contains = vec!["seguridad".to_string()];
             c.expected_not_contains = vec!["no se preocupe".to_string()];
             c.reference_answer = Some("Tomamos esto con máxima prioridad. Vamos a bloquear el acceso de forma preventiva y el equipo de seguridad revisará la actividad reciente de su cuenta.".to_string());
-            c.tags = vec!["security".to_string(), "urgent".to_string(), "escalation".to_string()];
+            c.tags = vec![
+                "security".to_string(),
+                "urgent".to_string(),
+                "escalation".to_string(),
+            ];
             c
         },
     ];
@@ -781,7 +839,9 @@ pub fn lead_qualification_suite() -> EvalSuite {
         "Lead Qualification Scoring",
         "Tests scoring consistency for inbound lead qualification",
     );
-    suite.metadata.insert("domain".to_string(), "xcapit_sff".to_string());
+    suite
+        .metadata
+        .insert("domain".to_string(), "xcapit_sff".to_string());
 
     suite.cases = vec![
         {
@@ -793,22 +853,38 @@ pub fn lead_qualification_suite() -> EvalSuite {
             c
         },
         {
-            let mut c = EvalCase::new("lq-002", "Soy estudiante y quiero abrir una cuenta para ahorrar", "qualification");
+            let mut c = EvalCase::new(
+                "lq-002",
+                "Soy estudiante y quiero abrir una cuenta para ahorrar",
+                "qualification",
+            );
             c.expected_contains = vec!["cuenta".to_string()];
             c.reference_answer = Some("Lead de baja prioridad comercial pero potencial a largo plazo: perfil joven, producto básico de ahorro.".to_string());
             c.tags = vec!["individual".to_string(), "low-priority".to_string()];
             c
         },
         {
-            let mut c = EvalCase::new("lq-003", "Startup fintech con 50 empleados, necesitamos API de pagos, decisión en 2 semanas", "qualification");
+            let mut c = EvalCase::new(
+                "lq-003",
+                "Startup fintech con 50 empleados, necesitamos API de pagos, decisión en 2 semanas",
+                "qualification",
+            );
             c.expected_contains = vec!["api".to_string()];
             c.expected_not_contains = vec!["descalificado".to_string()];
             c.reference_answer = Some("Lead calificado como alta prioridad: startup con urgencia, necesidad técnica específica de API y timeline corto.".to_string());
-            c.tags = vec!["startup".to_string(), "api".to_string(), "urgent".to_string()];
+            c.tags = vec![
+                "startup".to_string(),
+                "api".to_string(),
+                "urgent".to_string(),
+            ];
             c
         },
         {
-            let mut c = EvalCase::new("lq-004", "Solo estoy comparando opciones, todavía no tengo presupuesto", "qualification");
+            let mut c = EvalCase::new(
+                "lq-004",
+                "Solo estoy comparando opciones, todavía no tengo presupuesto",
+                "qualification",
+            );
             c.expected_contains = vec!["seguimiento".to_string()];
             c.reference_answer = Some("Lead en etapa temprana de exploración, sin presupuesto definido. Clasificar para seguimiento a mediano plazo con contenido educativo.".to_string());
             c.tags = vec!["exploratory".to_string(), "nurture".to_string()];
@@ -840,7 +916,10 @@ fn validate_schema(value: &serde_json::Value, schema: &serde_json::Value) -> boo
             if !value.is_object() {
                 return false;
             }
-            if let Some(props) = schema.get("properties").and_then(serde_json::Value::as_object) {
+            if let Some(props) = schema
+                .get("properties")
+                .and_then(serde_json::Value::as_object)
+            {
                 let obj = value.as_object().expect("checked above");
                 for key in props.keys() {
                     if !obj.contains_key(key) {
@@ -955,7 +1034,10 @@ fn build_report_with_metadata(
             *cat_passed.entry(case.category.clone()).or_default() += 1;
         }
         for tag in &case.tags {
-            tag_scores.entry(tag.clone()).or_default().push(result.score);
+            tag_scores
+                .entry(tag.clone())
+                .or_default()
+                .push(result.score);
         }
     }
 
@@ -969,7 +1051,14 @@ fn build_report_with_metadata(
             } else {
                 scores.iter().sum::<f32>() / scores.len() as f32
             };
-            (cat, CategoryResult { total, passed: p, avg_score: avg })
+            (
+                cat,
+                CategoryResult {
+                    total,
+                    passed: p,
+                    avg_score: avg,
+                },
+            )
         })
         .collect();
 
@@ -1020,7 +1109,12 @@ impl EvalFramework {
             results.push(result);
         }
 
-        Ok(build_report_with_metadata(suite_id, &suite.cases, results, start))
+        Ok(build_report_with_metadata(
+            suite_id,
+            &suite.cases,
+            results,
+            start,
+        ))
     }
 }
 
@@ -1603,7 +1697,11 @@ mod tests {
 
         let report = fw
             .run_suite_full("s1", &ExactMatchEvaluator, |case| {
-                if case.id == "c1" { "a".to_string() } else { "b".to_string() }
+                if case.id == "c1" {
+                    "a".to_string()
+                } else {
+                    "b".to_string()
+                }
             })
             .unwrap();
 

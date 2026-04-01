@@ -70,7 +70,9 @@ impl LlmBackend for DemoBackend {
         self.call_count.fetch_add(1, Ordering::SeqCst);
         let mut responses = self.responses.lock().await;
         if responses.is_empty() {
-            Err(ArgentorError::Agent("DemoBackend: no more responses".into()))
+            Err(ArgentorError::Agent(
+                "DemoBackend: no more responses".into(),
+            ))
         } else {
             // Simulate LLM latency
             tokio::time::sleep(Duration::from_millis(80)).await;
@@ -272,7 +274,9 @@ async fn main() {
     println!("  {DIM}Sin API keys — respuestas simuladas con DemoBackend{RST}");
     println!("  {DIM}Audit log + compliance + circuit breaker activos{RST}");
 
-    let audit = Arc::new(AuditLog::new(std::path::PathBuf::from("/tmp/argentor-demo-xcapit")));
+    let audit = Arc::new(AuditLog::new(std::path::PathBuf::from(
+        "/tmp/argentor-demo-xcapit",
+    )));
     let skills = Arc::new(SkillRegistry::new());
     let permissions = PermissionSet::new();
 
@@ -300,7 +304,9 @@ async fn main() {
         audit.clone(),
         3,
     )
-    .with_system_prompt("Clasificás tickets de soporte por categoría y prioridad. Respondé SOLO con JSON.");
+    .with_system_prompt(
+        "Clasificás tickets de soporte por categoría y prioridad. Respondé SOLO con JSON.",
+    );
 
     let mut session = Session::new();
     let result = runner.run(&mut session, ticket_input).await.unwrap();
@@ -352,8 +358,10 @@ async fn main() {
 
     // Execute in parallel
     let mut handles = Vec::new();
-    for (i, ((company, region, title, score, affinity), response)) in
-        leads.iter().zip(qualifier_responses.into_iter()).enumerate()
+    for (i, ((company, region, title, score, affinity), response)) in leads
+        .iter()
+        .zip(qualifier_responses.into_iter())
+        .enumerate()
     {
         let skills = skills.clone();
         let permissions = permissions.clone();
@@ -361,21 +369,24 @@ async fn main() {
         let context = format!(
             "Lead to qualify:\n  Company: {company}\n  Region: {region}\n  \
              C-Level: {}\n  Score ICP: {score}\n  Afinidad: {affinity}",
-            if *title == "CFO" || *title == "CTO" { "true" } else { "false" }
+            if *title == "CFO" || *title == "CTO" {
+                "true"
+            } else {
+                "false"
+            }
         );
 
-        println!("  {DIM}[{i}] {company} — {region}, {title}, ICP {score}, Afinidad {affinity}{RST}");
+        println!(
+            "  {DIM}[{i}] {company} — {region}, {title}, ICP {score}, Afinidad {affinity}{RST}"
+        );
 
         let handle = tokio::spawn(async move {
             let backend = DemoBackend::new("claude-demo", vec![response]);
-            let runner = AgentRunner::from_backend(
-                Box::new(backend),
-                skills,
-                permissions,
-                audit,
-                3,
-            )
-            .with_system_prompt("Evaluás leads usando ICP scoring. Clasificás como hot/warm/cool/cold.");
+            let runner =
+                AgentRunner::from_backend(Box::new(backend), skills, permissions, audit, 3)
+                    .with_system_prompt(
+                        "Evaluás leads usando ICP scoring. Clasificás como hot/warm/cool/cold.",
+                    );
 
             let mut session = Session::new();
             let result = runner.run(&mut session, &context).await;
@@ -408,13 +419,14 @@ async fn main() {
     }
 
     println!();
-    println!(
-        "  {GRN}{BOLD}✓ 3 leads calificados en {dur}ms (paralelo){RST}"
-    );
+    println!("  {GRN}{BOLD}✓ 3 leads calificados en {dur}ms (paralelo){RST}");
 
     // ── Phase 4: Outreach Composer ──────────────────────────────
 
-    section(4, "Outreach Composer — Mensaje para lead top (MegaBank, Score 91)");
+    section(
+        4,
+        "Outreach Composer — Mensaje para lead top (MegaBank, Score 91)",
+    );
 
     let outreach_context = "Componer mensaje de outreach para:\n\
         Company: MegaBank\n\
@@ -434,7 +446,9 @@ async fn main() {
         audit.clone(),
         3,
     )
-    .with_system_prompt("Componés mensajes de outreach personalizados. Incluí variante A/B y siguiente paso.");
+    .with_system_prompt(
+        "Componés mensajes de outreach personalizados. Incluí variante A/B y siguiente paso.",
+    );
 
     let mut session = Session::new();
     let result = runner.run(&mut session, outreach_context).await.unwrap();
@@ -454,9 +468,7 @@ async fn main() {
     println!();
     println!("  {BOLD}Agentes ejecutados:{RST}  4 roles, 6 invocaciones totales");
     println!("  {BOLD}Ejecución paralela:{RST}  3 leads calificados simultáneamente");
-    println!(
-        "  {BOLD}Tokens estimados:{RST}   ~{total_tokens}"
-    );
+    println!("  {BOLD}Tokens estimados:{RST}   ~{total_tokens}");
     println!(
         "  {BOLD}Duración total:{RST}     {:.1}s",
         total_duration.as_secs_f64()
@@ -468,8 +480,6 @@ async fn main() {
     println!("  {BLU}ticket_router{RST} → {GRN}support_responder{RST}");
     println!("  {YLW}sales_qualifier{RST} ×3 (paralelo) → {MAG}outreach_composer{RST}");
     println!();
-    println!(
-        "  {DIM}Argentor — Secure AI Agent Framework × XcapitSFF{RST}"
-    );
+    println!("  {DIM}Argentor — Secure AI Agent Framework × XcapitSFF{RST}");
     println!();
 }

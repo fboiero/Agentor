@@ -444,7 +444,12 @@ mod tests {
     #[test]
     fn test_add_rule() {
         let e = engine();
-        e.add_rule(AlertRule::new("test", "cpu", AlertCondition::GreaterThan(90.0), AlertSeverity::Warning));
+        e.add_rule(AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(90.0),
+            AlertSeverity::Warning,
+        ));
         assert_eq!(e.rule_count(), 1);
     }
 
@@ -452,7 +457,12 @@ mod tests {
     #[test]
     fn test_remove_rule() {
         let e = engine();
-        e.add_rule(AlertRule::new("test", "cpu", AlertCondition::GreaterThan(90.0), AlertSeverity::Warning));
+        e.add_rule(AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(90.0),
+            AlertSeverity::Warning,
+        ));
         assert!(e.remove_rule("test"));
         assert_eq!(e.rule_count(), 0);
         assert!(!e.remove_rule("nonexistent"));
@@ -462,7 +472,12 @@ mod tests {
     #[test]
     fn test_evaluate_fires() {
         let e = engine();
-        e.add_rule(AlertRule::new("high-cpu", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Critical));
+        e.add_rule(AlertRule::new(
+            "high-cpu",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Critical,
+        ));
         let alerts = e.evaluate("cpu", 95.0);
         assert_eq!(alerts.len(), 1);
         assert_eq!(alerts[0].rule_name, "high-cpu");
@@ -473,7 +488,12 @@ mod tests {
     #[test]
     fn test_evaluate_no_fire() {
         let e = engine();
-        e.add_rule(AlertRule::new("high-cpu", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning));
+        e.add_rule(AlertRule::new(
+            "high-cpu",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        ));
         let alerts = e.evaluate("cpu", 50.0);
         assert!(alerts.is_empty());
     }
@@ -482,7 +502,12 @@ mod tests {
     #[test]
     fn test_wrong_metric() {
         let e = engine();
-        e.add_rule(AlertRule::new("high-cpu", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning));
+        e.add_rule(AlertRule::new(
+            "high-cpu",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        ));
         let alerts = e.evaluate("memory", 95.0);
         assert!(alerts.is_empty());
     }
@@ -492,8 +517,13 @@ mod tests {
     fn test_cooldown() {
         let e = engine();
         e.add_rule(
-            AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning)
-                .with_cooldown(3600),
+            AlertRule::new(
+                "test",
+                "cpu",
+                AlertCondition::GreaterThan(80.0),
+                AlertSeverity::Warning,
+            )
+            .with_cooldown(3600),
         );
         let a1 = e.evaluate("cpu", 95.0);
         let a2 = e.evaluate("cpu", 99.0);
@@ -506,8 +536,13 @@ mod tests {
     fn test_stats() {
         let e = engine();
         e.add_rule(
-            AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning)
-                .with_cooldown(3600),
+            AlertRule::new(
+                "test",
+                "cpu",
+                AlertCondition::GreaterThan(80.0),
+                AlertSeverity::Warning,
+            )
+            .with_cooldown(3600),
         );
         e.evaluate("cpu", 95.0);
         e.evaluate("cpu", 99.0); // suppressed
@@ -523,7 +558,12 @@ mod tests {
     #[test]
     fn test_acknowledge() {
         let e = engine();
-        e.add_rule(AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning));
+        e.add_rule(AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        ));
         e.evaluate("cpu", 95.0);
 
         assert_eq!(e.pending_alerts().len(), 1);
@@ -586,8 +626,18 @@ mod tests {
     #[test]
     fn test_multiple_rules() {
         let e = engine();
-        e.add_rule(AlertRule::new("warn", "cpu", AlertCondition::GreaterThan(70.0), AlertSeverity::Warning));
-        e.add_rule(AlertRule::new("crit", "cpu", AlertCondition::GreaterThan(90.0), AlertSeverity::Critical));
+        e.add_rule(AlertRule::new(
+            "warn",
+            "cpu",
+            AlertCondition::GreaterThan(70.0),
+            AlertSeverity::Warning,
+        ));
+        e.add_rule(AlertRule::new(
+            "crit",
+            "cpu",
+            AlertCondition::GreaterThan(90.0),
+            AlertSeverity::Critical,
+        ));
 
         let alerts = e.evaluate("cpu", 95.0);
         assert_eq!(alerts.len(), 2);
@@ -597,7 +647,12 @@ mod tests {
     #[test]
     fn test_disabled_rule() {
         let e = engine();
-        let mut rule = AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning);
+        let mut rule = AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        );
         rule.enabled = false;
         e.add_rule(rule);
         let alerts = e.evaluate("cpu", 95.0);
@@ -608,8 +663,18 @@ mod tests {
     #[test]
     fn test_batch_evaluation() {
         let e = engine();
-        e.add_rule(AlertRule::new("cpu", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning));
-        e.add_rule(AlertRule::new("mem", "memory", AlertCondition::GreaterThan(90.0), AlertSeverity::Critical));
+        e.add_rule(AlertRule::new(
+            "cpu",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        ));
+        e.add_rule(AlertRule::new(
+            "mem",
+            "memory",
+            AlertCondition::GreaterThan(90.0),
+            AlertSeverity::Critical,
+        ));
 
         let mut metrics = HashMap::new();
         metrics.insert("cpu".to_string(), 95.0);
@@ -623,7 +688,12 @@ mod tests {
     #[test]
     fn test_clear_alerts() {
         let e = engine();
-        e.add_rule(AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning));
+        e.add_rule(AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        ));
         e.evaluate("cpu", 95.0);
         assert!(!e.alerts().is_empty());
 
@@ -635,7 +705,12 @@ mod tests {
     #[test]
     fn test_alert_serializable() {
         let e = engine();
-        e.add_rule(AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Critical));
+        e.add_rule(AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Critical,
+        ));
         e.evaluate("cpu", 95.0);
 
         let alerts = e.alerts();
@@ -647,7 +722,10 @@ mod tests {
     #[test]
     fn test_condition_describe() {
         assert_eq!(AlertCondition::GreaterThan(90.0).describe(), "> 90");
-        assert_eq!(AlertCondition::OutsideRange(10.0, 90.0).describe(), "outside [10, 90]");
+        assert_eq!(
+            AlertCondition::OutsideRange(10.0, 90.0).describe(),
+            "outside [10, 90]"
+        );
     }
 
     // 22. Rule with description
@@ -655,8 +733,13 @@ mod tests {
     fn test_rule_with_description() {
         let e = engine();
         e.add_rule(
-            AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning)
-                .with_description("CPU too high"),
+            AlertRule::new(
+                "test",
+                "cpu",
+                AlertCondition::GreaterThan(80.0),
+                AlertSeverity::Warning,
+            )
+            .with_description("CPU too high"),
         );
         e.evaluate("cpu", 95.0);
         let alerts = e.alerts();
@@ -675,7 +758,12 @@ mod tests {
     fn test_clone_shares_state() {
         let e1 = engine();
         let e2 = e1.clone();
-        e1.add_rule(AlertRule::new("test", "cpu", AlertCondition::GreaterThan(80.0), AlertSeverity::Warning));
+        e1.add_rule(AlertRule::new(
+            "test",
+            "cpu",
+            AlertCondition::GreaterThan(80.0),
+            AlertSeverity::Warning,
+        ));
         assert_eq!(e2.rule_count(), 1);
     }
 }

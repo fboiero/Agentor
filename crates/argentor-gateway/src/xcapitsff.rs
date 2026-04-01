@@ -10,12 +10,14 @@
 //! - `POST /api/v1/proxy/webhook` — Proxy external webhooks with HMAC validation and audit
 //! - `GET /api/v1/health` — Extended health check including XcapitSFF status
 
-use argentor_agent::{AgentRunner, ModelConfig, StreamEvent};
-use argentor_orchestrator::workflow::{WorkflowEngine, lead_qualification_workflow, support_ticket_workflow};
 use argentor_agent::evaluator::ResponseEvaluator;
 use argentor_agent::guardrails::{GuardrailEngine, RuleSeverity as GuardrailSeverity};
 use argentor_agent::prompt_manager::PromptManager;
+use argentor_agent::{AgentRunner, ModelConfig, StreamEvent};
 use argentor_memory::conversation::{ConversationMemory, ConversationSummarizer};
+use argentor_orchestrator::workflow::{
+    lead_qualification_workflow, support_ticket_workflow, WorkflowEngine,
+};
 use argentor_security::audit::AuditOutcome;
 use argentor_security::tenant_limits::{TenantLimitManager, TenantPlan};
 use argentor_security::{AuditLog, PermissionSet};
@@ -330,8 +332,12 @@ impl XcapitState {
     /// Register default workflow definitions (lead qualification, support ticket).
     /// Must be called after construction since workflow registration is async.
     pub async fn init_workflows(&self) {
-        self.workflow_engine.register_workflow(lead_qualification_workflow()).await;
-        self.workflow_engine.register_workflow(support_ticket_workflow()).await;
+        self.workflow_engine
+            .register_workflow(lead_qualification_workflow())
+            .await;
+        self.workflow_engine
+            .register_workflow(support_ticket_workflow())
+            .await;
     }
 
     /// Start the background health check loop for XcapitSFF.
@@ -817,17 +823,32 @@ pub struct UsageQueryParams {
 pub fn xcapitsff_router(state: Arc<XcapitState>) -> Router {
     Router::new()
         .route("/api/v1/agent/run-task", post(run_task_handler))
-        .route("/api/v1/agent/run-task-stream", post(run_task_stream_handler))
+        .route(
+            "/api/v1/agent/run-task-stream",
+            post(run_task_stream_handler),
+        )
         .route("/api/v1/agent/batch", post(batch_handler))
         .route("/api/v1/agent/evaluate", post(evaluate_handler))
         .route("/api/v1/agent/personas", post(create_persona_handler))
-        .route("/api/v1/agent/personas/{tenant_id}", get(list_personas_handler))
+        .route(
+            "/api/v1/agent/personas/{tenant_id}",
+            get(list_personas_handler),
+        )
         .route("/api/v1/agent/profiles", get(list_profiles_handler))
         .route("/api/v1/proxy/webhook", post(webhook_proxy_handler))
-        .route("/api/v1/usage/tenant/{tenant_id}", get(tenant_usage_handler))
+        .route(
+            "/api/v1/usage/tenant/{tenant_id}",
+            get(tenant_usage_handler),
+        )
         .route("/api/v1/health", get(extended_health_handler))
-        .route("/api/v1/tenants/{tenant_id}/register", post(register_tenant_handler))
-        .route("/api/v1/tenants/{tenant_id}/status", get(tenant_status_handler))
+        .route(
+            "/api/v1/tenants/{tenant_id}/register",
+            post(register_tenant_handler),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/status",
+            get(tenant_status_handler),
+        )
         .route("/api/v1/workflows/runs", get(list_workflow_runs_handler))
         .with_state(state)
 }
@@ -1035,9 +1056,7 @@ async fn run_task_handler(
     .with_system_prompt(&system_prompt);
 
     let mut session = Session::new();
-    let session_id = req
-        .session_id
-        .unwrap_or_else(|| session.id.to_string());
+    let session_id = req.session_id.unwrap_or_else(|| session.id.to_string());
 
     state.audit.log_action(
         session.id,
@@ -1061,7 +1080,9 @@ async fn run_task_handler(
     match result {
         Ok(mut response) => {
             // ── Step 7: Output guardrails ────────────────────────
-            let output_check = state.guardrails.check_output(&response, Some(&safe_context));
+            let output_check = state
+                .guardrails
+                .check_output(&response, Some(&safe_context));
             if !output_check.passed {
                 for v in &output_check.violations {
                     compliance_flags.push(format!("output_{:?}:{}", v.severity, v.rule_name));
@@ -1086,26 +1107,18 @@ async fn run_task_handler(
 
             // ── Step 9: Conversation memory recording ───────────
             if let Some(ref cid) = customer_id {
-                state.conversation_memory.record_turn(
-                    cid,
-                    &session_id,
-                    "user",
-                    &safe_context,
-                    HashMap::new(),
-                )
-                .await;
+                state
+                    .conversation_memory
+                    .record_turn(cid, &session_id, "user", &safe_context, HashMap::new())
+                    .await;
                 let mut meta = HashMap::new();
                 meta.insert("agent_role".to_string(), req.agent_role.clone());
                 meta.insert("model".to_string(), model_id.clone());
                 meta.insert("quality".to_string(), format!("{quality:.2}"));
-                state.conversation_memory.record_turn(
-                    cid,
-                    &session_id,
-                    "assistant",
-                    &response,
-                    meta,
-                )
-                .await;
+                state
+                    .conversation_memory
+                    .record_turn(cid, &session_id, "assistant", &response, meta)
+                    .await;
             }
 
             // ── Step 10: Usage + analytics + audit ──────────────
@@ -1113,29 +1126,44 @@ async fn run_task_handler(
                 let cost = estimate_cost_usd(&model_id, tokens_input, tokens_output);
                 state
                     .usage_tracker
-                    .record(tid, &req.agent_role, &model_id, tokens_input, tokens_output, cost)
+                    .record(
+                        tid,
+                        &req.agent_role,
+                        &model_id,
+                        tokens_input,
+                        tokens_output,
+                        cost,
+                    )
                     .await;
 
-                state.tenant_limits.record_usage(tid, tokens_input, tokens_output, cost);
+                state
+                    .tenant_limits
+                    .record_usage(tid, tokens_input, tokens_output, cost);
 
-                state.analytics.record_interaction(crate::analytics::InteractionEvent {
-                    tenant_id: tid.clone(),
-                    agent_role: req.agent_role.clone(),
-                    channel: "api".to_string(),
-                    customer_id: customer_id.clone(),
-                    outcome: crate::analytics::InteractionOutcome::Resolved,
-                    duration_ms,
-                    tokens_used: tokens_input + tokens_output,
-                    timestamp: Utc::now(),
-                }).await;
+                state
+                    .analytics
+                    .record_interaction(crate::analytics::InteractionEvent {
+                        tenant_id: tid.clone(),
+                        agent_role: req.agent_role.clone(),
+                        channel: "api".to_string(),
+                        customer_id: customer_id.clone(),
+                        outcome: crate::analytics::InteractionOutcome::Resolved,
+                        duration_ms,
+                        tokens_used: tokens_input + tokens_output,
+                        timestamp: Utc::now(),
+                    })
+                    .await;
 
-                state.analytics.record_quality_score(crate::analytics::QualityEvent {
-                    tenant_id: tid.clone(),
-                    agent_role: req.agent_role.clone(),
-                    overall_score: quality,
-                    criteria_scores: HashMap::new(),
-                    timestamp: Utc::now(),
-                }).await;
+                state
+                    .analytics
+                    .record_quality_score(crate::analytics::QualityEvent {
+                        tenant_id: tid.clone(),
+                        agent_role: req.agent_role.clone(),
+                        overall_score: quality,
+                        criteria_scores: HashMap::new(),
+                        timestamp: Utc::now(),
+                    })
+                    .await;
             }
 
             state.audit.log_action(
@@ -1165,24 +1193,36 @@ async fn run_task_handler(
                         "qualification_result": &response,
                         "session_id": &session_id,
                     });
-                    if let Some(run_id) = state.workflow_engine.start("lead_qualification", trigger_data).await {
+                    if let Some(run_id) = state
+                        .workflow_engine
+                        .start("lead_qualification", trigger_data)
+                        .await
+                    {
                         info!(workflow = "lead_qualification", run_id = %run_id, "Auto-triggered lead qualification workflow");
-                        compliance_flags.push(format!("workflow_triggered:lead_qualification:{run_id}"));
+                        compliance_flags
+                            .push(format!("workflow_triggered:lead_qualification:{run_id}"));
                     }
                 }
             } else if req.agent_role == "ticket_router" {
                 // Auto-trigger support workflow for urgent tickets
                 let response_lower = response.to_lowercase();
-                if response_lower.contains("\"priority\":\"urgent\"") || response_lower.contains("\"priority\": \"urgent\"") {
+                if response_lower.contains("\"priority\":\"urgent\"")
+                    || response_lower.contains("\"priority\": \"urgent\"")
+                {
                     let trigger_data = serde_json::json!({
                         "agent_role": "ticket_router",
                         "tenant_id": tenant_id,
                         "routing_result": &response,
                         "session_id": &session_id,
                     });
-                    if let Some(run_id) = state.workflow_engine.start("support_ticket", trigger_data).await {
+                    if let Some(run_id) = state
+                        .workflow_engine
+                        .start("support_ticket", trigger_data)
+                        .await
+                    {
                         info!(workflow = "support_ticket", run_id = %run_id, "Auto-triggered support ticket workflow");
-                        compliance_flags.push(format!("workflow_triggered:support_ticket:{run_id}"));
+                        compliance_flags
+                            .push(format!("workflow_triggered:support_ticket:{run_id}"));
                     }
                 }
             }
@@ -1191,17 +1231,19 @@ async fn run_task_handler(
 
             (
                 StatusCode::OK,
-                Json(serde_json::to_value(RunTaskResponse {
-                    response,
-                    session_id,
-                    model_used: model_id,
-                    tokens_input,
-                    tokens_output,
-                    tool_calls: vec![],
-                    compliance_flags,
-                    duration_ms,
-                })
-                .unwrap_or_default()),
+                Json(
+                    serde_json::to_value(RunTaskResponse {
+                        response,
+                        session_id,
+                        model_used: model_id,
+                        tokens_input,
+                        tokens_output,
+                        tool_calls: vec![],
+                        compliance_flags,
+                        duration_ms,
+                    })
+                    .unwrap_or_default(),
+                ),
             )
                 .into_response()
         }
@@ -1210,16 +1252,19 @@ async fn run_task_handler(
 
             // Record failure in analytics
             if let Some(ref tid) = tenant_id {
-                state.analytics.record_interaction(crate::analytics::InteractionEvent {
-                    tenant_id: tid.clone(),
-                    agent_role: req.agent_role.clone(),
-                    channel: "api".to_string(),
-                    customer_id: customer_id.clone(),
-                    outcome: crate::analytics::InteractionOutcome::Escalated,
-                    duration_ms,
-                    tokens_used: 0,
-                    timestamp: Utc::now(),
-                }).await;
+                state
+                    .analytics
+                    .record_interaction(crate::analytics::InteractionEvent {
+                        tenant_id: tid.clone(),
+                        agent_role: req.agent_role.clone(),
+                        channel: "api".to_string(),
+                        customer_id: customer_id.clone(),
+                        outcome: crate::analytics::InteractionOutcome::Escalated,
+                        duration_ms,
+                        tokens_used: 0,
+                        timestamp: Utc::now(),
+                    })
+                    .await;
             }
 
             state.audit.log_action(
@@ -1325,7 +1370,9 @@ async fn batch_handler(
             match runner.run(&mut session, &safe_context).await {
                 Ok(mut response) => {
                     // Output guardrails
-                    let output_check = state.guardrails.check_output(&response, Some(&safe_context));
+                    let output_check = state
+                        .guardrails
+                        .check_output(&response, Some(&safe_context));
                     if let Some(sanitized) = output_check.sanitized_text {
                         response = sanitized;
                     }
@@ -1382,19 +1429,24 @@ async fn batch_handler(
         .sum();
     let total_duration_ms = start.elapsed().as_millis() as u64;
 
-    info!(total, succeeded, failed, total_duration_ms, "XcapitSFF batch completed");
+    info!(
+        total,
+        succeeded, failed, total_duration_ms, "XcapitSFF batch completed"
+    );
 
     (
         StatusCode::OK,
-        Json(serde_json::to_value(BatchResponse {
-            results,
-            total,
-            succeeded,
-            failed,
-            total_tokens,
-            total_duration_ms,
-        })
-        .unwrap_or_default()),
+        Json(
+            serde_json::to_value(BatchResponse {
+                results,
+                total,
+                succeeded,
+                failed,
+                total_tokens,
+                total_duration_ms,
+            })
+            .unwrap_or_default(),
+        ),
     )
         .into_response()
 }
@@ -1419,13 +1471,15 @@ async fn webhook_proxy_handler(
 
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::to_value(WebhookProxyResponse {
-                forwarded: false,
-                upstream_status: None,
-                audit_id,
-                error: Some(format!("Source '{}' not in allowed list", req.source)),
-            })
-            .unwrap_or_default()),
+            Json(
+                serde_json::to_value(WebhookProxyResponse {
+                    forwarded: false,
+                    upstream_status: None,
+                    audit_id,
+                    error: Some(format!("Source '{}' not in allowed list", req.source)),
+                })
+                .unwrap_or_default(),
+            ),
         )
             .into_response();
     }
@@ -1497,12 +1551,7 @@ async fn webhook_proxy_handler(
 
     // Forward to XcapitSFF
     let forward_url = format!("{}/api/v1/webhooks/generic", state.config.url);
-    let result = state
-        .http_client
-        .post(&forward_url)
-        .json(&req)
-        .send()
-        .await;
+    let result = state.http_client.post(&forward_url).json(&req).send().await;
 
     match result {
         Ok(resp) => {
@@ -1534,17 +1583,19 @@ async fn webhook_proxy_handler(
 
             (
                 StatusCode::OK,
-                Json(serde_json::to_value(WebhookProxyResponse {
-                    forwarded: success,
-                    upstream_status: Some(status),
-                    audit_id,
-                    error: if success {
-                        None
-                    } else {
-                        Some(format!("Upstream returned HTTP {status}"))
-                    },
-                })
-                .unwrap_or_default()),
+                Json(
+                    serde_json::to_value(WebhookProxyResponse {
+                        forwarded: success,
+                        upstream_status: Some(status),
+                        audit_id,
+                        error: if success {
+                            None
+                        } else {
+                            Some(format!("Upstream returned HTTP {status}"))
+                        },
+                    })
+                    .unwrap_or_default(),
+                ),
             )
                 .into_response()
         }
@@ -1561,13 +1612,15 @@ async fn webhook_proxy_handler(
 
             (
                 StatusCode::BAD_GATEWAY,
-                Json(serde_json::to_value(WebhookProxyResponse {
-                    forwarded: false,
-                    upstream_status: None,
-                    audit_id,
-                    error: Some(e.to_string()),
-                })
-                .unwrap_or_default()),
+                Json(
+                    serde_json::to_value(WebhookProxyResponse {
+                        forwarded: false,
+                        upstream_status: None,
+                        audit_id,
+                        error: Some(e.to_string()),
+                    })
+                    .unwrap_or_default(),
+                ),
             )
                 .into_response()
         }
@@ -1575,9 +1628,7 @@ async fn webhook_proxy_handler(
 }
 
 /// GET /api/v1/health — Extended health check with XcapitSFF status.
-async fn extended_health_handler(
-    State(state): State<Arc<XcapitState>>,
-) -> impl IntoResponse {
+async fn extended_health_handler(State(state): State<Arc<XcapitState>>) -> impl IntoResponse {
     let xcapitsff_health = state.xcapitsff_health.read().await.clone();
 
     let overall = if xcapitsff_health.status == "ok" {
@@ -1597,7 +1648,11 @@ async fn extended_health_handler(
         xcapitsff: xcapitsff_health,
     };
 
-    (StatusCode::OK, Json(serde_json::to_value(response).unwrap_or_default())).into_response()
+    (
+        StatusCode::OK,
+        Json(serde_json::to_value(response).unwrap_or_default()),
+    )
+        .into_response()
 }
 
 // ---------------------------------------------------------------------------
@@ -1690,9 +1745,7 @@ async fn run_task_stream_handler(
     .with_system_prompt(&system_prompt);
 
     let mut session = Session::new();
-    let session_id = req
-        .session_id
-        .unwrap_or_else(|| session.id.to_string());
+    let session_id = req.session_id.unwrap_or_else(|| session.id.to_string());
 
     info!(role = %agent_role, session_id = %session_id, "XcapitSFF run-task-stream started");
 
@@ -1749,7 +1802,12 @@ async fn run_task_stream_handler(
     let context_len_for_stream = context_len;
 
     let sse_stream = futures_util::stream::unfold(
-        (rx_stream, session_id_for_stream, context_len_for_stream, 0usize),
+        (
+            rx_stream,
+            session_id_for_stream,
+            context_len_for_stream,
+            0usize,
+        ),
         |(mut rx, sid, ctx_len, mut output_chars)| async move {
             use futures_util::StreamExt;
             match rx.next().await {
@@ -1759,9 +1817,7 @@ async fn run_task_stream_handler(
                         "type": "token",
                         "content": text,
                     });
-                    let event = Ok::<_, Infallible>(
-                        SseEvent::default().data(data.to_string()),
-                    );
+                    let event = Ok::<_, Infallible>(SseEvent::default().data(data.to_string()));
                     Some((event, (rx, sid, ctx_len, output_chars)))
                 }
                 Some(StreamEvent::Done) => {
@@ -1773,9 +1829,7 @@ async fn run_task_stream_handler(
                         "tokens_input": tokens_input,
                         "tokens_output": tokens_output,
                     });
-                    let event = Ok::<_, Infallible>(
-                        SseEvent::default().data(data.to_string()),
-                    );
+                    let event = Ok::<_, Infallible>(SseEvent::default().data(data.to_string()));
                     Some((event, (rx, sid, ctx_len, output_chars)))
                 }
                 Some(StreamEvent::Error { message }) => {
@@ -1783,9 +1837,7 @@ async fn run_task_stream_handler(
                         "type": "error",
                         "message": message,
                     });
-                    let event = Ok::<_, Infallible>(
-                        SseEvent::default().data(data.to_string()),
-                    );
+                    let event = Ok::<_, Infallible>(SseEvent::default().data(data.to_string()));
                     Some((event, (rx, sid, ctx_len, output_chars)))
                 }
                 Some(StreamEvent::ToolCallStart { id, name }) => {
@@ -1794,20 +1846,19 @@ async fn run_task_stream_handler(
                         "id": id,
                         "name": name,
                     });
-                    let event = Ok::<_, Infallible>(
-                        SseEvent::default().data(data.to_string()),
-                    );
+                    let event = Ok::<_, Infallible>(SseEvent::default().data(data.to_string()));
                     Some((event, (rx, sid, ctx_len, output_chars)))
                 }
-                Some(StreamEvent::ToolCallDelta { id, arguments_delta }) => {
+                Some(StreamEvent::ToolCallDelta {
+                    id,
+                    arguments_delta,
+                }) => {
                     let data = serde_json::json!({
                         "type": "tool_call_delta",
                         "id": id,
                         "arguments_delta": arguments_delta,
                     });
-                    let event = Ok::<_, Infallible>(
-                        SseEvent::default().data(data.to_string()),
-                    );
+                    let event = Ok::<_, Infallible>(SseEvent::default().data(data.to_string()));
                     Some((event, (rx, sid, ctx_len, output_chars)))
                 }
                 Some(StreamEvent::ToolCallEnd { id }) => {
@@ -1815,9 +1866,7 @@ async fn run_task_stream_handler(
                         "type": "tool_call_end",
                         "id": id,
                     });
-                    let event = Ok::<_, Infallible>(
-                        SseEvent::default().data(data.to_string()),
-                    );
+                    let event = Ok::<_, Infallible>(SseEvent::default().data(data.to_string()));
                     Some((event, (rx, sid, ctx_len, output_chars)))
                 }
                 None => None, // Channel closed, end stream
@@ -1936,7 +1985,10 @@ async fn evaluate_handler(
         }
     }
     if suggestions.is_empty() && overall_score < 0.7 {
-        suggestions.push("Response quality is below threshold. Consider providing more detail and structure.".to_string());
+        suggestions.push(
+            "Response quality is below threshold. Consider providing more detail and structure."
+                .to_string(),
+        );
     }
 
     let response = EvaluateResponse {
@@ -1964,9 +2016,17 @@ fn score_tone(response: &str) -> f32 {
 
     // Polite / friendly markers
     let polite_markers = [
-        "por favor", "gracias", "please", "thank you", "happy to help",
-        "con gusto", "espero que", "hope this helps", "let me know",
-        "no dudes en", "feel free",
+        "por favor",
+        "gracias",
+        "please",
+        "thank you",
+        "happy to help",
+        "con gusto",
+        "espero que",
+        "hope this helps",
+        "let me know",
+        "no dudes en",
+        "feel free",
     ];
     for marker in &polite_markers {
         if lower.contains(marker) {
@@ -2052,9 +2112,7 @@ async fn list_personas_handler(
 // ---------------------------------------------------------------------------
 
 /// GET /api/v1/agent/profiles — List all available agent profiles.
-async fn list_profiles_handler(
-    State(state): State<Arc<XcapitState>>,
-) -> impl IntoResponse {
+async fn list_profiles_handler(State(state): State<Arc<XcapitState>>) -> impl IntoResponse {
     let profiles: Vec<serde_json::Value> = state
         .profiles
         .iter()
@@ -2070,10 +2128,14 @@ async fn list_profiles_handler(
         })
         .collect();
 
-    (StatusCode::OK, Json(serde_json::json!({
-        "profiles": profiles,
-        "total": profiles.len(),
-    }))).into_response()
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "profiles": profiles,
+            "total": profiles.len(),
+        })),
+    )
+        .into_response()
 }
 
 /// POST /api/v1/tenants/{tenant_id}/register — Register a tenant with a plan.
@@ -2102,11 +2164,15 @@ async fn register_tenant_handler(
 
     info!(tenant_id = %tenant_id, plan = %plan_name, "Tenant registered");
 
-    (StatusCode::CREATED, Json(serde_json::json!({
-        "tenant_id": tenant_id,
-        "plan": plan_name,
-        "status": "active",
-    }))).into_response()
+    (
+        StatusCode::CREATED,
+        Json(serde_json::json!({
+            "tenant_id": tenant_id,
+            "plan": plan_name,
+            "status": "active",
+        })),
+    )
+        .into_response()
 }
 
 /// GET /api/v1/tenants/{tenant_id}/status — Get tenant usage status and limits.
@@ -2115,7 +2181,10 @@ async fn tenant_status_handler(
     Path(tenant_id): Path<String>,
 ) -> impl IntoResponse {
     let limit_status = state.tenant_limits.get_status(&tenant_id);
-    let usage = state.usage_tracker.get_usage(&tenant_id, &UsagePeriod::All).await;
+    let usage = state
+        .usage_tracker
+        .get_usage(&tenant_id, &UsagePeriod::All)
+        .await;
 
     match limit_status {
         Some(status) => {
@@ -2148,28 +2217,30 @@ async fn tenant_status_handler(
 }
 
 /// GET /api/v1/workflows/runs — List all workflow runs.
-async fn list_workflow_runs_handler(
-    State(state): State<Arc<XcapitState>>,
-) -> impl IntoResponse {
+async fn list_workflow_runs_handler(State(state): State<Arc<XcapitState>>) -> impl IntoResponse {
     let lead_runs = state.workflow_engine.list_runs("lead_qualification").await;
     let support_runs = state.workflow_engine.list_runs("support_ticket").await;
 
-    (StatusCode::OK, Json(serde_json::json!({
-        "lead_qualification": lead_runs.iter().map(|r| serde_json::json!({
-            "run_id": r.run_id,
-            "status": format!("{:?}", r.status),
-            "created_at": r.created_at.to_rfc3339(),
-            "current_step": r.current_step_index,
-            "total_steps": r.step_results.len(),
-        })).collect::<Vec<_>>(),
-        "support_ticket": support_runs.iter().map(|r| serde_json::json!({
-            "run_id": r.run_id,
-            "status": format!("{:?}", r.status),
-            "created_at": r.created_at.to_rfc3339(),
-            "current_step": r.current_step_index,
-            "total_steps": r.step_results.len(),
-        })).collect::<Vec<_>>(),
-    }))).into_response()
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "lead_qualification": lead_runs.iter().map(|r| serde_json::json!({
+                "run_id": r.run_id,
+                "status": format!("{:?}", r.status),
+                "created_at": r.created_at.to_rfc3339(),
+                "current_step": r.current_step_index,
+                "total_steps": r.step_results.len(),
+            })).collect::<Vec<_>>(),
+            "support_ticket": support_runs.iter().map(|r| serde_json::json!({
+                "run_id": r.run_id,
+                "status": format!("{:?}", r.status),
+                "created_at": r.created_at.to_rfc3339(),
+                "current_step": r.current_step_index,
+                "total_steps": r.step_results.len(),
+            })).collect::<Vec<_>>(),
+        })),
+    )
+        .into_response()
 }
 
 // ---------------------------------------------------------------------------
@@ -2213,7 +2284,12 @@ mod tests {
     fn test_profile_has_fallback() {
         let profiles = default_xcapit_profiles();
         for (_, profile) in &profiles {
-            assert_eq!(profile.model.fallback_models.len(), 1, "Profile {} should have 1 fallback", profile.role);
+            assert_eq!(
+                profile.model.fallback_models.len(),
+                1,
+                "Profile {} should have 1 fallback",
+                profile.role
+            );
             assert_eq!(profile.model.fallback_models[0].model_id, "gpt-4o-mini");
         }
     }
@@ -2229,10 +2305,18 @@ mod tests {
     #[test]
     fn test_config_allowed_sources() {
         let config = XcapitConfig::default();
-        assert!(config.allowed_webhook_sources.contains(&"hubspot".to_string()));
-        assert!(config.allowed_webhook_sources.contains(&"salesforce".to_string()));
-        assert!(config.allowed_webhook_sources.contains(&"stripe".to_string()));
-        assert!(config.allowed_webhook_sources.contains(&"intercom".to_string()));
+        assert!(config
+            .allowed_webhook_sources
+            .contains(&"hubspot".to_string()));
+        assert!(config
+            .allowed_webhook_sources
+            .contains(&"salesforce".to_string()));
+        assert!(config
+            .allowed_webhook_sources
+            .contains(&"stripe".to_string()));
+        assert!(config
+            .allowed_webhook_sources
+            .contains(&"intercom".to_string()));
     }
 
     #[test]
@@ -2320,8 +2404,14 @@ mod tests {
     fn test_system_prompts_non_empty() {
         let profiles = default_xcapit_profiles();
         for (name, profile) in &profiles {
-            assert!(!profile.system_prompt.is_empty(), "Profile {name} has empty system prompt");
-            assert!(profile.system_prompt.len() > 50, "Profile {name} prompt is too short");
+            assert!(
+                !profile.system_prompt.is_empty(),
+                "Profile {name} has empty system prompt"
+            );
+            assert!(
+                profile.system_prompt.len() > 50,
+                "Profile {name} prompt is too short"
+            );
         }
     }
 
@@ -2337,7 +2427,10 @@ mod tests {
         assert!(result.is_some());
         let (model, provider) = result.unwrap();
         assert_eq!(model, "gpt-4o-mini");
-        assert!(matches!(provider, argentor_agent::config::LlmProvider::OpenAi));
+        assert!(matches!(
+            provider,
+            argentor_agent::config::LlmProvider::OpenAi
+        ));
     }
 
     #[test]
@@ -2346,13 +2439,19 @@ mod tests {
         assert!(result.is_some());
         let (model, provider) = result.unwrap();
         assert_eq!(model, "claude-opus-4-6-20250514");
-        assert!(matches!(provider, argentor_agent::config::LlmProvider::Claude));
+        assert!(matches!(
+            provider,
+            argentor_agent::config::LlmProvider::Claude
+        ));
     }
 
     #[test]
     fn test_resolve_routing_hint_balanced_returns_none() {
         let result = resolve_routing_hint("balanced");
-        assert!(result.is_none(), "balanced should return None (keep current model)");
+        assert!(
+            result.is_none(),
+            "balanced should return None (keep current model)"
+        );
     }
 
     #[test]
@@ -2367,21 +2466,30 @@ mod tests {
     fn test_estimate_cost_usd_sonnet() {
         let cost = estimate_cost_usd("claude-sonnet-4-6-20250514", 1000, 500);
         // 1000 * 3.0 / 1M + 500 * 15.0 / 1M = 0.003 + 0.0075 = 0.0105
-        assert!((cost - 0.0105).abs() < 0.0001, "Expected ~0.0105, got {cost}");
+        assert!(
+            (cost - 0.0105).abs() < 0.0001,
+            "Expected ~0.0105, got {cost}"
+        );
     }
 
     #[test]
     fn test_estimate_cost_usd_gpt4o_mini() {
         let cost = estimate_cost_usd("gpt-4o-mini", 10000, 5000);
         // 10000 * 0.15 / 1M + 5000 * 0.60 / 1M = 0.0015 + 0.003 = 0.0045
-        assert!((cost - 0.0045).abs() < 0.0001, "Expected ~0.0045, got {cost}");
+        assert!(
+            (cost - 0.0045).abs() < 0.0001,
+            "Expected ~0.0045, got {cost}"
+        );
     }
 
     #[test]
     fn test_estimate_cost_usd_opus() {
         let cost = estimate_cost_usd("claude-opus-4-6-20250514", 1000, 500);
         // 1000 * 15.0 / 1M + 500 * 75.0 / 1M = 0.015 + 0.0375 = 0.0525
-        assert!((cost - 0.0525).abs() < 0.0001, "Expected ~0.0525, got {cost}");
+        assert!(
+            (cost - 0.0525).abs() < 0.0001,
+            "Expected ~0.0525, got {cost}"
+        );
     }
 
     // -- TenantUsageTracker tests --
@@ -2390,9 +2498,22 @@ mod tests {
     async fn test_tenant_usage_tracker_record_and_query() {
         let tracker = TenantUsageTracker::new();
 
-        tracker.record("t_001", "sales_qualifier", "claude-sonnet-4-6", 100, 50, 0.01).await;
-        tracker.record("t_001", "outreach_composer", "gpt-4o-mini", 200, 100, 0.005).await;
-        tracker.record("t_002", "ticket_router", "claude-sonnet-4-6", 50, 25, 0.005).await;
+        tracker
+            .record(
+                "t_001",
+                "sales_qualifier",
+                "claude-sonnet-4-6",
+                100,
+                50,
+                0.01,
+            )
+            .await;
+        tracker
+            .record("t_001", "outreach_composer", "gpt-4o-mini", 200, 100, 0.005)
+            .await;
+        tracker
+            .record("t_002", "ticket_router", "claude-sonnet-4-6", 50, 25, 0.005)
+            .await;
 
         let usage = tracker.get_usage("t_001", &UsagePeriod::All).await;
         assert_eq!(usage.tenant_id, "t_001");
@@ -2417,8 +2538,19 @@ mod tests {
     #[tokio::test]
     async fn test_tenant_usage_tracker_by_model_breakdown() {
         let tracker = TenantUsageTracker::new();
-        tracker.record("t_100", "sales_qualifier", "claude-sonnet-4-6", 100, 50, 0.01).await;
-        tracker.record("t_100", "sales_qualifier", "gpt-4o-mini", 100, 50, 0.002).await;
+        tracker
+            .record(
+                "t_100",
+                "sales_qualifier",
+                "claude-sonnet-4-6",
+                100,
+                50,
+                0.01,
+            )
+            .await;
+        tracker
+            .record("t_100", "sales_qualifier", "gpt-4o-mini", 100, 50, 0.002)
+            .await;
 
         let usage = tracker.get_usage("t_100", &UsagePeriod::All).await;
         assert_eq!(usage.by_model.len(), 2);
@@ -2481,14 +2613,19 @@ mod tests {
 
     #[test]
     fn test_score_tone_polite() {
-        let score = score_tone("Gracias por tu consulta. Por favor, no dudes en preguntar si necesitás más ayuda.");
+        let score = score_tone(
+            "Gracias por tu consulta. Por favor, no dudes en preguntar si necesitás más ayuda.",
+        );
         assert!(score > 0.5, "Polite text should score > 0.5, got {score}");
     }
 
     #[test]
     fn test_score_tone_neutral() {
         let score = score_tone("The result is 42.");
-        assert!((score - 0.5).abs() < f32::EPSILON, "Neutral text should score 0.5, got {score}");
+        assert!(
+            (score - 0.5).abs() < f32::EPSILON,
+            "Neutral text should score 0.5, got {score}"
+        );
     }
 
     #[test]

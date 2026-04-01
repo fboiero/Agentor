@@ -136,9 +136,7 @@ impl RateLimitHeaders {
 
         let window_seconds = headers
             .get(HEADER_RATELIMIT_POLICY)
-            .and_then(|v| {
-                v.split(";w=").nth(1).and_then(|w| w.parse::<u64>().ok())
-            })
+            .and_then(|v| v.split(";w=").nth(1).and_then(|w| w.parse::<u64>().ok()))
             .unwrap_or(60);
 
         Some(RateLimitInfo {

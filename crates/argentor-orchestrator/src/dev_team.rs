@@ -518,7 +518,10 @@ impl DevTeam {
                     .as_ref()
                     .map(|g| format!(" [Gate: {}]", g.description))
                     .unwrap_or_default();
-                format!("  {}. {} ({}): {}{}", s.order, s.role, s.action, s.expected_output, gate_info)
+                format!(
+                    "  {}. {} ({}): {}{}",
+                    s.order, s.role, s.action, s.expected_output, gate_info
+                )
             })
             .collect();
 
@@ -611,7 +614,9 @@ fn build_implement_feature_steps() -> Vec<WorkflowStep> {
                 assess technical risks. Produce a detailed plan with step-by-step \
                 instructions for the implementer."
                 .to_string(),
-            expected_output: "Detailed implementation plan with tasks, dependencies, and risk assessment".to_string(),
+            expected_output:
+                "Detailed implementation plan with tasks, dependencies, and risk assessment"
+                    .to_string(),
             gate: Some(QualityGate {
                 description: "Implementation plan produced".to_string(),
                 check_type: GateCheck::Custom {
@@ -630,7 +635,8 @@ fn build_implement_feature_steps() -> Vec<WorkflowStep> {
                 Handle errors properly, avoid panics, and ensure the code compiles \
                 without warnings."
                 .to_string(),
-            expected_output: "Production code that compiles and implements the planned feature".to_string(),
+            expected_output: "Production code that compiles and implements the planned feature"
+                .to_string(),
             gate: Some(QualityGate {
                 description: "Code compiles successfully".to_string(),
                 check_type: GateCheck::CompileSuccess,
@@ -1336,7 +1342,10 @@ mod tests {
         ];
         for role in &all_roles {
             let prompt = team.role_system_prompt(*role);
-            assert!(!prompt.is_empty(), "System prompt for {role} should not be empty");
+            assert!(
+                !prompt.is_empty(),
+                "System prompt for {role} should not be empty"
+            );
             assert!(
                 prompt.len() > 50,
                 "System prompt for {role} should be substantive"

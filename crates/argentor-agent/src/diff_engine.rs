@@ -429,7 +429,11 @@ impl DiffEngine {
             }
 
             // Update offset for next hunk.
-            let added = hunk.lines.iter().filter(|l| matches!(l, DiffLine::Added(_))).count();
+            let added = hunk
+                .lines
+                .iter()
+                .filter(|l| matches!(l, DiffLine::Added(_)))
+                .count();
             let removed = hunk
                 .lines
                 .iter()
@@ -484,7 +488,10 @@ impl DiffEngine {
             .collect();
 
         for diff in &plan.diffs {
-            let current = content_map.get(&diff.path).map(|s| s.as_str()).unwrap_or("");
+            let current = content_map
+                .get(&diff.path)
+                .map(|s| s.as_str())
+                .unwrap_or("");
             let result = self.apply_diff(current, diff);
             if result.success {
                 if let Some(ref new_content) = result.new_content {
@@ -598,9 +605,7 @@ impl DiffEngine {
                         // Treat empty lines as context with empty content.
                         hunk_lines.push(DiffLine::Context(String::new()));
                     } else {
-                        return Err(format!(
-                            "Unexpected line prefix at line {i}: {dl:?}"
-                        ));
+                        return Err(format!("Unexpected line prefix at line {i}: {dl:?}"));
                     }
                     i += 1;
                 }
@@ -851,7 +856,10 @@ fn parse_hunk_header(line: &str) -> Result<(usize, usize, usize, usize), String>
 
     let parts: Vec<&str> = inner.split_whitespace().collect();
     if parts.len() != 2 {
-        return Err(format!("Expected 2 parts in hunk header, got {}: {line}", parts.len()));
+        return Err(format!(
+            "Expected 2 parts in hunk header, got {}: {line}",
+            parts.len()
+        ));
     }
 
     let old_part = parts[0]
@@ -1220,10 +1228,8 @@ mod tests {
         let old_b = "";
         let new_b = "pub fn hello() {\n    println!(\"hello\");\n}\n";
 
-        let changes: Vec<(&str, &str, &str)> = vec![
-            ("src/lib.rs", old_lib, new_lib),
-            ("src/b.rs", old_b, new_b),
-        ];
+        let changes: Vec<(&str, &str, &str)> =
+            vec![("src/lib.rs", old_lib, new_lib), ("src/b.rs", old_b, new_b)];
         let plan = e.create_plan("Add module b", &changes);
 
         let contents = vec![("src/lib.rs", old_lib), ("src/b.rs", old_b)];
@@ -1250,7 +1256,10 @@ mod tests {
 
         assert!(tokens > 0, "Token estimate should be positive");
         // Sanity: a small diff should not be thousands of tokens.
-        assert!(tokens < 500, "Token estimate too high for small diff: {tokens}");
+        assert!(
+            tokens < 500,
+            "Token estimate too high for small diff: {tokens}"
+        );
     }
 
     // ── 20. Create operation ────────────────────────────────────────────
@@ -1258,11 +1267,7 @@ mod tests {
     #[test]
     fn test_diff_operation_create() {
         let e = engine();
-        let diff = e.generate_diff(
-            "new.rs",
-            "",
-            "fn new() {}\n",
-        );
+        let diff = e.generate_diff("new.rs", "", "fn new() {}\n");
         assert_eq!(diff.operation, DiffOperation::Create);
         assert_eq!(diff.additions, 1);
         assert_eq!(diff.deletions, 0);

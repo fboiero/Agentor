@@ -12,10 +12,14 @@
 //! - [`Scheduler`] — Cron-based job scheduler for recurring tasks.
 //! - [`AgentProfile`] — Configuration profile defining an agent's role and capabilities.
 
+/// Agent version management with deploy, rollback, and A/B traffic split.
+pub mod agent_versioning;
 /// Token and resource budgeting per agent.
 pub mod budget;
 /// Agent deployment lifecycle management.
 pub mod deployment;
+/// Pre-configured development team orchestration with workflows and quality gates.
+pub mod dev_team;
 /// Orchestration engine and pipeline execution.
 pub mod engine;
 /// Agent health monitoring with state machine transitions.
@@ -40,18 +44,22 @@ pub mod spawner;
 pub mod task_queue;
 /// Shared orchestration types (Task, AgentProfile, Artifact, etc.).
 pub mod types;
-/// Pre-configured development team orchestration with workflows and quality gates.
-pub mod dev_team;
 /// Configurable workflow engine for automating business pipelines.
 pub mod workflow;
-/// Agent version management with deploy, rollback, and A/B traffic split.
-pub mod agent_versioning;
 
 pub use budget::{
     default_budget, AgentUsage, AgentUsageEntry, BudgetStatus, BudgetSummary, BudgetTracker,
     TokenBudget,
 };
+pub use deployment::{
+    DeploymentConfig, DeploymentManager, DeploymentStatus, IssueSeverity, ResourceLimits,
+};
+pub use dev_team::{
+    DevRole, DevTeam, DevTeamConfig, DevWorkflow, QualityGate, WorkflowArtifact, WorkflowResult,
+    WorkflowStatus, WorkflowStep,
+};
 pub use engine::{BackendFactory, Orchestrator, OrchestratorResult};
+pub use health::{HealthCheckConfig, HealthChecker, HealthEvent};
 pub use message_bus::{AgentMessage, BroadcastTarget, MessageBus, MessageType};
 pub use monitor::AgentMonitor;
 pub use patterns::{
@@ -59,6 +67,7 @@ pub use patterns::{
     PatternConfig, PatternConfigBuilder, PatternResult, PipelineStage, ReviewPolicy,
 };
 pub use profiles::default_profiles;
+pub use registry::{default_agent_definitions, AgentRegistry};
 pub use replanner::{
     FailureContext, RecoveryStrategy, RecoveryTask, ReplanEntry, ReplanHistory, Replanner,
 };
@@ -68,15 +77,6 @@ pub use task_queue::TaskQueue;
 pub use types::{
     AgentMetrics, AgentProfile, AgentRole, AgentState, Artifact, ArtifactKind, Task, TaskStatus,
     WorkerStatus,
-};
-pub use deployment::{
-    DeploymentConfig, DeploymentManager, DeploymentStatus, IssueSeverity, ResourceLimits,
-};
-pub use health::{HealthCheckConfig, HealthChecker, HealthEvent};
-pub use registry::{default_agent_definitions, AgentRegistry};
-pub use dev_team::{
-    DevRole, DevTeam, DevTeamConfig, DevWorkflow, QualityGate, WorkflowArtifact, WorkflowResult,
-    WorkflowStep, WorkflowStatus,
 };
 pub use workflow::{
     lead_qualification_workflow, support_ticket_workflow, FailureAction, RunStatus, StepCondition,

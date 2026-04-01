@@ -87,10 +87,7 @@ pub struct ProxyManagementState {
 
 impl ProxyManagementState {
     /// Create a new proxy management state.
-    pub fn new(
-        vault: Arc<CredentialVault>,
-        pool: Arc<TokenPool>,
-    ) -> Self {
+    pub fn new(vault: Arc<CredentialVault>, pool: Arc<TokenPool>) -> Self {
         Self {
             vault,
             pool,
@@ -293,18 +290,12 @@ pub fn proxy_management_router(state: Arc<ProxyManagementState>) -> Router {
             "/api/v1/proxy-management/tokens",
             get(list_tokens).post(add_token),
         )
-        .route(
-            "/api/v1/proxy-management/tokens/stats",
-            get(token_stats),
-        )
+        .route("/api/v1/proxy-management/tokens/stats", get(token_stats))
         .route(
             "/api/v1/proxy-management/tokens/health/{provider}",
             get(token_pool_health),
         )
-        .route(
-            "/api/v1/proxy-management/tokens/{id}",
-            delete(remove_token),
-        )
+        .route("/api/v1/proxy-management/tokens/{id}", delete(remove_token))
         // Orchestrator
         .route(
             "/api/v1/proxy-management/orchestrator/metrics",
@@ -371,9 +362,7 @@ async fn add_credential(
     state
         .vault
         .add(&req.id, &req.provider, &req.key_name, &req.value, policy)
-        .map_err(|e| {
-            ProxyManagementError::Conflict(format!("Failed to add credential: {e}"))
-        })?;
+        .map_err(|e| ProxyManagementError::Conflict(format!("Failed to add credential: {e}")))?;
 
     info!(credential_id = %req.id, provider = %req.provider, "Credential added");
 
@@ -392,9 +381,10 @@ async fn get_credential(
     State(state): State<Arc<ProxyManagementState>>,
     Path(id): Path<String>,
 ) -> Result<Json<CredentialInfo>, ProxyManagementError> {
-    let cred = state.vault.get(&id).ok_or_else(|| {
-        ProxyManagementError::NotFound(format!("Credential '{id}' not found"))
-    })?;
+    let cred = state
+        .vault
+        .get(&id)
+        .ok_or_else(|| ProxyManagementError::NotFound(format!("Credential '{id}' not found")))?;
 
     Ok(Json(CredentialInfo {
         id: cred.id,
@@ -413,9 +403,10 @@ async fn remove_credential(
     State(state): State<Arc<ProxyManagementState>>,
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, ProxyManagementError> {
-    state.vault.remove(&id).map_err(|e| {
-        ProxyManagementError::NotFound(format!("Failed to remove credential: {e}"))
-    })?;
+    state
+        .vault
+        .remove(&id)
+        .map_err(|e| ProxyManagementError::NotFound(format!("Failed to remove credential: {e}")))?;
 
     info!(credential_id = %id, "Credential removed");
 
@@ -437,9 +428,10 @@ async fn rotate_credential(
         ));
     }
 
-    state.vault.rotate(&id, &req.new_value).map_err(|e| {
-        ProxyManagementError::NotFound(format!("Failed to rotate credential: {e}"))
-    })?;
+    state
+        .vault
+        .rotate(&id, &req.new_value)
+        .map_err(|e| ProxyManagementError::NotFound(format!("Failed to rotate credential: {e}")))?;
 
     info!(credential_id = %id, "Credential rotated");
 
@@ -457,9 +449,7 @@ async fn set_credential_enabled(
     Json(req): Json<EnabledRequest>,
 ) -> Result<Json<serde_json::Value>, ProxyManagementError> {
     state.vault.set_enabled(&id, req.enabled).map_err(|e| {
-        ProxyManagementError::NotFound(format!(
-            "Failed to set enabled state for credential: {e}"
-        ))
+        ProxyManagementError::NotFound(format!("Failed to set enabled state for credential: {e}"))
     })?;
 
     info!(credential_id = %id, enabled = req.enabled, "Credential enabled state changed");
@@ -556,9 +546,7 @@ async fn add_token(
             req.daily_quota,
             weight,
         )
-        .map_err(|e| {
-            ProxyManagementError::Conflict(format!("Failed to add token: {e}"))
-        })?;
+        .map_err(|e| ProxyManagementError::Conflict(format!("Failed to add token: {e}")))?;
 
     info!(token_id = %req.id, provider = %req.provider, tier = %req.tier, "Token added to pool");
 
@@ -578,9 +566,10 @@ async fn remove_token(
     State(state): State<Arc<ProxyManagementState>>,
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, ProxyManagementError> {
-    state.pool.remove_token(&id).map_err(|e| {
-        ProxyManagementError::NotFound(format!("Failed to remove token: {e}"))
-    })?;
+    state
+        .pool
+        .remove_token(&id)
+        .map_err(|e| ProxyManagementError::NotFound(format!("Failed to remove token: {e}")))?;
 
     info!(token_id = %id, "Token removed from pool");
 
@@ -843,8 +832,7 @@ mod tests {
             )
             .unwrap();
 
-        let (status, json) =
-            get_json(&app, "/api/v1/proxy-management/credentials/c1").await;
+        let (status, json) = get_json(&app, "/api/v1/proxy-management/credentials/c1").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["id"], "c1");
         assert_eq!(json["provider"], "anthropic");
@@ -876,14 +864,12 @@ mod tests {
             )
             .unwrap();
 
-        let (status, json) =
-            delete_json(&app, "/api/v1/proxy-management/credentials/del1").await;
+        let (status, json) = delete_json(&app, "/api/v1/proxy-management/credentials/del1").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["deleted"], true);
 
         // Verify it's gone
-        let (status, _json) =
-            get_json(&app, "/api/v1/proxy-management/credentials/del1").await;
+        let (status, _json) = get_json(&app, "/api/v1/proxy-management/credentials/del1").await;
         assert_eq!(status, StatusCode::NOT_FOUND);
     }
 
@@ -974,18 +960,29 @@ mod tests {
 
         state
             .vault
-            .add("s1", "openai", "k", "v1-long-enough-value", CredentialPolicy::default())
+            .add(
+                "s1",
+                "openai",
+                "k",
+                "v1-long-enough-value",
+                CredentialPolicy::default(),
+            )
             .unwrap();
         state
             .vault
-            .add("s2", "anthropic", "k", "v2-long-enough-value", CredentialPolicy::default())
+            .add(
+                "s2",
+                "anthropic",
+                "k",
+                "v2-long-enough-value",
+                CredentialPolicy::default(),
+            )
             .unwrap();
 
         state.vault.record_usage("s1").unwrap();
         state.vault.record_usage("s1").unwrap();
 
-        let (status, json) =
-            get_json(&app, "/api/v1/proxy-management/credentials/stats").await;
+        let (status, json) = get_json(&app, "/api/v1/proxy-management/credentials/stats").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["total_credentials"], 2);
         assert_eq!(json["active_credentials"], 2);
@@ -1045,8 +1042,7 @@ mod tests {
             )
             .unwrap();
 
-        let (status, json) =
-            get_json(&app, "/api/v1/proxy-management/tokens/health/openai").await;
+        let (status, json) = get_json(&app, "/api/v1/proxy-management/tokens/health/openai").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["provider"], "openai");
         assert_eq!(json["total_tokens"], 1);
@@ -1061,17 +1057,32 @@ mod tests {
 
         state
             .pool
-            .add_token("ts1", "openai", "sk-111", TokenTier::Production, 60, Some(500), 5)
+            .add_token(
+                "ts1",
+                "openai",
+                "sk-111",
+                TokenTier::Production,
+                60,
+                Some(500),
+                5,
+            )
             .unwrap();
         state
             .pool
-            .add_token("ts2", "anthropic", "ak-222", TokenTier::Development, 30, None, 3)
+            .add_token(
+                "ts2",
+                "anthropic",
+                "ak-222",
+                TokenTier::Development,
+                30,
+                None,
+                3,
+            )
             .unwrap();
 
         state.pool.record_usage("ts1").unwrap();
 
-        let (status, json) =
-            get_json(&app, "/api/v1/proxy-management/tokens/stats").await;
+        let (status, json) = get_json(&app, "/api/v1/proxy-management/tokens/stats").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["total_tokens"], 2);
         assert_eq!(json["total_providers"], 2);
@@ -1089,8 +1100,7 @@ mod tests {
             .add_token("rt1", "openai", "sk-remove", TokenTier::Free, 10, None, 1)
             .unwrap();
 
-        let (status, json) =
-            delete_json(&app, "/api/v1/proxy-management/tokens/rt1").await;
+        let (status, json) = delete_json(&app, "/api/v1/proxy-management/tokens/rt1").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["deleted"], true);
 
@@ -1106,8 +1116,7 @@ mod tests {
     async fn test_orchestrator_metrics_empty() {
         let (app, _state) = test_app();
 
-        let (status, json) =
-            get_json(&app, "/api/v1/proxy-management/orchestrator/metrics").await;
+        let (status, json) = get_json(&app, "/api/v1/proxy-management/orchestrator/metrics").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["total_proxies"], 0);
     }
@@ -1135,8 +1144,7 @@ mod tests {
 
         *state.orchestrator_metrics.write().await = Some(metrics);
 
-        let (status, json) =
-            get_json(&app, "/api/v1/proxy-management/orchestrator/metrics").await;
+        let (status, json) = get_json(&app, "/api/v1/proxy-management/orchestrator/metrics").await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(json["total_proxies"], 3);
         assert_eq!(json["active_proxies"], 2);

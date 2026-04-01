@@ -141,8 +141,7 @@ impl MetricsExporter {
             let labels_str = if m.labels.is_empty() {
                 String::new()
             } else {
-                let pairs: Vec<String> =
-                    m.labels.iter().map(|(k, v)| format!("{k}={v}")).collect();
+                let pairs: Vec<String> = m.labels.iter().map(|(k, v)| format!("{k}={v}")).collect();
                 pairs.join(";")
             };
             let type_str = match m.metric_type {
@@ -150,7 +149,10 @@ impl MetricsExporter {
                 MetricType::Gauge => "gauge",
                 MetricType::Histogram => "histogram",
             };
-            out.push_str(&format!("{},{},{},{}\n", m.name, type_str, m.value, labels_str));
+            out.push_str(&format!(
+                "{},{},{},{}\n",
+                m.name, type_str, m.value, labels_str
+            ));
         }
         out
     }
@@ -252,10 +254,8 @@ mod tests {
             MetricPoint::counter("requests_total", 42.0)
                 .with_label("method", "GET")
                 .with_help("Total requests"),
-            MetricPoint::gauge("active_connections", 5.0)
-                .with_help("Current active connections"),
-            MetricPoint::counter("errors_total", 3.0)
-                .with_label("code", "500"),
+            MetricPoint::gauge("active_connections", 5.0).with_help("Current active connections"),
+            MetricPoint::counter("errors_total", 3.0).with_label("code", "500"),
         ]
     }
 

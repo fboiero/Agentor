@@ -374,10 +374,22 @@ impl TestOracle {
             }
         }
 
-        let passed = cases.iter().filter(|c| c.status == TestStatus::Passed).count();
-        let failed = cases.iter().filter(|c| c.status == TestStatus::Failed).count();
-        let skipped = cases.iter().filter(|c| c.status == TestStatus::Skipped).count();
-        let errors = cases.iter().filter(|c| c.status == TestStatus::Error).count();
+        let passed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Passed)
+            .count();
+        let failed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Failed)
+            .count();
+        let skipped = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Skipped)
+            .count();
+        let errors = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Error)
+            .count();
         let total = cases.len();
 
         TestRunSummary {
@@ -405,12 +417,10 @@ impl TestOracle {
         let mut line = None;
 
         // Pattern: "thread '...' panicked at '<message>', <file>:<line>:<col>"
-        let panic_re =
-            Regex::new(r"panicked at '([^']*)'(?:,\s*(.+?):(\d+)(?::\d+)?)?").ok();
+        let panic_re = Regex::new(r"panicked at '([^']*)'(?:,\s*(.+?):(\d+)(?::\d+)?)?").ok();
         // Alternative pattern for Rust 2021+ format:
         // "thread '...' panicked at <file>:<line>:<col>:\n<message>"
-        let panic_v2_re =
-            Regex::new(r"panicked at (.+?):(\d+)(?::\d+)?:?\s*\n(.+)").ok();
+        let panic_v2_re = Regex::new(r"panicked at (.+?):(\d+)(?::\d+)?:?\s*\n(.+)").ok();
 
         if let Some(re) = &panic_re {
             if let Some(caps) = re.captures(text) {
@@ -449,8 +459,7 @@ impl TestOracle {
         // Match lines like:
         //   PASSED test_file.py::test_name
         //   FAILED test_file.py::test_other - AssertionError: ...
-        let result_re =
-            Regex::new(r"(PASSED|FAILED|SKIPPED|ERROR)\s+(\S+?)(?:\s+-\s+(.+))?$").ok();
+        let result_re = Regex::new(r"(PASSED|FAILED|SKIPPED|ERROR)\s+(\S+?)(?:\s+-\s+(.+))?$").ok();
 
         if let Some(re) = &result_re {
             for line in output.lines() {
@@ -492,8 +501,7 @@ impl TestOracle {
         // Parse summary: "= 1 failed, 1 passed in 0.12s ="
         let mut total_duration_ms: Option<u64> = None;
         let summary_re = Regex::new(r"(\d+) failed.*?(\d+) passed.*?in (\d+(?:\.\d+)?)s").ok();
-        let summary_pass_only =
-            Regex::new(r"(\d+) passed.*?in (\d+(?:\.\d+)?)s").ok();
+        let summary_pass_only = Regex::new(r"(\d+) passed.*?in (\d+(?:\.\d+)?)s").ok();
 
         if let Some(re) = &summary_re {
             if let Some(caps) = re.captures(output) {
@@ -512,10 +520,22 @@ impl TestOracle {
             }
         }
 
-        let passed = cases.iter().filter(|c| c.status == TestStatus::Passed).count();
-        let failed = cases.iter().filter(|c| c.status == TestStatus::Failed).count();
-        let skipped = cases.iter().filter(|c| c.status == TestStatus::Skipped).count();
-        let errors = cases.iter().filter(|c| c.status == TestStatus::Error).count();
+        let passed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Passed)
+            .count();
+        let failed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Failed)
+            .count();
+        let skipped = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Skipped)
+            .count();
+        let errors = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Error)
+            .count();
         let total = cases.len();
 
         TestRunSummary {
@@ -548,8 +568,7 @@ impl TestOracle {
         // Match test result lines with optional duration
         let check_re = Regex::new(r"^\s*[✓✕]\s+(.+?)(?:\s+\((\d+)\s*ms\))?$").ok();
         // Also handle ASCII fallback: "√" and "×" or simple markers
-        let check_ascii_re =
-            Regex::new(r"^\s*(?:√|×)\s+(.+?)(?:\s+\((\d+)\s*ms\))?$").ok();
+        let check_ascii_re = Regex::new(r"^\s*(?:√|×)\s+(.+?)(?:\s+\((\d+)\s*ms\))?$").ok();
 
         // Jest output for failure details:
         //   Expected: 42
@@ -673,10 +692,22 @@ impl TestOracle {
             }
         }
 
-        let passed = cases.iter().filter(|c| c.status == TestStatus::Passed).count();
-        let failed = cases.iter().filter(|c| c.status == TestStatus::Failed).count();
-        let skipped = cases.iter().filter(|c| c.status == TestStatus::Skipped).count();
-        let errors = cases.iter().filter(|c| c.status == TestStatus::Error).count();
+        let passed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Passed)
+            .count();
+        let failed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Failed)
+            .count();
+        let skipped = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Skipped)
+            .count();
+        let errors = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Error)
+            .count();
         let total = cases.len();
 
         TestRunSummary {
@@ -699,8 +730,7 @@ impl TestOracle {
         //   --- PASS: TestName (0.00s)
         //   --- FAIL: TestOther (0.01s)
         //   --- SKIP: TestSkip (0.00s)
-        let result_re =
-            Regex::new(r"--- (PASS|FAIL|SKIP): (\S+) \((\d+(?:\.\d+)?)s\)").ok();
+        let result_re = Regex::new(r"--- (PASS|FAIL|SKIP): (\S+) \((\d+(?:\.\d+)?)s\)").ok();
 
         // Failure details:
         //     file_test.go:15: expected 42, got 0
@@ -779,10 +809,7 @@ impl TestOracle {
                         _ => TestStatus::Error,
                     };
                     let name = caps[2].to_string();
-                    let duration_ms = caps[3]
-                        .parse::<f64>()
-                        .ok()
-                        .map(|s| (s * 1000.0) as u64);
+                    let duration_ms = caps[3].parse::<f64>().ok().map(|s| (s * 1000.0) as u64);
 
                     let details = failure_details
                         .get(&name)
@@ -827,10 +854,22 @@ impl TestOracle {
             }
         }
 
-        let passed = cases.iter().filter(|c| c.status == TestStatus::Passed).count();
-        let failed = cases.iter().filter(|c| c.status == TestStatus::Failed).count();
-        let skipped = cases.iter().filter(|c| c.status == TestStatus::Skipped).count();
-        let errors = cases.iter().filter(|c| c.status == TestStatus::Error).count();
+        let passed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Passed)
+            .count();
+        let failed = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Failed)
+            .count();
+        let skipped = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Skipped)
+            .count();
+        let errors = cases
+            .iter()
+            .filter(|c| c.status == TestStatus::Error)
+            .count();
         let total = cases.len();
 
         TestRunSummary {
@@ -1054,8 +1093,7 @@ impl TestOracle {
 
         match &cycle.phase {
             TddPhase::Red => {
-                let target_failed =
-                    target_status == Some(&TestStatus::Failed);
+                let target_failed = target_status == Some(&TestStatus::Failed);
                 if target_failed {
                     // Good: test is failing. Move to Green phase.
                     let action = format!(
@@ -1131,8 +1169,8 @@ impl TestOracle {
             }
             TddPhase::Refactor => {
                 if Self::all_passing(summary) {
-                    let action = "Refactoring complete. All tests still pass. TDD cycle done."
-                        .to_string();
+                    let action =
+                        "Refactoring complete. All tests still pass. TDD cycle done.".to_string();
                     cycle.history.push(TddIteration {
                         phase: TddPhase::Refactor,
                         action: action.clone(),
@@ -1142,8 +1180,8 @@ impl TestOracle {
                     cycle.phase = TddPhase::Complete;
                     action
                 } else {
-                    let action = "Refactoring broke tests! Go back to green phase and fix them."
-                        .to_string();
+                    let action =
+                        "Refactoring broke tests! Go back to green phase and fix them.".to_string();
                     cycle.history.push(TddIteration {
                         phase: TddPhase::Refactor,
                         action: action.clone(),
@@ -1208,9 +1246,13 @@ impl TestOracle {
     /// a test following TDD principles.
     pub fn test_prompt(feature_description: &str, language: &str) -> String {
         let framework_hint = match language.to_lowercase().as_str() {
-            "rust" => "Use `#[test]` and `assert_eq!`/`assert!` macros. Follow `cargo test` conventions.",
+            "rust" => {
+                "Use `#[test]` and `assert_eq!`/`assert!` macros. Follow `cargo test` conventions."
+            }
             "python" => "Use `pytest` conventions. Name test functions with `test_` prefix.",
-            "javascript" | "typescript" | "js" | "ts" => "Use `jest` conventions with `describe`/`it`/`expect`.",
+            "javascript" | "typescript" | "js" | "ts" => {
+                "Use `jest` conventions with `describe`/`it`/`expect`."
+            }
             "go" => "Use Go testing conventions with `func TestXxx(t *testing.T)`.",
             _ => "Use the standard testing framework for the language.",
         };
@@ -1280,7 +1322,9 @@ impl TestOracle {
                     Self::first_sentence(message)
                 )
             }
-            ErrorType::PermissionDenied => "Insufficient permissions to access a resource".to_string(),
+            ErrorType::PermissionDenied => {
+                "Insufficient permissions to access a resource".to_string()
+            }
             ErrorType::NotFound => {
                 format!("Resource not found: {}", Self::first_sentence(message))
             }
@@ -1359,7 +1403,9 @@ impl TestOracle {
 
     /// Extract a description of a missing item from a compilation error.
     fn extract_missing_item(message: &str) -> String {
-        if let Ok(re) = Regex::new(r"(?:cannot find|not found)\s+(?:value|type|function|method|struct|trait|module)\s+`([^`]+)`") {
+        if let Ok(re) = Regex::new(
+            r"(?:cannot find|not found)\s+(?:value|type|function|method|struct|trait|module)\s+`([^`]+)`",
+        ) {
             if let Some(caps) = re.captures(message) {
                 return caps[1].to_string();
             }
@@ -1452,7 +1498,10 @@ test core::test_mul ... FAILED
 
 test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
 "#;
-        assert_eq!(TestOracle::detect_framework(output), TestFramework::CargoTest);
+        assert_eq!(
+            TestOracle::detect_framework(output),
+            TestFramework::CargoTest
+        );
     }
 
     #[test]
@@ -1688,15 +1737,11 @@ FAIL	example.com/calculator	0.023s
     #[test]
     fn test_classify_error_panic_unwrap() {
         assert_eq!(
-            TestOracle::classify_error(
-                "called `Option::unwrap()` on a `None` value"
-            ),
+            TestOracle::classify_error("called `Option::unwrap()` on a `None` value"),
             ErrorType::PanicUnwrap
         );
         assert_eq!(
-            TestOracle::classify_error(
-                "called `Result::unwrap()` on an `Err` value: NotFound"
-            ),
+            TestOracle::classify_error("called `Result::unwrap()` on an `Err` value: NotFound"),
             ErrorType::PanicUnwrap
         );
     }
@@ -1717,7 +1762,9 @@ FAIL	example.com/calculator	0.023s
             name: "math::test_divide".to_string(),
             status: TestStatus::Failed,
             duration_ms: Some(10),
-            error_message: Some("assertion failed: `(left == right)`\n  left: `0`,\n right: `1`".to_string()),
+            error_message: Some(
+                "assertion failed: `(left == right)`\n  left: `0`,\n right: `1`".to_string(),
+            ),
             file: Some("src/math.rs".to_string()),
             line: Some(42),
             stdout: None,
@@ -1749,10 +1796,7 @@ FAIL	example.com/calculator	0.023s
 
     #[test]
     fn test_suggest_fix_type_mismatch() {
-        let fix = TestOracle::suggest_fix(
-            &ErrorType::TypeMismatch,
-            "expected `u32`, found `i64`",
-        );
+        let fix = TestOracle::suggest_fix(&ErrorType::TypeMismatch, "expected `u32`, found `i64`");
         match fix {
             FixStrategy::FixType { expected, actual } => {
                 assert_eq!(expected, "u32");

@@ -202,7 +202,11 @@ impl TraceStore {
     /// Retrieve a trace by its identifier.
     pub async fn get_trace(&self, trace_id: &str) -> Option<DebugTrace> {
         let inner = self.inner.read().await;
-        inner.traces.iter().find(|t| t.trace_id == trace_id).cloned()
+        inner
+            .traces
+            .iter()
+            .find(|t| t.trace_id == trace_id)
+            .cloned()
     }
 
     /// List traces matching a filter, with pagination.
@@ -253,7 +257,11 @@ impl TraceStore {
 // ---------------------------------------------------------------------------
 
 fn extract_metadata_str(trace: &DebugTrace, key: &str) -> Option<String> {
-    trace.metadata.get(key).and_then(|v| v.as_str()).map(String::from)
+    trace
+        .metadata
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(String::from)
 }
 
 fn compute_status(trace: &DebugTrace) -> String {
@@ -359,8 +367,7 @@ fn compute_cost_breakdown(trace: &DebugTrace) -> CostBreakdown {
             .map(|t| (t.input, t.output))
             .unwrap_or((0, 0));
 
-        let cost =
-            tokens_in as f64 / 1000.0 * INPUT_COST_PER_1K
+        let cost = tokens_in as f64 / 1000.0 * INPUT_COST_PER_1K
             + tokens_out as f64 / 1000.0 * OUTPUT_COST_PER_1K;
 
         total_cost += cost;
@@ -447,9 +454,15 @@ pub struct TraceViewerState {
 pub fn trace_viewer_router(state: TraceViewerState) -> Router {
     Router::new()
         .route("/api/v1/traces", get(list_traces_handler))
-        .route("/api/v1/traces/{trace_id}", get(get_trace_handler).delete(delete_trace_handler))
+        .route(
+            "/api/v1/traces/{trace_id}",
+            get(get_trace_handler).delete(delete_trace_handler),
+        )
         .route("/api/v1/traces/{trace_id}/cost", get(get_cost_handler))
-        .route("/api/v1/traces/{trace_id}/timeline", get(get_timeline_handler))
+        .route(
+            "/api/v1/traces/{trace_id}/timeline",
+            get(get_timeline_handler),
+        )
         .with_state(state)
 }
 
@@ -610,13 +623,24 @@ mod tests {
     #[tokio::test]
     async fn test_filter_by_agent_role() {
         let store = TraceStore::new(100);
-        store.store_trace(make_trace("t1", Some("coder"), None)).await;
-        store.store_trace(make_trace("t2", Some("reviewer"), None)).await;
-        store.store_trace(make_trace("t3", Some("coder"), None)).await;
-        let filter = TraceFilter { agent_role: Some("coder".to_string()), ..Default::default() };
+        store
+            .store_trace(make_trace("t1", Some("coder"), None))
+            .await;
+        store
+            .store_trace(make_trace("t2", Some("reviewer"), None))
+            .await;
+        store
+            .store_trace(make_trace("t3", Some("coder"), None))
+            .await;
+        let filter = TraceFilter {
+            agent_role: Some("coder".to_string()),
+            ..Default::default()
+        };
         let list = store.list_traces(&filter).await;
         assert_eq!(list.len(), 2);
-        assert!(list.iter().all(|s| s.agent_role.as_deref() == Some("coder")));
+        assert!(list
+            .iter()
+            .all(|s| s.agent_role.as_deref() == Some("coder")));
     }
 
     // 8. List with session_id filter
@@ -625,7 +649,10 @@ mod tests {
         let store = TraceStore::new(100);
         store.store_trace(make_trace("t1", None, Some("s1"))).await;
         store.store_trace(make_trace("t2", None, Some("s2"))).await;
-        let filter = TraceFilter { session_id: Some("s1".to_string()), ..Default::default() };
+        let filter = TraceFilter {
+            session_id: Some("s1".to_string()),
+            ..Default::default()
+        };
         let list = store.list_traces(&filter).await;
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].trace_id, "t1");
@@ -637,7 +664,10 @@ mod tests {
         let store = TraceStore::new(100);
         store.store_trace(make_trace("t1", None, None)).await;
         store.store_trace(make_error_trace("t2")).await;
-        let filter = TraceFilter { has_errors: Some(true), ..Default::default() };
+        let filter = TraceFilter {
+            has_errors: Some(true),
+            ..Default::default()
+        };
         let list = store.list_traces(&filter).await;
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].trace_id, "t2");
@@ -650,7 +680,10 @@ mod tests {
         let store = TraceStore::new(100);
         store.store_trace(make_trace("t1", None, None)).await;
         store.store_trace(make_error_trace("t2")).await;
-        let filter = TraceFilter { has_errors: Some(false), ..Default::default() };
+        let filter = TraceFilter {
+            has_errors: Some(false),
+            ..Default::default()
+        };
         let list = store.list_traces(&filter).await;
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].trace_id, "t1");
@@ -661,9 +694,14 @@ mod tests {
     async fn test_pagination_limit() {
         let store = TraceStore::new(100);
         for i in 0..10 {
-            store.store_trace(make_trace(&format!("t{i}"), None, None)).await;
+            store
+                .store_trace(make_trace(&format!("t{i}"), None, None))
+                .await;
         }
-        let filter = TraceFilter { limit: Some(3), ..Default::default() };
+        let filter = TraceFilter {
+            limit: Some(3),
+            ..Default::default()
+        };
         let list = store.list_traces(&filter).await;
         assert_eq!(list.len(), 3);
     }
@@ -673,9 +711,15 @@ mod tests {
     async fn test_pagination_offset() {
         let store = TraceStore::new(100);
         for i in 0..5 {
-            store.store_trace(make_trace(&format!("t{i}"), None, None)).await;
+            store
+                .store_trace(make_trace(&format!("t{i}"), None, None))
+                .await;
         }
-        let filter = TraceFilter { offset: Some(3), limit: Some(50), ..Default::default() };
+        let filter = TraceFilter {
+            offset: Some(3),
+            limit: Some(50),
+            ..Default::default()
+        };
         let list = store.list_traces(&filter).await;
         assert_eq!(list.len(), 2);
     }
@@ -684,9 +728,16 @@ mod tests {
     #[tokio::test]
     async fn test_search_traces() {
         let store = TraceStore::new(100);
-        store.store_trace(make_trace("t1", Some("coder"), None)).await;
-        store.store_trace(make_trace("t2", Some("reviewer"), None)).await;
-        let filter = TraceFilter { agent_role: Some("reviewer".to_string()), ..Default::default() };
+        store
+            .store_trace(make_trace("t1", Some("coder"), None))
+            .await;
+        store
+            .store_trace(make_trace("t2", Some("reviewer"), None))
+            .await;
+        let filter = TraceFilter {
+            agent_role: Some("reviewer".to_string()),
+            ..Default::default()
+        };
         let results = store.search_traces(&filter).await;
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].trace_id, "t2");
@@ -698,7 +749,9 @@ mod tests {
     #[tokio::test]
     async fn test_summary_fields() {
         let store = TraceStore::new(100);
-        store.store_trace(make_trace("t1", Some("coder"), Some("s42"))).await;
+        store
+            .store_trace(make_trace("t1", Some("coder"), Some("s42")))
+            .await;
         let list = store.list_traces(&TraceFilter::default()).await;
         let s = &list[0];
         assert_eq!(s.trace_id, "t1");
@@ -794,7 +847,9 @@ mod tests {
     // 22. GET /api/v1/traces returns 200 with JSON array
     #[tokio::test]
     async fn test_rest_list_traces() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         state.store.store_trace(make_trace("t1", None, None)).await;
         let app = trace_viewer_router(state);
 
@@ -806,7 +861,9 @@ mod tests {
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(resp.into_body(), 1_000_000).await.unwrap();
+        let body = axum::body::to_bytes(resp.into_body(), 1_000_000)
+            .await
+            .unwrap();
         let summaries: Vec<TraceSummary> = serde_json::from_slice(&body).unwrap();
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].trace_id, "t1");
@@ -815,7 +872,9 @@ mod tests {
     // 23. GET /api/v1/traces/{id} returns 200 for existing trace
     #[tokio::test]
     async fn test_rest_get_trace() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         state.store.store_trace(make_trace("t1", None, None)).await;
         let app = trace_viewer_router(state);
 
@@ -827,7 +886,9 @@ mod tests {
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(resp.into_body(), 1_000_000).await.unwrap();
+        let body = axum::body::to_bytes(resp.into_body(), 1_000_000)
+            .await
+            .unwrap();
         let trace: DebugTrace = serde_json::from_slice(&body).unwrap();
         assert_eq!(trace.trace_id, "t1");
     }
@@ -835,7 +896,9 @@ mod tests {
     // 24. GET /api/v1/traces/{id} returns 404 for missing
     #[tokio::test]
     async fn test_rest_get_trace_not_found() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         let app = trace_viewer_router(state);
 
         let req = Request::builder()
@@ -850,7 +913,9 @@ mod tests {
     // 25. GET /api/v1/traces/{id}/cost returns cost breakdown
     #[tokio::test]
     async fn test_rest_cost_endpoint() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         state.store.store_trace(make_trace("t1", None, None)).await;
         let app = trace_viewer_router(state);
 
@@ -862,7 +927,9 @@ mod tests {
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(resp.into_body(), 1_000_000).await.unwrap();
+        let body = axum::body::to_bytes(resp.into_body(), 1_000_000)
+            .await
+            .unwrap();
         let cb: CostBreakdown = serde_json::from_slice(&body).unwrap();
         assert_eq!(cb.trace_id, "t1");
         assert!(!cb.steps.is_empty());
@@ -871,7 +938,9 @@ mod tests {
     // 26. GET /api/v1/traces/{id}/timeline returns timeline
     #[tokio::test]
     async fn test_rest_timeline_endpoint() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         state.store.store_trace(make_trace("t1", None, None)).await;
         let app = trace_viewer_router(state);
 
@@ -883,7 +952,9 @@ mod tests {
         let resp = app.oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(resp.into_body(), 1_000_000).await.unwrap();
+        let body = axum::body::to_bytes(resp.into_body(), 1_000_000)
+            .await
+            .unwrap();
         let tl: TraceTimeline = serde_json::from_slice(&body).unwrap();
         assert_eq!(tl.trace_id, "t1");
         assert!(!tl.lanes.is_empty());
@@ -892,7 +963,9 @@ mod tests {
     // 27. DELETE /api/v1/traces/{id} returns 204 for existing
     #[tokio::test]
     async fn test_rest_delete_trace() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         state.store.store_trace(make_trace("t1", None, None)).await;
         let app = trace_viewer_router(state);
 
@@ -909,7 +982,9 @@ mod tests {
     // 28. DELETE /api/v1/traces/{id} returns 404 for missing
     #[tokio::test]
     async fn test_rest_delete_not_found() {
-        let state = TraceViewerState { store: TraceStore::new(100) };
+        let state = TraceViewerState {
+            store: TraceStore::new(100),
+        };
         let app = trace_viewer_router(state);
 
         let req = Request::builder()

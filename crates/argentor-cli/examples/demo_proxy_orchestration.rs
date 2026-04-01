@@ -64,10 +64,7 @@ fn print_err(msg: &str) {
 }
 
 fn print_metrics_table(metrics: &OrchestratorMetrics) {
-    println!(
-        "    {BOLD}{WHT}{:<24} {:<12}{RST}",
-        "METRIC", "VALUE"
-    );
+    println!("    {BOLD}{WHT}{:<24} {:<12}{RST}", "METRIC", "VALUE");
     println!("    {DIM}{}{RST}", "─".repeat(36));
     println!(
         "    {:<24} {BOLD}{CYAN}{}{RST}",
@@ -80,7 +77,11 @@ fn print_metrics_table(metrics: &OrchestratorMetrics) {
     println!(
         "    {:<24} {}{BOLD}{}{RST}",
         "Circuit-open proxies",
-        if metrics.circuit_open_proxies > 0 { RED } else { DIM },
+        if metrics.circuit_open_proxies > 0 {
+            RED
+        } else {
+            DIM
+        },
         metrics.circuit_open_proxies
     );
     println!(
@@ -100,10 +101,7 @@ fn print_metrics_table(metrics: &OrchestratorMetrics) {
 
     if !metrics.calls_per_group.is_empty() {
         println!();
-        println!(
-            "    {BOLD}{WHT}{:<24} {:<12}{RST}",
-            "GROUP", "CALLS"
-        );
+        println!("    {BOLD}{WHT}{:<24} {:<12}{RST}", "GROUP", "CALLS");
         println!("    {DIM}{}{RST}", "─".repeat(36));
         let mut groups: Vec<_> = metrics.calls_per_group.iter().collect();
         groups.sort_by_key(|(name, _)| (*name).clone());
@@ -219,7 +217,10 @@ async fn main() -> anyhow::Result<()> {
     let mut providers: Vec<_> = stats.providers.iter().collect();
     providers.sort_by_key(|(name, _)| (*name).clone());
     for (provider, count) in &providers {
-        println!("      {CYAN}{:<16}{RST} {BOLD}{count}{RST} key(s)", provider);
+        println!(
+            "      {CYAN}{:<16}{RST} {BOLD}{count}{RST} key(s)",
+            provider
+        );
     }
     delay(200).await;
 
@@ -358,7 +359,9 @@ async fn main() -> anyhow::Result<()> {
         "    {GRN}[✓]{RST} select(\"openai\") -> token with value starting: {BOLD}{}{RST}...",
         &selected[..selected.len().min(20)]
     );
-    println!("    {DIM}Production tier selected first (openai-prod), then Development, then Free{RST}");
+    println!(
+        "    {DIM}Production tier selected first (openai-prod), then Development, then Free{RST}"
+    );
     delay(300).await;
 
     // ════════════════════════════════════════════════════════════════
@@ -534,10 +537,7 @@ async fn main() -> anyhow::Result<()> {
 
         // Check which proxy got the call by looking at total_calls
         let proxy_list = orchestrator.list_proxies();
-        let coding_proxies: Vec<_> = proxy_list
-            .iter()
-            .filter(|p| p.group == "coding")
-            .collect();
+        let coding_proxies: Vec<_> = proxy_list.iter().filter(|p| p.group == "coding").collect();
 
         let selected_name = coding_proxies
             .iter()
@@ -738,7 +738,11 @@ async fn main() -> anyhow::Result<()> {
     );
     println!(
         "    Total errors:     {}{BOLD}{}{RST}",
-        if pool_stats.total_errors > 0 { RED } else { DIM },
+        if pool_stats.total_errors > 0 {
+            RED
+        } else {
+            DIM
+        },
         pool_stats.total_errors
     );
     delay(100).await;

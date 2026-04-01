@@ -78,7 +78,10 @@ pub enum ReActAction {
 impl ReActAction {
     /// Returns `true` if this action terminates the reasoning chain.
     pub fn is_terminal(&self) -> bool {
-        matches!(self, ReActAction::Respond { .. } | ReActAction::Clarify { .. })
+        matches!(
+            self,
+            ReActAction::Respond { .. } | ReActAction::Clarify { .. }
+        )
     }
 }
 
@@ -201,10 +204,7 @@ impl ReActEngine {
         let tools_list = if available_tools.is_empty() {
             "No tools are currently available.".to_string()
         } else {
-            format!(
-                "Available tools: {}",
-                available_tools.join(", ")
-            )
+            format!("Available tools: {}", available_tools.join(", "))
         };
 
         let reflection_instruction = if self.config.enable_reflection {
@@ -538,7 +538,10 @@ mod tests {
         assert_eq!(deserialized.step_number, 1);
         assert_eq!(deserialized.thought, "I need to search for the file");
         assert_eq!(deserialized.observation, "No observation yet");
-        assert_eq!(deserialized.reflection, Some("This seems right".to_string()));
+        assert_eq!(
+            deserialized.reflection,
+            Some("This seems right".to_string())
+        );
         assert!((deserialized.confidence - 0.85).abs() < f32::EPSILON);
         assert_eq!(deserialized.duration_ms, 120);
     }
@@ -585,7 +588,8 @@ mod tests {
     #[test]
     fn test_parse_step_valid_json() {
         let engine = ReActEngine::with_defaults();
-        let input = r#"{"thought": "Let me analyze this", "action": {"type": "think"}, "confidence": 0.9}"#;
+        let input =
+            r#"{"thought": "Let me analyze this", "action": {"type": "think"}, "confidence": 0.9}"#;
 
         let step = engine.parse_step(input, 1).unwrap();
 
@@ -955,8 +959,7 @@ That's my step."#;
     #[test]
     fn test_parse_step_unknown_action_type_errors() {
         let engine = ReActEngine::with_defaults();
-        let input =
-            r#"{"thought": "hmm", "action": {"type": "fly_to_moon"}, "confidence": 0.1}"#;
+        let input = r#"{"thought": "hmm", "action": {"type": "fly_to_moon"}, "confidence": 0.1}"#;
 
         let result = engine.parse_step(input, 1);
         assert!(result.is_err());
@@ -966,7 +969,8 @@ That's my step."#;
     #[test]
     fn test_parse_step_tool_use_missing_tool_name_errors() {
         let engine = ReActEngine::with_defaults();
-        let input = r#"{"thought": "use a tool", "action": {"type": "tool_use"}, "confidence": 0.5}"#;
+        let input =
+            r#"{"thought": "use a tool", "action": {"type": "tool_use"}, "confidence": 0.5}"#;
 
         let result = engine.parse_step(input, 1);
         assert!(result.is_err());

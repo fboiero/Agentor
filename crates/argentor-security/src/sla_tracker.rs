@@ -36,11 +36,7 @@ pub struct SlaDefinition {
 
 impl SlaDefinition {
     /// Create a new SLA definition.
-    pub fn new(
-        name: impl Into<String>,
-        target_uptime: f64,
-        max_response_ms: u64,
-    ) -> Self {
+    pub fn new(name: impl Into<String>, target_uptime: f64, max_response_ms: u64) -> Self {
         Self {
             name: name.into(),
             target_uptime_percent: target_uptime,
@@ -125,7 +121,7 @@ struct SlaState {
     failed_checks: u64,
     total_response_time_ms: u64,
     response_time_samples: u64,
-    tracking_since: DateTime<Utc>,
+    _tracking_since: DateTime<Utc>,
 }
 
 impl SlaState {
@@ -137,7 +133,7 @@ impl SlaState {
             failed_checks: 0,
             total_response_time_ms: 0,
             response_time_samples: 0,
-            tracking_since: Utc::now(),
+            _tracking_since: Utc::now(),
         }
     }
 
@@ -157,10 +153,7 @@ impl SlaState {
     }
 
     fn total_downtime_seconds(&self) -> u64 {
-        self.incidents
-            .iter()
-            .map(|i| i.duration_seconds)
-            .sum()
+        self.incidents.iter().map(|i| i.duration_seconds).sum()
     }
 
     fn status(&self) -> SlaStatus {
@@ -527,8 +520,7 @@ mod tests {
     // 15. SLA definition with description
     #[test]
     fn test_sla_with_description() {
-        let sla = SlaDefinition::new("api", 99.9, 500)
-            .with_description("Production API SLA");
+        let sla = SlaDefinition::new("api", 99.9, 500).with_description("Production API SLA");
         assert_eq!(sla.description, "Production API SLA");
     }
 

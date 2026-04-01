@@ -55,7 +55,10 @@ pub enum RuleType {
     /// Enforce a maximum character length.
     MaxLength { max_chars: usize },
     /// Match (or anti-match) an arbitrary regex.
-    RegexMatch { pattern: String, block_on_match: bool },
+    RegexMatch {
+        pattern: String,
+        block_on_match: bool,
+    },
     /// Detect prompt-injection attempts.
     PromptInjection,
     /// Enforce a content policy.
@@ -413,10 +416,7 @@ fn check_max_length(rule: &GuardrailRule, text: &str, max_chars: usize) -> Vec<V
         vec![Violation {
             rule_name: rule.name.clone(),
             severity: rule.severity.clone(),
-            message: format!(
-                "Text exceeds maximum length: {} > {max_chars}",
-                text.len()
-            ),
+            message: format!("Text exceeds maximum length: {} > {max_chars}", text.len()),
             span: None,
             suggestion: Some(format!("Reduce text to at most {max_chars} characters")),
         }]
@@ -692,7 +692,9 @@ fn check_hallucination(rule: &GuardrailRule, text: &str) -> Vec<Violation> {
                 severity: rule.severity.clone(),
                 message: format!("Low-confidence language detected: \"{marker}\""),
                 span: Some((pos, pos + marker.len())),
-                suggestion: Some("Verify facts before presenting or rephrase with certainty".into()),
+                suggestion: Some(
+                    "Verify facts before presenting or rephrase with certainty".into(),
+                ),
             });
         }
     }
@@ -1042,9 +1044,7 @@ mod tests {
             name: "disclaimer".into(),
             description: "Require AI disclaimer".into(),
             rule_type: RuleType::ContentPolicy {
-                policy: ContentPolicy::RequireDisclaimer(
-                    "This is not professional advice".into(),
-                ),
+                policy: ContentPolicy::RequireDisclaimer("This is not professional advice".into()),
             },
             severity: RuleSeverity::Block,
             enabled: true,
@@ -1052,8 +1052,10 @@ mod tests {
         let r = engine.check_output("Here is my recommendation", None);
         assert!(!r.passed);
 
-        let r2 = engine
-            .check_output("Here is my recommendation. This is not professional advice.", None);
+        let r2 = engine.check_output(
+            "Here is my recommendation. This is not professional advice.",
+            None,
+        );
         let disc_vs: Vec<_> = r2
             .violations
             .iter()
@@ -1095,7 +1097,10 @@ mod tests {
             enabled: true,
         });
         let r = engine.check_input("Do something for me");
-        assert!(r.violations.iter().any(|v| v.rule_name == "must_have_greeting"));
+        assert!(r
+            .violations
+            .iter()
+            .any(|v| v.rule_name == "must_have_greeting"));
     }
 
     // -- Sanitization --------------------------------------------------------
@@ -1119,8 +1124,7 @@ mod tests {
 
     #[test]
     fn test_redact_pii_multiple() {
-        let (sanitized, _matches) =
-            redact_pii("Email me at a@b.com, my SSN is 111-22-3333");
+        let (sanitized, _matches) = redact_pii("Email me at a@b.com, my SSN is 111-22-3333");
         assert!(sanitized.contains("[EMAIL]"));
         assert!(sanitized.contains("[SSN]"));
     }
@@ -1145,7 +1149,10 @@ mod tests {
         // Should have at least 3 distinct rule names triggered.
         let rule_names: std::collections::HashSet<_> =
             r.violations.iter().map(|v| v.rule_name.clone()).collect();
-        assert!(rule_names.len() >= 3, "Expected 3+ rules triggered, got {rule_names:?}");
+        assert!(
+            rule_names.len() >= 3,
+            "Expected 3+ rules triggered, got {rule_names:?}"
+        );
     }
 
     // -- Severity levels -----------------------------------------------------
@@ -1164,9 +1171,12 @@ mod tests {
             enabled: true,
         });
         let r = engine.check_input("please help me"); // no PII, no injection, no toxicity
-        // Warn violations don't cause passed=false
+                                                      // Warn violations don't cause passed=false
         assert!(r.passed);
-        assert!(r.violations.iter().any(|v| v.severity == RuleSeverity::Warn));
+        assert!(r
+            .violations
+            .iter()
+            .any(|v| v.severity == RuleSeverity::Warn));
     }
 
     #[test]
@@ -1203,7 +1213,11 @@ mod tests {
         });
         // Custom validators produce no built-in violations.
         let r = engine.check_input("Anything goes");
-        let custom_vs: Vec<_> = r.violations.iter().filter(|v| v.rule_name == "custom").collect();
+        let custom_vs: Vec<_> = r
+            .violations
+            .iter()
+            .filter(|v| v.rule_name == "custom")
+            .collect();
         assert!(custom_vs.is_empty());
     }
 
@@ -1244,10 +1258,7 @@ mod tests {
             enabled: true,
         });
         let r = engine.check_output("I think the answer might be 42", None);
-        assert!(r
-            .violations
-            .iter()
-            .any(|v| v.rule_name == "hallucination"));
+        assert!(r.violations.iter().any(|v| v.rule_name == "hallucination"));
     }
 
     #[test]

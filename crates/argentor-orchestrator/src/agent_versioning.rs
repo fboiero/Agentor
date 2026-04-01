@@ -371,9 +371,9 @@ impl AgentVersionManager {
     /// If the active version is N, this activates version N-1 and marks N as Inactive.
     pub async fn rollback(&self, agent_id: &str) -> ArgentorResult<u32> {
         let mut state = self.state.write().await;
-        let agent_state = state.get_mut(agent_id).ok_or_else(|| {
-            ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found"))
-        })?;
+        let agent_state = state
+            .get_mut(agent_id)
+            .ok_or_else(|| ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found")))?;
 
         let active = agent_state.active_version.ok_or_else(|| {
             ArgentorError::Orchestrator(format!("Agent '{agent_id}' has no active version"))
@@ -404,9 +404,9 @@ impl AgentVersionManager {
     /// Roll back to a specific version.
     pub async fn rollback_to(&self, agent_id: &str, version: u32) -> ArgentorResult<u32> {
         let mut state = self.state.write().await;
-        let agent_state = state.get_mut(agent_id).ok_or_else(|| {
-            ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found"))
-        })?;
+        let agent_state = state
+            .get_mut(agent_id)
+            .ok_or_else(|| ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found")))?;
 
         let active = agent_state.active_version;
 
@@ -513,9 +513,9 @@ impl AgentVersionManager {
         }
 
         let mut state = self.state.write().await;
-        let agent_state = state.get_mut(agent_id).ok_or_else(|| {
-            ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found"))
-        })?;
+        let agent_state = state
+            .get_mut(agent_id)
+            .ok_or_else(|| ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found")))?;
 
         // Validate that referenced versions exist.
         if agent_state.get_version(split.primary_version).is_none() {
@@ -578,9 +578,9 @@ impl AgentVersionManager {
         to_version: u32,
     ) -> ArgentorResult<VersionDiff> {
         let state = self.state.read().await;
-        let agent_state = state.get(agent_id).ok_or_else(|| {
-            ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found"))
-        })?;
+        let agent_state = state
+            .get(agent_id)
+            .ok_or_else(|| ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found")))?;
 
         let from = agent_state.get_version(from_version).ok_or_else(|| {
             ArgentorError::Orchestrator(format!(
@@ -654,15 +654,11 @@ impl AgentVersionManager {
     }
 
     /// Deprecate a specific version, marking it as no longer usable.
-    pub async fn deprecate_version(
-        &self,
-        agent_id: &str,
-        version: u32,
-    ) -> ArgentorResult<()> {
+    pub async fn deprecate_version(&self, agent_id: &str, version: u32) -> ArgentorResult<()> {
         let mut state = self.state.write().await;
-        let agent_state = state.get_mut(agent_id).ok_or_else(|| {
-            ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found"))
-        })?;
+        let agent_state = state
+            .get_mut(agent_id)
+            .ok_or_else(|| ArgentorError::Orchestrator(format!("Agent '{agent_id}' not found")))?;
 
         let config = agent_state.get_version_mut(version).ok_or_else(|| {
             ArgentorError::Orchestrator(format!(

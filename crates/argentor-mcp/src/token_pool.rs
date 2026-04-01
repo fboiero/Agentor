@@ -113,10 +113,7 @@ impl RateWindow {
     /// Count the number of calls within the last 60-second window.
     pub fn calls_in_window(&self, now: DateTime<Utc>) -> u32 {
         let cutoff = now - chrono::Duration::seconds(RATE_WINDOW_SECONDS);
-        self.window_calls
-            .iter()
-            .filter(|ts| **ts > cutoff)
-            .count() as u32
+        self.window_calls.iter().filter(|ts| **ts > cutoff).count() as u32
     }
 
     /// Remove entries older than 60 seconds from the window.
@@ -259,10 +256,7 @@ impl TokenPool {
                 .providers
                 .write()
                 .map_err(|e| ArgentorError::Security(format!("Provider lock poisoned: {e}")))?;
-            providers
-                .entry(provider)
-                .or_insert_with(Vec::new)
-                .push(id);
+            providers.entry(provider).or_insert_with(Vec::new).push(id);
         }
 
         Ok(())
@@ -797,19 +791,51 @@ mod tests {
     /// Helper: create a pool and add some tokens.
     fn setup_pool(strategy: SelectionStrategy) -> TokenPool {
         let pool = TokenPool::new(strategy);
-        pool.add_token("t1", "openai", "sk-111", TokenTier::Production, 60, Some(1000), 10)
-            .unwrap();
-        pool.add_token("t2", "openai", "sk-222", TokenTier::Development, 30, Some(500), 5)
-            .unwrap();
-        pool.add_token("t3", "anthropic", "ak-333", TokenTier::Production, 100, None, 8)
-            .unwrap();
+        pool.add_token(
+            "t1",
+            "openai",
+            "sk-111",
+            TokenTier::Production,
+            60,
+            Some(1000),
+            10,
+        )
+        .unwrap();
+        pool.add_token(
+            "t2",
+            "openai",
+            "sk-222",
+            TokenTier::Development,
+            30,
+            Some(500),
+            5,
+        )
+        .unwrap();
+        pool.add_token(
+            "t3",
+            "anthropic",
+            "ak-333",
+            TokenTier::Production,
+            100,
+            None,
+            8,
+        )
+        .unwrap();
         pool
     }
 
     #[test]
     fn test_add_token() {
         let pool = TokenPool::new(SelectionStrategy::MostRemaining);
-        let result = pool.add_token("t1", "openai", "sk-111", TokenTier::Production, 60, Some(1000), 10);
+        let result = pool.add_token(
+            "t1",
+            "openai",
+            "sk-111",
+            TokenTier::Production,
+            60,
+            Some(1000),
+            10,
+        );
         assert!(result.is_ok());
 
         // Duplicate ID should fail
@@ -867,12 +893,36 @@ mod tests {
     #[test]
     fn test_select_tier_priority() {
         let pool = TokenPool::new(SelectionStrategy::TierPriority);
-        pool.add_token("dev1", "prov", "dev-key", TokenTier::Development, 60, Some(1000), 5)
-            .unwrap();
-        pool.add_token("prod1", "prov", "prod-key", TokenTier::Production, 60, Some(100), 5)
-            .unwrap();
-        pool.add_token("free1", "prov", "free-key", TokenTier::Free, 60, Some(2000), 5)
-            .unwrap();
+        pool.add_token(
+            "dev1",
+            "prov",
+            "dev-key",
+            TokenTier::Development,
+            60,
+            Some(1000),
+            5,
+        )
+        .unwrap();
+        pool.add_token(
+            "prod1",
+            "prov",
+            "prod-key",
+            TokenTier::Production,
+            60,
+            Some(100),
+            5,
+        )
+        .unwrap();
+        pool.add_token(
+            "free1",
+            "prov",
+            "free-key",
+            TokenTier::Free,
+            60,
+            Some(2000),
+            5,
+        )
+        .unwrap();
 
         // Should always pick Production tier first
         let value = pool.select("prov").unwrap();
@@ -882,10 +932,26 @@ mod tests {
     #[test]
     fn test_select_tier_priority_same_tier_most_remaining() {
         let pool = TokenPool::new(SelectionStrategy::TierPriority);
-        pool.add_token("p1", "prov", "key-a", TokenTier::Production, 60, Some(100), 5)
-            .unwrap();
-        pool.add_token("p2", "prov", "key-b", TokenTier::Production, 60, Some(500), 5)
-            .unwrap();
+        pool.add_token(
+            "p1",
+            "prov",
+            "key-a",
+            TokenTier::Production,
+            60,
+            Some(100),
+            5,
+        )
+        .unwrap();
+        pool.add_token(
+            "p2",
+            "prov",
+            "key-b",
+            TokenTier::Production,
+            60,
+            Some(500),
+            5,
+        )
+        .unwrap();
 
         // Same tier — should pick the one with more remaining (p2 = 500)
         let value = pool.select("prov").unwrap();
@@ -927,8 +993,16 @@ mod tests {
     #[test]
     fn test_daily_quota_enforcement() {
         let pool = TokenPool::new(SelectionStrategy::MostRemaining);
-        pool.add_token("t1", "prov", "key", TokenTier::Production, 1000, Some(3), 10)
-            .unwrap();
+        pool.add_token(
+            "t1",
+            "prov",
+            "key",
+            TokenTier::Production,
+            1000,
+            Some(3),
+            10,
+        )
+        .unwrap();
 
         pool.record_usage("t1").unwrap();
         pool.record_usage("t1").unwrap();
@@ -941,8 +1015,16 @@ mod tests {
     #[test]
     fn test_quota_exhaustion_prevents_selection() {
         let pool = TokenPool::new(SelectionStrategy::MostRemaining);
-        pool.add_token("t1", "prov", "key", TokenTier::Production, 1000, Some(1), 10)
-            .unwrap();
+        pool.add_token(
+            "t1",
+            "prov",
+            "key",
+            TokenTier::Production,
+            1000,
+            Some(1),
+            10,
+        )
+        .unwrap();
 
         pool.record_usage("t1").unwrap();
 
@@ -1038,8 +1120,16 @@ mod tests {
     #[test]
     fn test_no_available_tokens_error() {
         let pool = TokenPool::new(SelectionStrategy::MostRemaining);
-        pool.add_token("t1", "prov", "key", TokenTier::Production, 1000, Some(1), 10)
-            .unwrap();
+        pool.add_token(
+            "t1",
+            "prov",
+            "key",
+            TokenTier::Production,
+            1000,
+            Some(1),
+            10,
+        )
+        .unwrap();
         pool.record_usage("t1").unwrap();
 
         let result = pool.select("prov");
@@ -1060,8 +1150,16 @@ mod tests {
     #[test]
     fn test_daily_quota_reset() {
         let pool = TokenPool::new(SelectionStrategy::MostRemaining);
-        pool.add_token("t1", "prov", "key", TokenTier::Production, 1000, Some(5), 10)
-            .unwrap();
+        pool.add_token(
+            "t1",
+            "prov",
+            "key",
+            TokenTier::Production,
+            1000,
+            Some(5),
+            10,
+        )
+        .unwrap();
 
         // Exhaust the quota
         for _ in 0..5 {
@@ -1111,10 +1209,26 @@ mod tests {
     fn test_weighted_selection() {
         let pool = TokenPool::new(SelectionStrategy::WeightedRandom);
         // w=3 and w=1 → 3/4 of calls go to heavy, 1/4 to light
-        pool.add_token("heavy", "prov", "heavy-key", TokenTier::Production, 1000, None, 3)
-            .unwrap();
-        pool.add_token("light", "prov", "light-key", TokenTier::Production, 1000, None, 1)
-            .unwrap();
+        pool.add_token(
+            "heavy",
+            "prov",
+            "heavy-key",
+            TokenTier::Production,
+            1000,
+            None,
+            3,
+        )
+        .unwrap();
+        pool.add_token(
+            "light",
+            "prov",
+            "light-key",
+            TokenTier::Production,
+            1000,
+            None,
+            1,
+        )
+        .unwrap();
 
         let mut heavy_count = 0u32;
         let mut light_count = 0u32;
@@ -1188,7 +1302,8 @@ mod tests {
     #[test]
     fn test_remove_last_token_removes_provider() {
         let pool = TokenPool::new(SelectionStrategy::MostRemaining);
-        pool.add_token("t1", "solo", "key", TokenTier::Free, 10, None, 1).unwrap();
+        pool.add_token("t1", "solo", "key", TokenTier::Free, 10, None, 1)
+            .unwrap();
 
         pool.remove_token("t1").unwrap();
 

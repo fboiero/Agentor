@@ -307,7 +307,8 @@ impl ContextPropagator {
             for item in baggage_str.split(',') {
                 let item = item.trim();
                 if let Some((k, v)) = item.split_once('=') {
-                    ctx.baggage.insert(k.trim().to_string(), v.trim().to_string());
+                    ctx.baggage
+                        .insert(k.trim().to_string(), v.trim().to_string());
                 }
             }
         }
@@ -462,7 +463,10 @@ mod tests {
     fn test_span_child() {
         let parent = SpanContext::new("parent");
         let child = parent.child("child");
-        assert_eq!(child.parent_span_id.as_deref(), Some(parent.span_id.as_str()));
+        assert_eq!(
+            child.parent_span_id.as_deref(),
+            Some(parent.span_id.as_str())
+        );
         assert_eq!(child.operation, "child");
         assert_ne!(child.span_id, parent.span_id);
     }
@@ -508,8 +512,7 @@ mod tests {
     // 9. Context child inherits trace ID
     #[test]
     fn test_context_child() {
-        let parent = CorrelationContext::new("root")
-            .with_baggage("user", "alice");
+        let parent = CorrelationContext::new("root").with_baggage("user", "alice");
         let child = parent.child("sub-op");
         assert_eq!(child.trace_id, parent.trace_id);
         assert_eq!(child.correlation_id, parent.correlation_id);
@@ -659,17 +662,13 @@ mod tests {
         let mut ctx = CorrelationContext::new("op");
         ctx.finish_with_error("boom");
         assert_eq!(ctx.current_span.status, SpanStatus::Error);
-        assert_eq!(
-            ctx.current_span.attributes.get("error").unwrap(),
-            "boom"
-        );
+        assert_eq!(ctx.current_span.attributes.get("error").unwrap(), "boom");
     }
 
     // 21. CorrelationContext serializable
     #[test]
     fn test_context_serializable() {
-        let ctx = CorrelationContext::new("op")
-            .with_baggage("key", "val");
+        let ctx = CorrelationContext::new("op").with_baggage("key", "val");
         let json = serde_json::to_string(&ctx).unwrap();
         let restored: CorrelationContext = serde_json::from_str(&json).unwrap();
         assert_eq!(restored.trace_id, ctx.trace_id);
@@ -693,8 +692,7 @@ mod tests {
     // 23. Baggage propagation through multiple levels
     #[test]
     fn test_baggage_multi_level() {
-        let root = CorrelationContext::new("root")
-            .with_baggage("tenant", "acme");
+        let root = CorrelationContext::new("root").with_baggage("tenant", "acme");
         let l1 = root.child("l1").with_baggage("region", "us-east");
         let l2 = l1.child("l2");
         assert_eq!(l2.baggage.get("tenant").unwrap(), "acme");

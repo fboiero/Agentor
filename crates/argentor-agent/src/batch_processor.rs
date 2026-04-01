@@ -580,7 +580,9 @@ mod tests {
     // 15. Config builder
     #[test]
     fn test_config_builder() {
-        let c = BatchConfig::new(20).with_concurrency(10).with_timeout_ms(5000);
+        let c = BatchConfig::new(20)
+            .with_concurrency(10)
+            .with_timeout_ms(5000);
         assert_eq!(c.max_batch_size, 20);
         assert_eq!(c.max_concurrency, 10);
         assert_eq!(c.timeout_ms, 5000);

@@ -898,7 +898,8 @@ mod tests {
 
     #[test]
     fn test_task_stream_event_deserialization() {
-        let json = r#"{"type":"status_update","task_id":"t-1","status":"working","message":"busy"}"#;
+        let json =
+            r#"{"type":"status_update","task_id":"t-1","status":"working","message":"busy"}"#;
         let event: TaskStreamEvent = serde_json::from_str(json).unwrap();
         match event {
             TaskStreamEvent::StatusUpdate {

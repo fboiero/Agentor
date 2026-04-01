@@ -513,7 +513,10 @@ mod tests {
         ctx.add_to_history("skills");
         ctx.add_to_history("exit");
         assert_eq!(ctx.history.len(), 3);
-        assert_eq!(ctx.recent_history(2), &["skills".to_string(), "exit".to_string()]);
+        assert_eq!(
+            ctx.recent_history(2),
+            &["skills".to_string(), "exit".to_string()]
+        );
     }
 
     // 11. History max size

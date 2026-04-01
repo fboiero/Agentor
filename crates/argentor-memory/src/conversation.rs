@@ -94,10 +94,7 @@ impl ConversationMemory {
             metadata,
         };
         let mut store = self.turns.write().await;
-        store
-            .entry(customer_id.to_string())
-            .or_default()
-            .push(turn);
+        store.entry(customer_id.to_string()).or_default().push(turn);
     }
 
     /// Record a turn with an explicit timestamp (useful for tests and imports).
@@ -119,10 +116,7 @@ impl ConversationMemory {
             metadata,
         };
         let mut store = self.turns.write().await;
-        store
-            .entry(customer_id.to_string())
-            .or_default()
-            .push(turn);
+        store.entry(customer_id.to_string()).or_default().push(turn);
     }
 
     /// Retrieve the last `max_turns` turns for a customer across all sessions.
@@ -204,11 +198,7 @@ impl ConversationMemory {
     /// Case-insensitive keyword search across all turns for a customer.
     ///
     /// Returns turns whose content contains the query substring.
-    pub async fn search_history(
-        &self,
-        customer_id: &str,
-        query: &str,
-    ) -> Vec<ConversationTurn> {
+    pub async fn search_history(&self, customer_id: &str, query: &str) -> Vec<ConversationTurn> {
         let store = self.turns.read().await;
         let query_lower = query.to_lowercase();
         match store.get(customer_id) {
@@ -374,15 +364,15 @@ fn truncate_content(s: &str, max_len: usize) -> String {
 /// Simple stopword list for topic extraction.
 const STOPWORDS: &[&str] = &[
     "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
-    "do", "does", "did", "will", "would", "could", "should", "may", "might", "shall", "can",
-    "to", "of", "in", "for", "on", "with", "at", "by", "from", "as", "into", "through",
-    "during", "before", "after", "and", "but", "or", "nor", "not", "so", "yet", "both",
-    "either", "neither", "each", "every", "all", "any", "few", "more", "most", "other",
-    "some", "such", "no", "only", "own", "same", "than", "too", "very", "just", "because",
-    "about", "up", "out", "then", "them", "these", "those", "this", "that", "it", "its",
-    "i", "me", "my", "we", "our", "you", "your", "he", "him", "his", "she", "her",
-    "they", "their", "what", "which", "who", "whom", "how", "when", "where", "why",
-    "if", "while", "also", "like", "get", "got", "want", "need", "know", "think",
+    "do", "does", "did", "will", "would", "could", "should", "may", "might", "shall", "can", "to",
+    "of", "in", "for", "on", "with", "at", "by", "from", "as", "into", "through", "during",
+    "before", "after", "and", "but", "or", "nor", "not", "so", "yet", "both", "either", "neither",
+    "each", "every", "all", "any", "few", "more", "most", "other", "some", "such", "no", "only",
+    "own", "same", "than", "too", "very", "just", "because", "about", "up", "out", "then", "them",
+    "these", "those", "this", "that", "it", "its", "i", "me", "my", "we", "our", "you", "your",
+    "he", "him", "his", "she", "her", "they", "their", "what", "which", "who", "whom", "how",
+    "when", "where", "why", "if", "while", "also", "like", "get", "got", "want", "need", "know",
+    "think",
 ];
 
 /// Extract the most frequent non-stopword tokens from conversation content.
@@ -418,12 +408,40 @@ fn infer_sentiment(turns: &[ConversationTurn]) -> String {
     let mut negative = 0i32;
 
     let positive_words = [
-        "thanks", "thank", "great", "good", "excellent", "perfect", "happy", "love", "awesome",
-        "helpful", "appreciate", "wonderful", "fantastic", "pleased", "satisfied",
+        "thanks",
+        "thank",
+        "great",
+        "good",
+        "excellent",
+        "perfect",
+        "happy",
+        "love",
+        "awesome",
+        "helpful",
+        "appreciate",
+        "wonderful",
+        "fantastic",
+        "pleased",
+        "satisfied",
     ];
     let negative_words = [
-        "bad", "terrible", "awful", "horrible", "hate", "angry", "frustrated", "disappointed",
-        "worst", "broken", "fail", "failed", "issue", "problem", "error", "bug", "complaint",
+        "bad",
+        "terrible",
+        "awful",
+        "horrible",
+        "hate",
+        "angry",
+        "frustrated",
+        "disappointed",
+        "worst",
+        "broken",
+        "fail",
+        "failed",
+        "issue",
+        "problem",
+        "error",
+        "bug",
+        "complaint",
     ];
 
     for turn in turns {
@@ -524,7 +542,8 @@ mod tests {
     async fn test_record_and_get_context() {
         let mem = ConversationMemory::new();
         mem.record_turn("c1", "s1", "user", "Hello", meta()).await;
-        mem.record_turn("c1", "s1", "assistant", "Hi!", meta()).await;
+        mem.record_turn("c1", "s1", "assistant", "Hi!", meta())
+            .await;
 
         let ctx = mem.get_context("c1", 10).await;
         assert_eq!(ctx.len(), 2);
@@ -596,7 +615,9 @@ mod tests {
         let results = mem.search_history("c1", "stake").await;
         // Both the user question and assistant reply contain "stake"
         assert_eq!(results.len(), 2);
-        assert!(results.iter().all(|r| r.content.to_lowercase().contains("stake")));
+        assert!(results
+            .iter()
+            .all(|r| r.content.to_lowercase().contains("stake")));
 
         // "billing" only appears once
         let billing = mem.search_history("c1", "billing").await;
@@ -710,10 +731,22 @@ mod tests {
     #[tokio::test]
     async fn test_profile_sentiment_from_metadata() {
         let mem = ConversationMemory::new();
-        mem.record_turn("c1", "s1", "user", "neutral text", meta_with("sentiment", "positive"))
-            .await;
-        mem.record_turn("c1", "s1", "user", "more text", meta_with("sentiment", "positive"))
-            .await;
+        mem.record_turn(
+            "c1",
+            "s1",
+            "user",
+            "neutral text",
+            meta_with("sentiment", "positive"),
+        )
+        .await;
+        mem.record_turn(
+            "c1",
+            "s1",
+            "user",
+            "more text",
+            meta_with("sentiment", "positive"),
+        )
+        .await;
 
         let profile = mem.build_profile("c1").await.unwrap();
         assert_eq!(profile.sentiment_trend, "positive");
@@ -795,16 +828,14 @@ mod tests {
 
     #[test]
     fn test_extract_topics_basic() {
-        let turns = vec![
-            ConversationTurn {
-                customer_id: "c1".to_string(),
-                session_id: "s1".to_string(),
-                role: "user".to_string(),
-                content: "billing billing billing staking staking DeFi".to_string(),
-                timestamp: Utc::now(),
-                metadata: meta(),
-            },
-        ];
+        let turns = vec![ConversationTurn {
+            customer_id: "c1".to_string(),
+            session_id: "s1".to_string(),
+            role: "user".to_string(),
+            content: "billing billing billing staking staking DeFi".to_string(),
+            timestamp: Utc::now(),
+            metadata: meta(),
+        }];
         let topics = extract_topics(&turns);
         assert!(topics.contains(&"billing".to_string()));
         assert!(topics.contains(&"staking".to_string()));

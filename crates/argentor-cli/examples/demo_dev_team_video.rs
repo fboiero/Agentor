@@ -77,19 +77,25 @@ fn spinner(label: &str, duration_ms: u64) {
 
 fn banner() {
     println!();
-    println!("  {BG_BLU}{WHT}{BOLD}                                                          {RST}");
-    println!("  {BG_BLU}{WHT}{BOLD}   ARGENTOR — Autonomous Dev Team Demo                    {RST}");
-    println!("  {BG_BLU}{WHT}{BOLD}   Real Code Intelligence • Zero Simulation                {RST}");
-    println!("  {BG_BLU}{WHT}{BOLD}                                                          {RST}");
+    println!(
+        "  {BG_BLU}{WHT}{BOLD}                                                          {RST}"
+    );
+    println!(
+        "  {BG_BLU}{WHT}{BOLD}   ARGENTOR — Autonomous Dev Team Demo                    {RST}"
+    );
+    println!(
+        "  {BG_BLU}{WHT}{BOLD}   Real Code Intelligence • Zero Simulation                {RST}"
+    );
+    println!(
+        "  {BG_BLU}{WHT}{BOLD}                                                          {RST}"
+    );
     println!();
     delay(1500);
 }
 
 fn phase_header(num: usize, title: &str, color: &str) {
     println!();
-    println!(
-        "  {color}{BOLD}━━━ PHASE {num}: {title} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RST}"
-    );
+    println!("  {color}{BOLD}━━━ PHASE {num}: {title} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RST}");
     println!();
     delay(800);
 }
@@ -110,7 +116,10 @@ fn code_block(filename: &str, content: &str, max_lines: usize) {
     println!("  {DIM}┌─ {CYAN}{filename}{RST}");
     for (i, line) in content.lines().enumerate() {
         if i >= max_lines {
-            println!("  {DIM}│  ... ({} more lines){RST}", content.lines().count() - max_lines);
+            println!(
+                "  {DIM}│  ... ({} more lines){RST}",
+                content.lines().count() - max_lines
+            );
             break;
         }
         println!("  {DIM}│{RST}  {line}");
@@ -412,7 +421,12 @@ fn main() {
     let workflow = DevWorkflow::ImplementFeature;
     let roles = team.required_roles(workflow.clone());
 
-    agent_says("Orchestrator", MAG, "🎯", "Assembling FullStack dev team...");
+    agent_says(
+        "Orchestrator",
+        MAG,
+        "🎯",
+        "Assembling FullStack dev team...",
+    );
     delay(500);
 
     let role_icons: &[(&str, &str, &str)] = &[
@@ -504,7 +518,10 @@ fn main() {
     }
 
     separator();
-    println!("  {DIM}Test strategy: {:?}{RST}", plan.test_strategy.test_types);
+    println!(
+        "  {DIM}Test strategy: {:?}{RST}",
+        plan.test_strategy.test_types
+    );
     delay(500);
 
     // ─── PHASE 4: TDD RED ────────────────────────────────────────────────────
@@ -544,7 +561,10 @@ fn main() {
         }
     }
     if combined_output.lines().count() > 12 {
-        println!("  {DIM}  ... ({} more lines){RST}", combined_output.lines().count() - 12);
+        println!(
+            "  {DIM}  ... ({} more lines){RST}",
+            combined_output.lines().count() - 12
+        );
     }
     separator();
 
@@ -573,7 +593,9 @@ fn main() {
     }
 
     separator();
-    println!("  {RED}{BOLD}TDD Phase: RED{RST} {DIM}— Tests written, compilation fails (expected!){RST}");
+    println!(
+        "  {RED}{BOLD}TDD Phase: RED{RST} {DIM}— Tests written, compilation fails (expected!){RST}"
+    );
     delay(1500);
 
     // ─── PHASE 5: TDD GREEN — Implement ──────────────────────────────────────
@@ -625,36 +647,21 @@ fn main() {
             summary_green.passed, summary_green.total
         ),
     );
-    println!(
-        "  {GRN}{BOLD}TDD Phase: GREEN{RST} {DIM}— All tests passing!{RST}"
-    );
+    println!("  {GRN}{BOLD}TDD Phase: GREEN{RST} {DIM}— All tests passing!{RST}");
     delay(1500);
 
     // ─── PHASE 6: CODE ANALYSIS ──────────────────────────────────────────────
     phase_header(6, "CODE ANALYSIS", BG_CYAN);
 
-    agent_says(
-        "Architect",
-        CYAN,
-        "🏗️ ",
-        "Running CodeGraph analysis...",
-    );
+    agent_says("Architect", CYAN, "🏗️ ", "Running CodeGraph analysis...");
     spinner("Parsing code structure", 800);
 
     let mut graph = CodeGraph::new();
     graph.parse_file("src/lib.rs", LIB_RS_GREEN);
 
     let code_summary = graph.summary();
-    result_line(
-        "📊",
-        "Files",
-        &format!("{}", code_summary.total_files),
-    );
-    result_line(
-        "🔣",
-        "Symbols",
-        &format!("{}", code_summary.total_symbols),
-    );
+    result_line("📊", "Files", &format!("{}", code_summary.total_files));
+    result_line("🔣", "Symbols", &format!("{}", code_summary.total_symbols));
     result_line(
         "🌐",
         "Public API",
@@ -741,10 +748,7 @@ fn main() {
             FindingSeverity::Warning => ("🟡", YEL),
             FindingSeverity::Info => ("🔵", BLU),
         };
-        let line_str = finding
-            .line
-            .map(|l| format!("L{l}"))
-            .unwrap_or_default();
+        let line_str = finding.line.map(|l| format!("L{l}")).unwrap_or_default();
         println!(
             "  {color}  {icon} [{:6}] {line_str:4} {}{RST}",
             finding.rule_id, finding.message
@@ -813,17 +817,16 @@ fn main() {
     }
 
     separator();
-    result_line(
-        "📝",
-        "Hunks",
-        &format!("{}", diff.hunks.len()),
-    );
+    result_line("📝", "Hunks", &format!("{}", diff.hunks.len()));
     result_line(
         "➕",
         "Added",
         &format!(
             "{} lines",
-            unified.lines().filter(|l| l.starts_with('+') && !l.starts_with("+++")).count()
+            unified
+                .lines()
+                .filter(|l| l.starts_with('+') && !l.starts_with("+++"))
+                .count()
         ),
     );
     result_line(
@@ -831,7 +834,10 @@ fn main() {
         "Removed",
         &format!(
             "{} lines",
-            unified.lines().filter(|l| l.starts_with('-') && !l.starts_with("---")).count()
+            unified
+                .lines()
+                .filter(|l| l.starts_with('-') && !l.starts_with("---"))
+                .count()
         ),
     );
 
@@ -872,19 +878,11 @@ fn main() {
     result_line(
         "✅",
         "Tests",
-        &format!(
-            "{}/{} passing",
-            summary_final.passed, summary_final.total
-        ),
+        &format!("{}/{} passing", summary_final.passed, summary_final.total),
     );
 
     // Re-review
-    agent_says(
-        "Reviewer",
-        YEL,
-        "🔍",
-        "Final code review...",
-    );
+    agent_says("Reviewer", YEL, "🔍", "Final code review...");
     spinner("Reviewing refactored code", 800);
 
     let final_report = review.review_code("src/lib.rs", LIB_RS_FINAL);
@@ -931,23 +929,68 @@ fn main() {
     let elapsed = start.elapsed();
 
     println!("  {BOLD}{WHT}Team Performance:{RST}");
-    result_line("⏱️ ", "Total time", &format!("{:.1}s", elapsed.as_secs_f64()));
+    result_line(
+        "⏱️ ",
+        "Total time",
+        &format!("{:.1}s", elapsed.as_secs_f64()),
+    );
     result_line("🏗️ ", "Plan steps", &format!("{}", plan.steps.len()));
     result_line("🧪", "Tests written", &format!("{}", summary_final.total));
     result_line("✅", "Tests passing", &format!("{}", summary_final.passed));
-    result_line("🔍", "Review findings fixed", &format!("{} → {}", report.findings.len(), final_report.findings.len()));
-    result_line("📊", "Quality score", &format!("{:.0}% → {:.0}%", report.total_score * 100.0, final_report.total_score * 100.0));
-    result_line("🔣", "Symbols analyzed", &format!("{}", code_summary.total_symbols));
+    result_line(
+        "🔍",
+        "Review findings fixed",
+        &format!(
+            "{} → {}",
+            report.findings.len(),
+            final_report.findings.len()
+        ),
+    );
+    result_line(
+        "📊",
+        "Quality score",
+        &format!(
+            "{:.0}% → {:.0}%",
+            report.total_score * 100.0,
+            final_report.total_score * 100.0
+        ),
+    );
+    result_line(
+        "🔣",
+        "Symbols analyzed",
+        &format!("{}", code_summary.total_symbols),
+    );
 
     separator();
     println!("  {BOLD}{WHT}Artifacts:{RST}");
-    result_line("📐", "Implementation plan", &format!("{} steps", plan.steps.len()));
+    result_line(
+        "📐",
+        "Implementation plan",
+        &format!("{} steps", plan.steps.len()),
+    );
     result_line("💻", "Source code", "src/lib.rs (Calculator + CalcError)");
-    result_line("🧪", "Test suite", &format!("{} tests", summary_final.total));
-    result_line("🔍", "Code review report", &format!("{} findings analyzed", report.findings.len()));
-    result_line("📝", "Diff", &format!("{} hunks, {} lines changed", diff.hunks.len(),
-        unified.lines().filter(|l| l.starts_with('+') || l.starts_with('-')).count()
-    ));
+    result_line(
+        "🧪",
+        "Test suite",
+        &format!("{} tests", summary_final.total),
+    );
+    result_line(
+        "🔍",
+        "Code review report",
+        &format!("{} findings analyzed", report.findings.len()),
+    );
+    result_line(
+        "📝",
+        "Diff",
+        &format!(
+            "{} hunks, {} lines changed",
+            diff.hunks.len(),
+            unified
+                .lines()
+                .filter(|l| l.starts_with('+') || l.starts_with('-'))
+                .count()
+        ),
+    );
 
     separator();
     println!(

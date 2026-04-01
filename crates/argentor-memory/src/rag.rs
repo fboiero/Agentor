@@ -371,7 +371,10 @@ impl RagPipeline {
                 serde_json::json!(chunk.chunk_index),
             );
             if let Some(cat) = &doc.category {
-                metadata.insert("category".to_string(), serde_json::Value::String(cat.clone()));
+                metadata.insert(
+                    "category".to_string(),
+                    serde_json::Value::String(cat.clone()),
+                );
             }
             if self.config.include_metadata {
                 for (k, v) in &doc.metadata {
@@ -403,10 +406,7 @@ impl RagPipeline {
     }
 
     /// Batch-ingest multiple documents.
-    pub async fn ingest_batch(
-        &self,
-        docs: &[Document],
-    ) -> ArgentorResult<Vec<Vec<DocumentChunk>>> {
+    pub async fn ingest_batch(&self, docs: &[Document]) -> ArgentorResult<Vec<Vec<DocumentChunk>>> {
         let mut all_chunks = Vec::with_capacity(docs.len());
         for doc in docs {
             let chunks = self.ingest_document(doc).await?;

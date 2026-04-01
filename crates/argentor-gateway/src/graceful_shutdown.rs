@@ -273,9 +273,7 @@ impl ShutdownManager {
 
         info!(
             total_ms = total_duration_ms,
-            succeeded,
-            failed,
-            "Graceful shutdown complete"
+            succeeded, failed, "Graceful shutdown complete"
         );
 
         ShutdownReport {
@@ -439,7 +437,8 @@ mod tests {
         let mgr = manager();
         assert_eq!(mgr.hook_count().await, 0);
 
-        mgr.on_shutdown("h1", ShutdownPhase::Cleanup, || Ok(())).await;
+        mgr.on_shutdown("h1", ShutdownPhase::Cleanup, || Ok(()))
+            .await;
         mgr.on_shutdown("h2", ShutdownPhase::Final, || Ok(())).await;
         assert_eq!(mgr.hook_count().await, 2);
     }
@@ -469,7 +468,8 @@ mod tests {
     #[tokio::test]
     async fn test_report_serializable() {
         let mgr = manager();
-        mgr.on_shutdown("ser", ShutdownPhase::Cleanup, || Ok(())).await;
+        mgr.on_shutdown("ser", ShutdownPhase::Cleanup, || Ok(()))
+            .await;
         let report = mgr.shutdown().await;
 
         let json = serde_json::to_string(&report).unwrap();
@@ -505,10 +505,12 @@ mod tests {
     #[tokio::test]
     async fn test_mixed_results() {
         let mgr = manager();
-        mgr.on_shutdown("ok1", ShutdownPhase::PreDrain, || Ok(())).await;
+        mgr.on_shutdown("ok1", ShutdownPhase::PreDrain, || Ok(()))
+            .await;
         mgr.on_shutdown("fail1", ShutdownPhase::Drain, || Err("oops".to_string()))
             .await;
-        mgr.on_shutdown("ok2", ShutdownPhase::Cleanup, || Ok(())).await;
+        mgr.on_shutdown("ok2", ShutdownPhase::Cleanup, || Ok(()))
+            .await;
         mgr.on_shutdown("fail2", ShutdownPhase::Final, || Err("boom".to_string()))
             .await;
 

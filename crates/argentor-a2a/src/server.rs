@@ -246,8 +246,10 @@ async fn sse_handler(
     let params = match &envelope.params {
         Some(p) => p.clone(),
         None => {
-            let resp =
-                A2AResponse::invalid_params(envelope.id.clone(), "Missing params for tasks/sendSubscribe");
+            let resp = A2AResponse::invalid_params(
+                envelope.id.clone(),
+                "Missing params for tasks/sendSubscribe",
+            );
             return (StatusCode::BAD_REQUEST, Json(resp)).into_response();
         }
     };
@@ -310,7 +312,10 @@ async fn sse_handler(
     };
 
     info!(task_id = %task.id, "Processing A2A streaming task");
-    task.transition_to(TaskStatus::Working, Some("Streaming handler invoked".to_string()));
+    task.transition_to(
+        TaskStatus::Working,
+        Some("Streaming handler invoked".to_string()),
+    );
 
     // Store task before processing
     {
@@ -320,7 +325,9 @@ async fn sse_handler(
 
     // Build the SSE stream
     let stream = build_sse_stream(state, task);
-    Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+    Sse::new(stream)
+        .keep_alive(KeepAlive::default())
+        .into_response()
 }
 
 /// Build an SSE stream for a task, executing the handler and emitting events.
@@ -344,8 +351,7 @@ fn build_sse_stream(
     tokio::spawn(async move {
         // Execute the handler via the non-streaming fallback path, which
         // emits synthetic status events (working -> completed/failed).
-        let final_result =
-            run_non_streaming_with_events(&handler, &task_for_spawn, &tx).await;
+        let final_result = run_non_streaming_with_events(&handler, &task_for_spawn, &tx).await;
 
         // Store final task state and send the closing event
         match final_result {
@@ -415,10 +421,7 @@ fn build_sse_stream(
             }
         };
 
-        let sse_payload = SseEventPayload {
-            event_type,
-            data,
-        };
+        let sse_payload = SseEventPayload { event_type, data };
 
         let json_str = serde_json::to_string(&sse_payload).unwrap_or_else(|e| {
             format!(r#"{{"type":"error","data":{{"error":"serialization failed: {e}"}}}}"#)

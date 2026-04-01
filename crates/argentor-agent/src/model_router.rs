@@ -360,9 +360,7 @@ impl ModelRouter {
                     .max_by(|a, b| {
                         let score_a = Self::balanced_score(a, complexity.score);
                         let score_b = Self::balanced_score(b, complexity.score);
-                        score_a
-                            .partial_cmp(&score_b)
-                            .unwrap_or(Ordering::Equal)
+                        score_a.partial_cmp(&score_b).unwrap_or(Ordering::Equal)
                     })
                     // Fallback to the most capable if nothing matches
                     .or_else(|| {
@@ -395,24 +393,18 @@ impl ModelRouter {
                                 .iter()
                                 .find(|m| m.tier == ModelTier::Balanced)
                                 .or_else(|| {
-                                    self.models
-                                        .iter()
-                                        .find(|m| m.tier == ModelTier::Powerful)
+                                    self.models.iter().find(|m| m.tier == ModelTier::Powerful)
                                 }),
                             ModelTier::Powerful => self
                                 .models
                                 .iter()
                                 .find(|m| m.tier == ModelTier::Balanced)
-                                .or_else(|| {
-                                    self.models.iter().find(|m| m.tier == ModelTier::Fast)
-                                }),
+                                .or_else(|| self.models.iter().find(|m| m.tier == ModelTier::Fast)),
                             ModelTier::Balanced => self
                                 .models
                                 .iter()
                                 .find(|m| m.tier == ModelTier::Powerful)
-                                .or_else(|| {
-                                    self.models.iter().find(|m| m.tier == ModelTier::Fast)
-                                }),
+                                .or_else(|| self.models.iter().find(|m| m.tier == ModelTier::Fast)),
                         }
                     })
                     .or(self.models.first())
@@ -447,10 +439,8 @@ impl ModelRouter {
 
     /// Record the actual cost after a model call completes.
     pub fn record_cost(&mut self, input_tokens: u64, output_tokens: u64, model: &ModelOption) {
-        let input_cost =
-            (input_tokens as f64 / 1_000_000.0) * model.cost.input_cost_per_mtok;
-        let output_cost =
-            (output_tokens as f64 / 1_000_000.0) * model.cost.output_cost_per_mtok;
+        let input_cost = (input_tokens as f64 / 1_000_000.0) * model.cost.input_cost_per_mtok;
+        let output_cost = (output_tokens as f64 / 1_000_000.0) * model.cost.output_cost_per_mtok;
         self.total_cost_usd += input_cost + output_cost;
     }
 
@@ -1033,10 +1023,7 @@ mod tests {
             decision.estimated_cost_usd > 0.0,
             "Estimated cost should be positive"
         );
-        assert!(
-            !decision.reason.is_empty(),
-            "Reason should not be empty"
-        );
+        assert!(!decision.reason.is_empty(), "Reason should not be empty");
     }
 
     // ── 22. test_remaining_budget_floors_at_zero ─────────────────────────

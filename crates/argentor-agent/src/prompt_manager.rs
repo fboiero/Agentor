@@ -129,11 +129,7 @@ pub struct PromptTemplate {
 
 impl PromptTemplate {
     /// Create a new template at version 1.
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-        content: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, name: impl Into<String>, content: impl Into<String>) -> Self {
         let now = Utc::now();
         Self {
             id: id.into(),
@@ -318,8 +314,7 @@ fn render_if_blocks(content: &str, vars: &HashMap<String, String>) -> String {
 
 /// Render `{{variable}}`, `{{variable|default:val}}`, `{{variable|upper}}`, `{{variable|lower}}`.
 fn render_variables(content: &str, vars: &HashMap<String, String>) -> String {
-    let var_re =
-        regex::Regex::new(r"\{\{(\w+)(?:\|(\w+)(?::([^}]*))?)?\}\}").unwrap();
+    let var_re = regex::Regex::new(r"\{\{(\w+)(?:\|(\w+)(?::([^}]*))?)?\}\}").unwrap();
 
     var_re
         .replace_all(content, |caps: &regex::Captures| {
@@ -334,12 +329,8 @@ fn render_variables(content: &str, vars: &HashMap<String, String>) -> String {
                     let default_val = filter_arg.unwrap_or("");
                     raw_value.unwrap_or_else(|| default_val.to_string())
                 }
-                Some("upper") => raw_value
-                    .unwrap_or_default()
-                    .to_uppercase(),
-                Some("lower") => raw_value
-                    .unwrap_or_default()
-                    .to_lowercase(),
+                Some("upper") => raw_value.unwrap_or_default().to_uppercase(),
+                Some("lower") => raw_value.unwrap_or_default().to_lowercase(),
                 _ => raw_value.unwrap_or_default(),
             }
         })
@@ -437,9 +428,7 @@ impl PromptManager {
 
         // Pick content: active variant or base content.
         let content = if let Some(variant_name) = inner.active_variants.get(template_id) {
-            tmpl.variants
-                .get(variant_name)
-                .unwrap_or(&tmpl.content)
+            tmpl.variants.get(variant_name).unwrap_or(&tmpl.content)
         } else {
             &tmpl.content
         };
@@ -491,7 +480,11 @@ impl PromptManager {
     /// List all registered templates.
     pub fn list_templates(&self) -> Vec<TemplateSummary> {
         let inner = self.inner.read().unwrap();
-        inner.templates.values().map(TemplateSummary::from).collect()
+        inner
+            .templates
+            .values()
+            .map(TemplateSummary::from)
+            .collect()
     }
 
     /// Get the current version of a template by id.
@@ -721,10 +714,14 @@ pub fn support_responder_v1() -> PromptTemplate {
     )
     .with_description("Generates support responses using ticket context and KB articles.")
     .with_variables(vec![
-        TemplateVariable::required("ticket_category").with_description("Category of the support ticket"),
-        TemplateVariable::required("priority").with_description("Ticket priority (low, medium, high, critical)"),
-        TemplateVariable::required("customer_message").with_description("The customer's original message"),
-        TemplateVariable::optional("kb_context", "").with_description("Relevant knowledge base excerpts"),
+        TemplateVariable::required("ticket_category")
+            .with_description("Category of the support ticket"),
+        TemplateVariable::required("priority")
+            .with_description("Ticket priority (low, medium, high, critical)"),
+        TemplateVariable::required("customer_message")
+            .with_description("The customer's original message"),
+        TemplateVariable::optional("kb_context", "")
+            .with_description("Relevant knowledge base excerpts"),
     ])
     .with_tag("support")
     .with_tag("xcapit-sff")
@@ -745,7 +742,7 @@ pub fn ticket_router_v1() -> PromptTemplate {
     )
     .with_description("Routes incoming messages to the correct support category and priority.")
     .with_variables(vec![
-        TemplateVariable::required("message").with_description("Raw customer message to classify"),
+        TemplateVariable::required("message").with_description("Raw customer message to classify")
     ])
     .with_tag("routing")
     .with_tag("xcapit-sff")
@@ -777,9 +774,13 @@ mod tests {
     }
 
     fn basic_template() -> PromptTemplate {
-        PromptTemplate::new("test1", "Test Template", "Hello {{name}}, welcome to {{place}}!")
-            .with_variable(TemplateVariable::required("name"))
-            .with_variable(TemplateVariable::required("place"))
+        PromptTemplate::new(
+            "test1",
+            "Test Template",
+            "Hello {{name}}, welcome to {{place}}!",
+        )
+        .with_variable(TemplateVariable::required("name"))
+        .with_variable(TemplateVariable::required("place"))
     }
 
     // -----------------------------------------------------------------------
@@ -790,7 +791,10 @@ mod tests {
         let mgr = PromptManager::new();
         mgr.register_template(basic_template());
         let result = mgr
-            .render("test1", &vars(&[("name", "Alice"), ("place", "Wonderland")]))
+            .render(
+                "test1",
+                &vars(&[("name", "Alice"), ("place", "Wonderland")]),
+            )
             .unwrap();
         assert_eq!(result, "Hello Alice, welcome to Wonderland!");
     }
@@ -802,7 +806,9 @@ mod tests {
     fn test_missing_required_variable() {
         let mgr = PromptManager::new();
         mgr.register_template(basic_template());
-        let err = mgr.render("test1", &vars(&[("name", "Alice")])).unwrap_err();
+        let err = mgr
+            .render("test1", &vars(&[("name", "Alice")]))
+            .unwrap_err();
         assert_eq!(err, PromptError::MissingVariable("place".to_string()));
     }
 
@@ -890,9 +896,7 @@ mod tests {
         );
         let mgr = PromptManager::new();
         mgr.register_template(tmpl);
-        let result = mgr
-            .render("each1", &vars(&[("items", "a,b,c")]))
-            .unwrap();
+        let result = mgr.render("each1", &vars(&[("items", "a,b,c")])).unwrap();
         assert_eq!(result, "Items: [a] [b] [c]");
     }
 
@@ -901,7 +905,11 @@ mod tests {
     // -----------------------------------------------------------------------
     #[test]
     fn test_each_block_missing() {
-        let tmpl = PromptTemplate::new("each2", "EachTest2", "Items:{{#each items}} [{{item}}]{{/each}} done");
+        let tmpl = PromptTemplate::new(
+            "each2",
+            "EachTest2",
+            "Items:{{#each items}} [{{item}}]{{/each}} done",
+        );
         let mgr = PromptManager::new();
         mgr.register_template(tmpl);
         let result = mgr.render("each2", &HashMap::new()).unwrap();
@@ -973,10 +981,14 @@ mod tests {
                 .with_variable(TemplateVariable::required("x")),
         );
 
-        let r1 = mgr.render_version("rv", 1, &vars(&[("x", "hello")])).unwrap();
+        let r1 = mgr
+            .render_version("rv", 1, &vars(&[("x", "hello")]))
+            .unwrap();
         assert_eq!(r1, "v1: hello");
 
-        let r2 = mgr.render_version("rv", 2, &vars(&[("x", "hello")])).unwrap();
+        let r2 = mgr
+            .render_version("rv", 2, &vars(&[("x", "hello")]))
+            .unwrap();
         assert_eq!(r2, "v2: hello");
     }
 

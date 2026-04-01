@@ -411,7 +411,10 @@ impl WorkflowEngine {
             .get_mut(run_id)
             .ok_or_else(|| format!("run {run_id} not found"))?;
         if run.status != RunStatus::Running {
-            return Err(format!("run {run_id} is not running (status: {:?})", run.status));
+            return Err(format!(
+                "run {run_id} is not running (status: {:?})",
+                run.status
+            ));
         }
         run.status = RunStatus::Paused;
         run.updated_at = Utc::now();
@@ -425,7 +428,10 @@ impl WorkflowEngine {
             .get_mut(run_id)
             .ok_or_else(|| format!("run {run_id} not found"))?;
         if run.status != RunStatus::Paused {
-            return Err(format!("run {run_id} is not paused (status: {:?})", run.status));
+            return Err(format!(
+                "run {run_id} is not paused (status: {:?})",
+                run.status
+            ));
         }
         run.status = RunStatus::Running;
         run.updated_at = Utc::now();
@@ -952,7 +958,10 @@ mod tests {
     #[tokio::test]
     async fn test_start_unknown_workflow_returns_none() {
         let engine = WorkflowEngine::new();
-        assert!(engine.start("no_such", serde_json::json!({})).await.is_none());
+        assert!(engine
+            .start("no_such", serde_json::json!({}))
+            .await
+            .is_none());
     }
 
     #[tokio::test]
@@ -986,7 +995,10 @@ mod tests {
         engine
             .register_workflow(simple_workflow(vec![agent_step("s1", "Step 1")]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
 
         let advanced = engine.advance(&run_id).await.unwrap();
         assert!(advanced);
@@ -1007,7 +1019,10 @@ mod tests {
                 agent_step("s3", "Step 3"),
             ]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
 
         // Advance first step.
         assert!(engine.advance(&run_id).await.unwrap());
@@ -1031,7 +1046,10 @@ mod tests {
         engine
             .register_workflow(simple_workflow(vec![agent_step("s1", "Step 1")]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         engine.advance(&run_id).await.unwrap();
         // Already completed — should return false.
         assert!(!engine.advance(&run_id).await.unwrap());
@@ -1052,8 +1070,14 @@ mod tests {
         engine
             .register_workflow(simple_workflow(vec![agent_step("s1", "Step 1")]))
             .await;
-        engine.start("test_wf", serde_json::json!({})).await.unwrap();
-        engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
+        engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
 
         let runs = engine.list_runs("test_wf").await;
         assert_eq!(runs.len(), 2);
@@ -1077,7 +1101,10 @@ mod tests {
                 agent_step("s2", "Step 2"),
             ]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.status, RunStatus::Completed);
         assert_eq!(run.step_results.len(), 2);
@@ -1094,7 +1121,10 @@ mod tests {
                 agent_step("s2", "Step 2"),
             ]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
 
         // Advance once to transition to Running.
         engine.advance(&run_id).await.unwrap();
@@ -1118,7 +1148,10 @@ mod tests {
         engine
             .register_workflow(simple_workflow(vec![agent_step("s1", "Step 1")]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         // Run is Pending, not Running.
         assert!(engine.pause(&run_id).await.is_err());
     }
@@ -1132,7 +1165,10 @@ mod tests {
                 agent_step("s2", "Step 2"),
             ]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         engine.advance(&run_id).await.unwrap();
         // Run is Running, not Paused.
         assert!(engine.resume(&run_id).await.is_err());
@@ -1148,7 +1184,10 @@ mod tests {
         engine
             .register_workflow(simple_workflow(vec![agent_step("s1", "Step 1"), step2]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.status, RunStatus::Completed);
         assert_eq!(run.step_results.len(), 2);
@@ -1163,9 +1202,7 @@ mod tests {
             field: "tier".to_string(),
             value: "gold".to_string(),
         });
-        engine
-            .register_workflow(simple_workflow(vec![step]))
-            .await;
+        engine.register_workflow(simple_workflow(vec![step])).await;
 
         // Trigger data matches.
         let run_id = engine
@@ -1184,9 +1221,7 @@ mod tests {
             field: "tier".to_string(),
             value: "gold".to_string(),
         });
-        engine
-            .register_workflow(simple_workflow(vec![step]))
-            .await;
+        engine.register_workflow(simple_workflow(vec![step])).await;
 
         let run_id = engine
             .start("test_wf", serde_json::json!({"tier": "silver"}))
@@ -1204,9 +1239,7 @@ mod tests {
             field: "score".to_string(),
             threshold: 50.0,
         });
-        engine
-            .register_workflow(simple_workflow(vec![step]))
-            .await;
+        engine.register_workflow(simple_workflow(vec![step])).await;
 
         let run_id = engine
             .start("test_wf", serde_json::json!({"score": 80}))
@@ -1224,9 +1257,7 @@ mod tests {
             field: "score".to_string(),
             threshold: 50.0,
         });
-        engine
-            .register_workflow(simple_workflow(vec![step]))
-            .await;
+        engine.register_workflow(simple_workflow(vec![step])).await;
 
         let run_id = engine
             .start("test_wf", serde_json::json!({"score": 30}))
@@ -1250,7 +1281,10 @@ mod tests {
             timeout_seconds: None,
         }]);
         engine.register_workflow(wf).await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.step_results[0].output["delayed_seconds"], 5);
     }
@@ -1270,7 +1304,10 @@ mod tests {
             timeout_seconds: None,
         }]);
         engine.register_workflow(wf).await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.step_results[0].output["sent"], true);
     }
@@ -1290,7 +1327,10 @@ mod tests {
             timeout_seconds: None,
         }]);
         engine.register_workflow(wf).await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.step_results[0].output["assigned"], true);
     }
@@ -1311,7 +1351,10 @@ mod tests {
             timeout_seconds: None,
         }]);
         engine.register_workflow(wf).await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.step_results[0].output["status_code"], 200);
     }
@@ -1334,7 +1377,10 @@ mod tests {
         engine
             .register_workflow(simple_workflow(vec![step1, step2]))
             .await;
-        let run_id = engine.start("test_wf", serde_json::json!({})).await.unwrap();
+        let run_id = engine
+            .start("test_wf", serde_json::json!({}))
+            .await
+            .unwrap();
         let run = engine.run_to_completion(&run_id).await.unwrap();
         assert_eq!(run.status, RunStatus::Completed);
         // First step skipped, second completed.
@@ -1447,9 +1493,7 @@ mod tests {
     #[tokio::test]
     async fn test_support_ticket_run_to_completion() {
         let engine = WorkflowEngine::new();
-        engine
-            .register_workflow(support_ticket_workflow())
-            .await;
+        engine.register_workflow(support_ticket_workflow()).await;
         let run_id = engine
             .start(
                 "support_ticket",

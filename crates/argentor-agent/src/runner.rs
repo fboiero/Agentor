@@ -147,7 +147,8 @@ impl AgentRunner {
     pub async fn run(&self, session: &mut Session, user_input: &str) -> ArgentorResult<String> {
         let session_id = session.id;
 
-        self.debug_recorder.record(StepType::Input, user_input, None);
+        self.debug_recorder
+            .record(StepType::Input, user_input, None);
 
         // Add user message
         let user_msg = Message::user(user_input, session_id);
@@ -194,7 +195,11 @@ impl AgentRunner {
             let cache_key = CacheKey::compute(provider_name, &cache_messages);
 
             if let Some(cached) = self.cache.as_ref().and_then(|c| c.get(&cache_key)) {
-                self.debug_recorder.record(StepType::CacheHit, "LLM response served from cache", None);
+                self.debug_recorder.record(
+                    StepType::CacheHit,
+                    "LLM response served from cache",
+                    None,
+                );
                 self.circuit_breakers.record_success(provider_name);
 
                 let assistant_msg = Message::assistant(&cached, session_id);
@@ -205,7 +210,11 @@ impl AgentRunner {
                 return Ok(cached);
             }
 
-            self.debug_recorder.record(StepType::LlmCall, format!("Turn {turn}: calling {provider_name}"), None);
+            self.debug_recorder.record(
+                StepType::LlmCall,
+                format!("Turn {turn}: calling {provider_name}"),
+                None,
+            );
             let llm_start = std::time::Instant::now();
 
             let response = self
@@ -226,7 +235,9 @@ impl AgentRunner {
                     self.debug_recorder.record_with_metrics(
                         StepType::LlmResponse,
                         format!("Turn {turn}: response received"),
-                        llm_duration, 0, 0,
+                        llm_duration,
+                        0,
+                        0,
                     );
                     r
                 }
@@ -318,7 +329,10 @@ impl AgentRunner {
                             Ok(tool_result) => {
                                 self.debug_recorder.record(
                                     StepType::ToolResult,
-                                    format!("Tool {} result (error={})", call.name, tool_result.is_error),
+                                    format!(
+                                        "Tool {} result (error={})",
+                                        call.name, tool_result.is_error
+                                    ),
                                     None,
                                 );
                                 let outcome = if tool_result.is_error {

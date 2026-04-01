@@ -296,11 +296,7 @@ impl PersistentUsageStore {
 
     /// Append one or more usage records for a tenant. Records are written
     /// atomically by appending to a tmp file then renaming.
-    pub async fn save_usage(
-        &self,
-        tenant_id: &str,
-        records: &[UsageRecord],
-    ) -> ArgentorResult<()> {
+    pub async fn save_usage(&self, tenant_id: &str, records: &[UsageRecord]) -> ArgentorResult<()> {
         if records.is_empty() {
             return Ok(());
         }
@@ -434,8 +430,7 @@ impl PersistentPersonaStore {
     }
 
     fn persona_path(&self, tenant_id: &str, role: &str) -> PathBuf {
-        self.personas_dir()
-            .join(format!("{tenant_id}_{role}.json"))
+        self.personas_dir().join(format!("{tenant_id}_{role}.json"))
     }
 
     /// Save (create or overwrite) a persona configuration.
@@ -631,8 +626,7 @@ mod tests {
         let (_tmp, store) = temp_session_store().await;
 
         let mut s1 = Session::new();
-        s1.metadata
-            .insert("env".into(), serde_json::json!("prod"));
+        s1.metadata.insert("env".into(), serde_json::json!("prod"));
         store.create(&s1).await.unwrap();
 
         let mut s2 = Session::new();
@@ -847,7 +841,10 @@ mod tests {
             "temperature": 0.3,
             "model": "claude-opus-4-20250514"
         });
-        store.save_persona("t1", "coder", config.clone()).await.unwrap();
+        store
+            .save_persona("t1", "coder", config.clone())
+            .await
+            .unwrap();
 
         let loaded = store.load_persona("t1", "coder").await.unwrap();
         assert!(loaded.is_some());

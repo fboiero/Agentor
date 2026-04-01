@@ -437,7 +437,9 @@ impl CodePlanner {
         let description = format!("Fix: {error_message}");
 
         // Step 1: Investigate
-        let primary_file = affected_files.first().map_or("unknown".into(), |f| (*f).to_string());
+        let primary_file = affected_files
+            .first()
+            .map_or("unknown".into(), |f| (*f).to_string());
         steps.push(PlanStep {
             order,
             file: primary_file.clone(),
@@ -677,7 +679,10 @@ impl CodePlanner {
             });
         }
 
-        let description = format!("Add test coverage for {} source file(s)", source_files.len());
+        let description = format!(
+            "Add test coverage for {} source file(s)",
+            source_files.len()
+        );
         self.finalize_plan(title, TaskType::AddTests, &description, steps)
     }
 
@@ -820,7 +825,10 @@ impl CodePlanner {
                 "### Step {} — {} (`{}`)\n\n",
                 step.order, step.operation, step.file
             ));
-            md.push_str(&format!("**Role:** {} | **Effort:** {}", step.assigned_role, step.effort));
+            md.push_str(&format!(
+                "**Role:** {} | **Effort:** {}",
+                step.assigned_role, step.effort
+            ));
             if step.breaks_api {
                 md.push_str(" | **BREAKS API**");
             }
@@ -907,7 +915,10 @@ impl CodePlanner {
     /// `plan.steps`).
     pub fn step_prompt(&self, plan: &ImplementationPlan, step_index: usize) -> String {
         let Some(step) = plan.steps.get(step_index) else {
-            return format!("Error: step index {step_index} is out of range (plan has {} steps)", plan.steps.len());
+            return format!(
+                "Error: step index {step_index} is out of range (plan has {} steps)",
+                plan.steps.len()
+            );
         };
 
         let mut prompt = String::new();
@@ -937,7 +948,9 @@ impl CodePlanner {
         prompt.push_str("- Add `///` doc comments on all public types and methods\n");
         prompt.push_str("- Follow Rust 2021 edition conventions\n");
         if step.breaks_api {
-            prompt.push_str("- **WARNING:** This step modifies public API — update all downstream consumers\n");
+            prompt.push_str(
+                "- **WARNING:** This step modifies public API — update all downstream consumers\n",
+            );
         }
 
         // Dependencies
@@ -984,10 +997,7 @@ impl CodePlanner {
             return TaskType::Refactor;
         }
 
-        if lower.contains("test")
-            || lower.contains("coverage")
-            || lower.contains("spec")
-        {
+        if lower.contains("test") || lower.contains("coverage") || lower.contains("spec") {
             return TaskType::AddTests;
         }
 
@@ -1000,10 +1010,7 @@ impl CodePlanner {
             return TaskType::Optimization;
         }
 
-        if lower.contains("doc")
-            || lower.contains("readme")
-            || lower.contains("comment")
-        {
+        if lower.contains("doc") || lower.contains("readme") || lower.contains("comment") {
             return TaskType::Documentation;
         }
 
@@ -1029,10 +1036,7 @@ impl CodePlanner {
         }
 
         // Security files
-        if lower.contains("security")
-            || lower.contains("auth")
-            || lower.contains("crypto")
-        {
+        if lower.contains("security") || lower.contains("auth") || lower.contains("crypto") {
             return AgentRole::SecurityAuditor;
         }
 
@@ -1049,10 +1053,7 @@ impl CodePlanner {
         }
 
         // Documentation files
-        if lower.ends_with(".md")
-            || lower.contains("readme")
-            || lower.contains("docs/")
-        {
+        if lower.ends_with(".md") || lower.contains("readme") || lower.contains("docs/") {
             return AgentRole::Documenter;
         }
 
@@ -1109,7 +1110,8 @@ impl CodePlanner {
                 description: "Plan includes file deletions".into(),
                 level: RiskLevel::High,
             });
-            mitigations.push("Verify deleted files have no remaining references before removal".into());
+            mitigations
+                .push("Verify deleted files have no remaining references before removal".into());
         }
 
         // Check for API-breaking changes
@@ -1441,7 +1443,10 @@ mod tests {
         );
         // Should have: interface + modify existing + test + review = 4 steps
         assert!(plan.steps.len() >= 3);
-        let has_tester = plan.steps.iter().any(|s| s.assigned_role == AgentRole::Tester);
+        let has_tester = plan
+            .steps
+            .iter()
+            .any(|s| s.assigned_role == AgentRole::Tester);
         assert!(has_tester, "Feature plan should include a testing step");
     }
 
@@ -1454,8 +1459,14 @@ mod tests {
             &["src/user_service.rs"],
         );
         assert_eq!(plan.task_type, TaskType::BugFix);
-        assert!(plan.steps.len() >= 3, "Bug fix should have investigate, fix, test, and review steps");
-        let has_debugger = plan.steps.iter().any(|s| s.assigned_role == AgentRole::Debugger);
+        assert!(
+            plan.steps.len() >= 3,
+            "Bug fix should have investigate, fix, test, and review steps"
+        );
+        let has_debugger = plan
+            .steps
+            .iter()
+            .any(|s| s.assigned_role == AgentRole::Debugger);
         assert!(has_debugger, "Bug fix should include an investigation step");
     }
 
@@ -1470,8 +1481,14 @@ mod tests {
         );
         assert_eq!(plan.task_type, TaskType::Refactor);
         assert!(!plan.steps.is_empty());
-        let has_architect = plan.steps.iter().any(|s| s.assigned_role == AgentRole::Architect);
-        assert!(has_architect, "Refactor should include architecture analysis");
+        let has_architect = plan
+            .steps
+            .iter()
+            .any(|s| s.assigned_role == AgentRole::Architect);
+        assert!(
+            has_architect,
+            "Refactor should include architecture analysis"
+        );
     }
 
     #[test]
@@ -1484,34 +1501,70 @@ mod tests {
         assert_eq!(plan.task_type, TaskType::AddTests);
         // One test step per source file + run step
         assert!(plan.steps.len() >= 2);
-        assert!(plan.steps.iter().all(|s| s.assigned_role == AgentRole::Tester));
+        assert!(plan
+            .steps
+            .iter()
+            .all(|s| s.assigned_role == AgentRole::Tester));
     }
 
     #[test]
     fn test_infer_task_type_feature() {
-        assert_eq!(CodePlanner::infer_task_type("Add new dashboard widget"), TaskType::Feature);
-        assert_eq!(CodePlanner::infer_task_type("Implement user profile page"), TaskType::Feature);
+        assert_eq!(
+            CodePlanner::infer_task_type("Add new dashboard widget"),
+            TaskType::Feature
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Implement user profile page"),
+            TaskType::Feature
+        );
     }
 
     #[test]
     fn test_infer_task_type_bugfix() {
-        assert_eq!(CodePlanner::infer_task_type("Fix login error"), TaskType::BugFix);
-        assert_eq!(CodePlanner::infer_task_type("Bug in payment processing"), TaskType::BugFix);
-        assert_eq!(CodePlanner::infer_task_type("Application crashes on startup"), TaskType::BugFix);
+        assert_eq!(
+            CodePlanner::infer_task_type("Fix login error"),
+            TaskType::BugFix
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Bug in payment processing"),
+            TaskType::BugFix
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Application crashes on startup"),
+            TaskType::BugFix
+        );
     }
 
     #[test]
     fn test_infer_task_type_refactor() {
-        assert_eq!(CodePlanner::infer_task_type("Refactor database layer"), TaskType::Refactor);
-        assert_eq!(CodePlanner::infer_task_type("Rename UserService to AccountService"), TaskType::Refactor);
-        assert_eq!(CodePlanner::infer_task_type("Extract common utilities"), TaskType::Refactor);
+        assert_eq!(
+            CodePlanner::infer_task_type("Refactor database layer"),
+            TaskType::Refactor
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Rename UserService to AccountService"),
+            TaskType::Refactor
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Extract common utilities"),
+            TaskType::Refactor
+        );
     }
 
     #[test]
     fn test_infer_task_type_security() {
-        assert_eq!(CodePlanner::infer_task_type("Fix security vulnerability"), TaskType::SecurityFix);
-        assert_eq!(CodePlanner::infer_task_type("Harden authentication"), TaskType::SecurityFix);
-        assert_eq!(CodePlanner::infer_task_type("Patch CVE-2024-1234"), TaskType::SecurityFix);
+        assert_eq!(
+            CodePlanner::infer_task_type("Fix security vulnerability"),
+            TaskType::SecurityFix
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Harden authentication"),
+            TaskType::SecurityFix
+        );
+        assert_eq!(
+            CodePlanner::infer_task_type("Patch CVE-2024-1234"),
+            TaskType::SecurityFix
+        );
     }
 
     #[test]
@@ -1629,7 +1682,10 @@ mod tests {
         let planner = CodePlanner::new();
         let plan = planner.plan_feature("Test feature", "A simple feature", &["src/main.rs"]);
         let result = planner.validate_plan(&plan);
-        assert!(result.is_ok(), "Valid plan should pass validation: {result:?}");
+        assert!(
+            result.is_ok(),
+            "Valid plan should pass validation: {result:?}"
+        );
     }
 
     #[test]
@@ -1797,7 +1853,10 @@ mod tests {
         assert!(md.contains("# Markdown test"), "Should contain title");
         assert!(md.contains("**Type:** Feature"), "Should contain task type");
         assert!(md.contains("## Steps"), "Should contain steps section");
-        assert!(md.contains("## Risk Assessment"), "Should contain risk section");
+        assert!(
+            md.contains("## Risk Assessment"),
+            "Should contain risk section"
+        );
     }
 
     #[test]
@@ -1807,13 +1866,25 @@ mod tests {
         let prompt = planner.step_prompt(&plan, 0);
 
         assert!(prompt.contains("Prompt test"), "Should contain plan title");
-        assert!(prompt.contains("## Instructions"), "Should contain instructions");
-        assert!(prompt.contains("## Constraints"), "Should contain constraints");
-        assert!(prompt.contains(".unwrap()"), "Should mention unwrap constraint");
+        assert!(
+            prompt.contains("## Instructions"),
+            "Should contain instructions"
+        );
+        assert!(
+            prompt.contains("## Constraints"),
+            "Should contain constraints"
+        );
+        assert!(
+            prompt.contains(".unwrap()"),
+            "Should mention unwrap constraint"
+        );
 
         // Out-of-range index
         let error_prompt = planner.step_prompt(&plan, 999);
-        assert!(error_prompt.contains("Error"), "Should return error for invalid index");
+        assert!(
+            error_prompt.contains("Error"),
+            "Should return error for invalid index"
+        );
     }
 
     #[test]
@@ -1823,11 +1894,19 @@ mod tests {
             Effort::Small,
         );
         assert_eq!(
-            CodePlanner::estimate_step_effort(&FileOperation::Rename { new_path: "new.rs".into() }, "Rename module"),
+            CodePlanner::estimate_step_effort(
+                &FileOperation::Rename {
+                    new_path: "new.rs".into()
+                },
+                "Rename module"
+            ),
             Effort::Small,
         );
         assert_eq!(
-            CodePlanner::estimate_step_effort(&FileOperation::Create, "Create a new file with some code"),
+            CodePlanner::estimate_step_effort(
+                &FileOperation::Create,
+                "Create a new file with some code"
+            ),
             Effort::Medium,
         );
         // Large: Create with a very long description (>30 words)

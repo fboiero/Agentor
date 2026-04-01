@@ -531,7 +531,10 @@ mod tests {
         let k3 = CacheKey::compute("m", &msgs("msg-3"));
         c.put(k3, "r3", "m", 10);
 
-        assert!(c.get(&k0).is_some(), "k0 was accessed recently, should survive");
+        assert!(
+            c.get(&k0).is_some(),
+            "k0 was accessed recently, should survive"
+        );
         assert!(c.get(&k1).is_none(), "k1 should be evicted");
     }
 

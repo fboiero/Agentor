@@ -318,11 +318,7 @@ impl AnalyticsEngine {
     }
 
     /// Compute the full analytics dashboard for a tenant and period.
-    pub async fn get_dashboard(
-        &self,
-        tenant_id: &str,
-        period: &str,
-    ) -> AnalyticsDashboard {
+    pub async fn get_dashboard(&self, tenant_id: &str, period: &str) -> AnalyticsDashboard {
         let data = self.data.read().await;
         let empty = TenantData::default();
         let tenant = data.get(tenant_id).unwrap_or(&empty);
@@ -351,11 +347,7 @@ impl AnalyticsEngine {
         };
 
         let total_duration: u64 = interactions.iter().map(|i| i.duration_ms).sum();
-        let avg_response_time_ms = if total > 0 {
-            total_duration / total
-        } else {
-            0
-        };
+        let avg_response_time_ms = if total > 0 { total_duration / total } else { 0 };
 
         let total_tokens: u64 = interactions.iter().map(|i| i.tokens_used).sum();
         let cost_total_usd = (total_tokens as f64 / 1000.0) * COST_PER_1K_TOKENS;
@@ -487,11 +479,7 @@ impl AnalyticsEngine {
         };
 
         let total_duration: u64 = interactions.iter().map(|i| i.duration_ms).sum();
-        let avg_duration_ms = if total > 0 {
-            total_duration / total
-        } else {
-            0
-        };
+        let avg_duration_ms = if total > 0 { total_duration / total } else { 0 };
 
         let avg_quality = if quality.is_empty() {
             0.0
@@ -636,7 +624,11 @@ fn build_daily_trend(
     }
 
     // Merge into daily metrics
-    let mut all_dates: Vec<NaiveDate> = by_date.keys().chain(quality_by_date.keys()).copied().collect();
+    let mut all_dates: Vec<NaiveDate> = by_date
+        .keys()
+        .chain(quality_by_date.keys())
+        .copied()
+        .collect();
     all_dates.sort();
     all_dates.dedup();
 
@@ -701,14 +693,8 @@ pub fn analytics_router(state: Arc<AnalyticsState>) -> Router {
             "/api/v1/analytics/{tenant_id}/agents/{role}",
             get(agent_performance_handler),
         )
-        .route(
-            "/api/v1/analytics/{tenant_id}/funnel",
-            get(funnel_handler),
-        )
-        .route(
-            "/api/v1/analytics/{tenant_id}/trends",
-            get(trends_handler),
-        )
+        .route("/api/v1/analytics/{tenant_id}/funnel", get(funnel_handler))
+        .route("/api/v1/analytics/{tenant_id}/trends", get(trends_handler))
         .with_state(state)
 }
 
@@ -855,7 +841,14 @@ mod tests {
     #[tokio::test]
     async fn test_record_interaction() {
         let engine = AnalyticsEngine::new();
-        let event = make_interaction("t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100);
+        let event = make_interaction(
+            "t1",
+            "sales",
+            "chat",
+            InteractionOutcome::Resolved,
+            500,
+            100,
+        );
         engine.record_interaction(event).await;
         let dashboard = engine.get_dashboard("t1", "last_30d").await;
         assert_eq!(dashboard.total_interactions, 1);
@@ -866,12 +859,22 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Escalated, 800, 200,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Escalated,
+                800,
+                200,
             ))
             .await;
         let dashboard = engine.get_dashboard("t1", "last_30d").await;
@@ -884,12 +887,22 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 400, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                400,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 600, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                600,
+                100,
             ))
             .await;
         let dashboard = engine.get_dashboard("t1", "last_30d").await;
@@ -915,7 +928,12 @@ mod tests {
         // All resolved → resolution_rate = 1.0
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         // Quality = 0.8
@@ -933,7 +951,12 @@ mod tests {
         // 10_000 tokens → (10_000 / 1000) * 0.003 = 0.03 USD
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 10_000,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                10_000,
             ))
             .await;
         let dashboard = engine.get_dashboard("t1", "last_30d").await;
@@ -946,12 +969,22 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "support", "email", InteractionOutcome::Escalated, 1000, 200,
+                "t1",
+                "support",
+                "email",
+                InteractionOutcome::Escalated,
+                1000,
+                200,
             ))
             .await;
         let dashboard = engine.get_dashboard("t1", "last_30d").await;
@@ -965,17 +998,32 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "email", InteractionOutcome::Resolved, 700, 100,
+                "t1",
+                "sales",
+                "email",
+                InteractionOutcome::Resolved,
+                700,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Escalated, 600, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Escalated,
+                600,
+                100,
             ))
             .await;
         let dashboard = engine.get_dashboard("t1", "last_30d").await;
@@ -989,12 +1037,22 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "email", InteractionOutcome::Escalated, 700, 200,
+                "t1",
+                "sales",
+                "email",
+                InteractionOutcome::Escalated,
+                700,
+                200,
             ))
             .await;
         engine
@@ -1083,23 +1141,41 @@ mod tests {
 
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100, two_days_ago,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
+                two_days_ago,
             ))
             .await;
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Escalated, 700, 200, yesterday,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Escalated,
+                700,
+                200,
+                yesterday,
             ))
             .await;
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 300, 50, now,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                300,
+                50,
+                now,
             ))
             .await;
 
         let trends = engine.get_trends("t1", 7).await;
         assert!(trends.len() >= 2); // at least 2 distinct days (yesterday and today or 3)
-        // Verify chronological order
+                                    // Verify chronological order
         for window in trends.windows(2) {
             assert!(window[0].date <= window[1].date);
         }
@@ -1112,12 +1188,24 @@ mod tests {
 
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 1000, now,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                1000,
+                now,
             ))
             .await;
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Escalated, 700, 2000, now,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Escalated,
+                700,
+                2000,
+                now,
             ))
             .await;
         engine
@@ -1143,12 +1231,24 @@ mod tests {
 
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100, old,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
+                old,
             ))
             .await;
         engine
             .record_interaction(make_interaction_at(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100, now,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
+                now,
             ))
             .await;
 
@@ -1164,12 +1264,22 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t2", "support", "email", InteractionOutcome::Escalated, 700, 200,
+                "t2",
+                "support",
+                "email",
+                InteractionOutcome::Escalated,
+                700,
+                200,
             ))
             .await;
 
@@ -1202,8 +1312,7 @@ mod tests {
     async fn test_interaction_outcome_serialization() {
         let resolved = serde_json::to_string(&InteractionOutcome::Resolved).unwrap();
         assert_eq!(resolved, "\"Resolved\"");
-        let escalated: InteractionOutcome =
-            serde_json::from_str("\"Escalated\"").unwrap();
+        let escalated: InteractionOutcome = serde_json::from_str("\"Escalated\"").unwrap();
         assert_eq!(escalated, InteractionOutcome::Escalated);
     }
 
@@ -1212,7 +1321,12 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "t1",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         let cloned = engine.clone();
@@ -1228,7 +1342,12 @@ mod tests {
         state
             .engine
             .record_interaction(make_interaction(
-                "acme", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "acme",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
 
@@ -1258,7 +1377,12 @@ mod tests {
         state
             .engine
             .record_interaction(make_interaction(
-                "acme", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "acme",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
         state
@@ -1324,7 +1448,12 @@ mod tests {
         state
             .engine
             .record_interaction(make_interaction(
-                "acme", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "acme",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
 
@@ -1353,7 +1482,12 @@ mod tests {
         state
             .engine
             .record_interaction(make_interaction(
-                "acme", "sales", "chat", InteractionOutcome::Resolved, 500, 100,
+                "acme",
+                "sales",
+                "chat",
+                InteractionOutcome::Resolved,
+                500,
+                100,
             ))
             .await;
 
@@ -1394,22 +1528,42 @@ mod tests {
         let engine = AnalyticsEngine::new();
         engine
             .record_interaction(make_interaction(
-                "t1", "a", "chat", InteractionOutcome::Resolved, 100, 10,
+                "t1",
+                "a",
+                "chat",
+                InteractionOutcome::Resolved,
+                100,
+                10,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "a", "chat", InteractionOutcome::Escalated, 200, 20,
+                "t1",
+                "a",
+                "chat",
+                InteractionOutcome::Escalated,
+                200,
+                20,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "a", "chat", InteractionOutcome::Pending, 300, 30,
+                "t1",
+                "a",
+                "chat",
+                InteractionOutcome::Pending,
+                300,
+                30,
             ))
             .await;
         engine
             .record_interaction(make_interaction(
-                "t1", "a", "chat", InteractionOutcome::Abandoned, 400, 40,
+                "t1",
+                "a",
+                "chat",
+                InteractionOutcome::Abandoned,
+                400,
+                40,
             ))
             .await;
 

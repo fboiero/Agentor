@@ -334,10 +334,7 @@ impl ResponseEvaluator {
     /// computes the ratio of question keywords found in the response.
     fn score_relevance(&self, question: &str, response: &str) -> f32 {
         let q_lower = question.to_lowercase();
-        let q_words: HashSet<&str> = q_lower
-            .split_whitespace()
-            .filter(|w| w.len() > 3)
-            .collect();
+        let q_words: HashSet<&str> = q_lower.split_whitespace().filter(|w| w.len() > 3).collect();
 
         if q_words.is_empty() {
             return 0.5;
@@ -417,10 +414,7 @@ impl ResponseEvaluator {
         if avg_line_len < 200 {
             score += 0.1; // Not giant paragraphs
         }
-        if response.contains("```")
-            || response.contains("- ")
-            || response.contains("1.")
-        {
+        if response.contains("```") || response.contains("- ") || response.contains("1.") {
             score += 0.2; // Has formatting
         }
         score.min(1.0)
@@ -569,9 +563,21 @@ mod tests {
         let score = evaluator.evaluate_heuristic(question, response, &tool_results);
 
         // Should score well on all dimensions
-        assert!(score.overall > 0.5, "Overall should be > 0.5, got {}", score.overall);
-        assert!(score.relevance > 0.3, "Relevance should be > 0.3, got {}", score.relevance);
-        assert!(score.completeness >= 0.8, "Completeness should be >= 0.8, got {}", score.completeness);
+        assert!(
+            score.overall > 0.5,
+            "Overall should be > 0.5, got {}",
+            score.overall
+        );
+        assert!(
+            score.relevance > 0.3,
+            "Relevance should be > 0.3, got {}",
+            score.relevance
+        );
+        assert!(
+            score.completeness >= 0.8,
+            "Completeness should be >= 0.8, got {}",
+            score.completeness
+        );
     }
 
     #[test]
@@ -584,7 +590,11 @@ mod tests {
         let score = evaluator.evaluate_heuristic(question, response, &tool_results);
 
         // Short response should score low on completeness
-        assert!(score.completeness <= 0.4, "Completeness should be <= 0.4, got {}", score.completeness);
+        assert!(
+            score.completeness <= 0.4,
+            "Completeness should be <= 0.4, got {}",
+            score.completeness
+        );
     }
 
     #[test]
@@ -599,7 +609,11 @@ mod tests {
         let score = evaluator.evaluate_heuristic(question, response, &tool_results);
 
         // Irrelevant response should have low relevance
-        assert!(score.relevance < 0.5, "Relevance should be < 0.5, got {}", score.relevance);
+        assert!(
+            score.relevance < 0.5,
+            "Relevance should be < 0.5, got {}",
+            score.relevance
+        );
     }
 
     // --- Individual scoring function tests ---
@@ -636,7 +650,10 @@ mod tests {
 
         let score = evaluator.score_relevance(question, response);
         // Should return 0.5 default since no words > 3 chars
-        assert!((score - 0.5).abs() < f32::EPSILON, "Expected 0.5, got {score}");
+        assert!(
+            (score - 0.5).abs() < f32::EPSILON,
+            "Expected 0.5, got {score}"
+        );
     }
 
     #[test]
@@ -660,20 +677,25 @@ mod tests {
         let tool_results: Vec<String> = vec![];
 
         let score = evaluator.score_consistency(response, &tool_results);
-        assert!((score - 1.0).abs() < f32::EPSILON, "No tools should give 1.0, got {score}");
+        assert!(
+            (score - 1.0).abs() < f32::EPSILON,
+            "No tools should give 1.0, got {score}"
+        );
     }
 
     #[test]
     fn test_score_consistency_unreferenced_tools() {
         let evaluator = ResponseEvaluator::with_defaults();
         let response = "The answer is 42.";
-        let tool_results = vec![
-            "Database query returned: customer records for enterprise accounts".to_string(),
-        ];
+        let tool_results =
+            vec!["Database query returned: customer records for enterprise accounts".to_string()];
 
         let score = evaluator.score_consistency(response, &tool_results);
         // None of the key words from tool results appear in the response
-        assert!(score < 1.0, "Unreferenced tool results should score < 1.0, got {score}");
+        assert!(
+            score < 1.0,
+            "Unreferenced tool results should score < 1.0, got {score}"
+        );
     }
 
     #[test]
@@ -684,7 +706,9 @@ mod tests {
         assert!((evaluator.score_completeness("Short.") - 0.2).abs() < f32::EPSILON);
 
         // 20-49 chars -> 0.4
-        assert!((evaluator.score_completeness("This is a bit longer now.") - 0.4).abs() < f32::EPSILON);
+        assert!(
+            (evaluator.score_completeness("This is a bit longer now.") - 0.4).abs() < f32::EPSILON
+        );
 
         // 50-99 chars -> 0.6
         let medium = "This is a medium-length response that has some substance to it at least.";
@@ -713,17 +737,24 @@ mod tests {
 
         let score = evaluator.score_clarity(structured);
         // Multiple lines (+0.2), short avg line (+0.1), has formatting (+0.2) = 1.0
-        assert!(score >= 0.9, "Structured response should score >= 0.9, got {score}");
+        assert!(
+            score >= 0.9,
+            "Structured response should score >= 0.9, got {score}"
+        );
     }
 
     #[test]
     fn test_score_clarity_unstructured() {
         let evaluator = ResponseEvaluator::with_defaults();
-        let unstructured = "This is a single line of text without any formatting or structure whatsoever.";
+        let unstructured =
+            "This is a single line of text without any formatting or structure whatsoever.";
 
         let score = evaluator.score_clarity(unstructured);
         // Single line: 0.5 base + 0.1 (avg_line_len < 200) = 0.6
-        assert!(score < 0.8, "Unstructured response should score < 0.8, got {score}");
+        assert!(
+            score < 0.8,
+            "Unstructured response should score < 0.8, got {score}"
+        );
     }
 
     // --- determine_action tests ---

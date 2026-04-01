@@ -93,7 +93,11 @@ impl ApiParameter {
     }
 
     /// Create an optional query parameter.
-    pub fn query(name: impl Into<String>, data_type: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn query(
+        name: impl Into<String>,
+        data_type: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             name: name.into(),
             location: ParameterLocation::Query,
@@ -166,11 +170,7 @@ pub struct ApiEndpoint {
 
 impl ApiEndpoint {
     /// Create a new endpoint.
-    pub fn new(
-        method: HttpMethod,
-        path: impl Into<String>,
-        summary: impl Into<String>,
-    ) -> Self {
+    pub fn new(method: HttpMethod, path: impl Into<String>, summary: impl Into<String>) -> Self {
         Self {
             path: path.into(),
             method,
@@ -267,7 +267,10 @@ impl OpenApiGenerator {
 
             if let Some(obj) = path_entry.as_object_mut() {
                 let mut operation = serde_json::Map::new();
-                operation.insert("summary".to_string(), serde_json::Value::String(endpoint.summary.clone()));
+                operation.insert(
+                    "summary".to_string(),
+                    serde_json::Value::String(endpoint.summary.clone()),
+                );
 
                 if !endpoint.description.is_empty() {
                     operation.insert(
@@ -334,7 +337,10 @@ impl OpenApiGenerator {
                         serde_json::Value::Object(resp_obj),
                     );
                 }
-                operation.insert("responses".to_string(), serde_json::Value::Object(responses_map));
+                operation.insert(
+                    "responses".to_string(),
+                    serde_json::Value::Object(responses_map),
+                );
 
                 // Security
                 if endpoint.auth_required {
@@ -390,8 +396,16 @@ impl OpenApiGenerator {
 
         // Core endpoints
         gen.add_endpoint(ApiEndpoint::new(HttpMethod::Get, "/health", "Health check"));
-        gen.add_endpoint(ApiEndpoint::new(HttpMethod::Get, "/metrics", "Prometheus metrics"));
-        gen.add_endpoint(ApiEndpoint::new(HttpMethod::Get, "/dashboard", "Web dashboard"));
+        gen.add_endpoint(ApiEndpoint::new(
+            HttpMethod::Get,
+            "/metrics",
+            "Prometheus metrics",
+        ));
+        gen.add_endpoint(ApiEndpoint::new(
+            HttpMethod::Get,
+            "/dashboard",
+            "Web dashboard",
+        ));
 
         // Sessions
         gen.add_endpoint(
@@ -405,20 +419,27 @@ impl OpenApiGenerator {
 
         // Skills
         gen.add_endpoint(
-            ApiEndpoint::new(HttpMethod::Get, "/api/v1/skills", "List skills")
-                .with_tag("Skills"),
+            ApiEndpoint::new(HttpMethod::Get, "/api/v1/skills", "List skills").with_tag("Skills"),
         );
 
         // Control plane
         gen.add_endpoint(
-            ApiEndpoint::new(HttpMethod::Get, "/api/v1/control-plane/deployments", "List deployments")
-                .with_tag("Control Plane")
-                .requires_auth(),
+            ApiEndpoint::new(
+                HttpMethod::Get,
+                "/api/v1/control-plane/deployments",
+                "List deployments",
+            )
+            .with_tag("Control Plane")
+            .requires_auth(),
         );
         gen.add_endpoint(
-            ApiEndpoint::new(HttpMethod::Post, "/api/v1/control-plane/deployments", "Create deployment")
-                .with_tag("Control Plane")
-                .requires_auth(),
+            ApiEndpoint::new(
+                HttpMethod::Post,
+                "/api/v1/control-plane/deployments",
+                "Create deployment",
+            )
+            .with_tag("Control Plane")
+            .requires_auth(),
         );
 
         gen
@@ -496,10 +517,7 @@ mod tests {
     #[test]
     fn test_auth_required() {
         let mut gen = OpenApiGenerator::new("Test", "1.0");
-        gen.add_endpoint(
-            ApiEndpoint::new(HttpMethod::Post, "/secure", "Secure")
-                .requires_auth(),
-        );
+        gen.add_endpoint(ApiEndpoint::new(HttpMethod::Post, "/secure", "Secure").requires_auth());
         let spec = gen.generate();
         assert!(spec["paths"]["/secure"]["post"]["security"].is_array());
     }
@@ -518,8 +536,7 @@ mod tests {
     // 7. Server URL
     #[test]
     fn test_server_url() {
-        let gen = OpenApiGenerator::new("Test", "1.0")
-            .with_server("https://api.example.com");
+        let gen = OpenApiGenerator::new("Test", "1.0").with_server("https://api.example.com");
         let spec = gen.generate();
         assert_eq!(spec["servers"][0]["url"], "https://api.example.com");
     }
@@ -563,10 +580,7 @@ mod tests {
         let mut gen = OpenApiGenerator::new("Test", "1.0");
         gen.add_endpoint(
             ApiEndpoint::new(HttpMethod::Get, "/status", "Status")
-                .with_response(
-                    ApiResponse::json(200, "OK")
-                        .with_example(r#"{"status": "ok"}"#),
-                ),
+                .with_response(ApiResponse::json(200, "OK").with_example(r#"{"status": "ok"}"#)),
         );
         let spec = gen.generate();
         assert!(spec["paths"]["/status"]["get"]["responses"]["200"].is_object());
@@ -619,8 +633,7 @@ mod tests {
     // 18. Description
     #[test]
     fn test_description() {
-        let gen = OpenApiGenerator::new("Test", "1.0")
-            .with_description("My API");
+        let gen = OpenApiGenerator::new("Test", "1.0").with_description("My API");
         let spec = gen.generate();
         assert_eq!(spec["info"]["description"], "My API");
     }

@@ -58,10 +58,7 @@ pub struct FieldDefinition {
 
 impl FieldDefinition {
     /// Create a new required field definition.
-    pub fn required(
-        name: impl Into<String>,
-        field_type: FieldType,
-    ) -> Self {
+    pub fn required(name: impl Into<String>, field_type: FieldType) -> Self {
         Self {
             name: name.into(),
             field_type,
@@ -138,9 +135,15 @@ impl OutputSchema {
             };
 
             let mut prop = serde_json::Map::new();
-            prop.insert("type".to_string(), serde_json::Value::String(type_str.to_string()));
+            prop.insert(
+                "type".to_string(),
+                serde_json::Value::String(type_str.to_string()),
+            );
             if let Some(desc) = &field.description {
-                prop.insert("description".to_string(), serde_json::Value::String(desc.clone()));
+                prop.insert(
+                    "description".to_string(),
+                    serde_json::Value::String(desc.clone()),
+                );
             }
             properties.insert(field.name.clone(), serde_json::Value::Object(prop));
 
@@ -515,7 +518,8 @@ mod tests {
     // 1. Parse JSON from markdown code block
     #[test]
     fn test_markdown_code_block() {
-        let parser = StructuredOutputParser::new(test_schema(), ExtractionPattern::MarkdownCodeBlock);
+        let parser =
+            StructuredOutputParser::new(test_schema(), ExtractionPattern::MarkdownCodeBlock);
         let text = r#"Here is the result:
 ```json
 {"name": "Alice", "age": 30}
@@ -674,8 +678,8 @@ mod tests {
     // 15. FieldType::Any accepts everything
     #[test]
     fn test_any_type() {
-        let schema = OutputSchema::new("any")
-            .with_field(FieldDefinition::required("value", FieldType::Any));
+        let schema =
+            OutputSchema::new("any").with_field(FieldDefinition::required("value", FieldType::Any));
         let parser = StructuredOutputParser::new(schema, ExtractionPattern::JsonBlock);
 
         for text in &[
@@ -692,7 +696,8 @@ mod tests {
     // 16. Code block without json language tag
     #[test]
     fn test_code_block_no_lang() {
-        let parser = StructuredOutputParser::new(test_schema(), ExtractionPattern::MarkdownCodeBlock);
+        let parser =
+            StructuredOutputParser::new(test_schema(), ExtractionPattern::MarkdownCodeBlock);
         let text = "```\n{\"name\": \"NoLang\", \"age\": 5}\n```";
         let result = parser.parse(text);
         assert!(result.is_valid);

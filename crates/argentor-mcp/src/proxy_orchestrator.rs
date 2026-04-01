@@ -376,9 +376,7 @@ impl ProxyOrchestrator {
             let half_open: Vec<usize> = proxies
                 .iter()
                 .enumerate()
-                .filter(|(_, p)| {
-                    p.group == target_group && p.enabled && self.is_half_open(p)
-                })
+                .filter(|(_, p)| p.group == target_group && p.enabled && self.is_half_open(p))
                 .map(|(i, _)| i)
                 .collect();
 
@@ -919,8 +917,7 @@ mod tests {
 
         orch.add_proxy("p_github", "github", p_github.clone())
             .unwrap();
-        orch.add_proxy("p_slack", "slack", p_slack.clone())
-            .unwrap();
+        orch.add_proxy("p_slack", "slack", p_slack.clone()).unwrap();
 
         orch.add_rule(RoutingRule {
             name: "github".into(),
@@ -1142,8 +1139,7 @@ mod tests {
         let p_low = make_proxy();
         orch.add_proxy("p_high", "high_prio", p_high.clone())
             .unwrap();
-        orch.add_proxy("p_low", "low_prio", p_low.clone())
-            .unwrap();
+        orch.add_proxy("p_low", "low_prio", p_low.clone()).unwrap();
 
         // Lower priority rule is added first.
         orch.add_rule(RoutingRule {
@@ -1194,7 +1190,11 @@ mod tests {
 
         let result = orch.route(&call, "a", None);
         assert!(result.is_err());
-        assert!(result.err().unwrap().to_string().contains("No routing rule matches"));
+        assert!(result
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("No routing rule matches"));
     }
 
     // ----- empty orchestrator → error -------------------------------------
@@ -1211,7 +1211,11 @@ mod tests {
 
         let result = orch.route(&call, "a", None);
         assert!(result.is_err());
-        assert!(result.err().unwrap().to_string().contains("No proxies registered"));
+        assert!(result
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("No proxies registered"));
     }
 
     // ----- pattern matching -----------------------------------------------

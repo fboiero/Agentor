@@ -45,7 +45,7 @@ Argentor also provides a complete platform for building multi-agent systems — 
 ## Key Features
 
 ### Core Runtime
-- **Rust 1.75+** with strict clippy lints (`unwrap_used`, `expect_used`, etc.) — zero warnings
+- **Rust 1.75+** with strict clippy lints (`unwrap_used`, `expect_used`, etc.) — zero errors, warnings in CI
 - **Multi-provider LLM support** — Claude, OpenAI, Gemini, OpenRouter, Groq, Ollama, Mistral, XAi, Azure OpenAI, Cerebras, Together, DeepSeek, and more (14 providers)
 - **Automatic failover** across LLM backends with `RetryPolicy` (exponential backoff, error classification)
 - **Circuit breaker** per LLM provider (Closed→Open→HalfOpen state machine) — integrated into AgentRunner

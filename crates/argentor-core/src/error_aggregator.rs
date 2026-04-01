@@ -108,7 +108,10 @@ fn normalize_message(msg: &str) -> String {
     while let Some(ch) = chars.next() {
         if ch.is_ascii_digit() {
             // Skip all consecutive digits, replace with <N>
-            while chars.peek().is_some_and(|c| c.is_ascii_digit() || *c == '-') {
+            while chars
+                .peek()
+                .is_some_and(|c| c.is_ascii_digit() || *c == '-')
+            {
                 chars.next();
             }
             result.push_str("<N>");
@@ -307,17 +310,20 @@ impl ErrorAggregator {
         *inner.by_category.entry(cat_label).or_insert(0) += 1;
 
         // Update or create group
-        let group = inner.groups.entry(fingerprint).or_insert_with(|| ErrorGroup {
-            fingerprint: record.fingerprint.clone(),
-            message: message.clone(),
-            category,
-            max_severity: severity,
-            count: 0,
-            first_seen: now,
-            last_seen: now,
-            sources: Vec::new(),
-            sample_correlation_ids: Vec::new(),
-        });
+        let group = inner
+            .groups
+            .entry(fingerprint)
+            .or_insert_with(|| ErrorGroup {
+                fingerprint: record.fingerprint.clone(),
+                message: message.clone(),
+                category,
+                max_severity: severity,
+                count: 0,
+                first_seen: now,
+                last_seen: now,
+                sources: Vec::new(),
+                sample_correlation_ids: Vec::new(),
+            });
 
         group.count += 1;
         group.last_seen = now;
@@ -503,7 +509,13 @@ mod tests {
     #[test]
     fn test_record_increments_total() {
         let agg = aggregator();
-        agg.record("test error", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "test error",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
         assert_eq!(agg.total_errors(), 1);
     }
 
@@ -531,17 +543,38 @@ mod tests {
     #[test]
     fn test_different_errors_different_groups() {
         let agg = aggregator();
-        agg.record("error A", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
-        agg.record("error B", ErrorSeverity::Warning, ErrorCategory::Network, None, None);
+        agg.record(
+            "error A",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
+        agg.record(
+            "error B",
+            ErrorSeverity::Warning,
+            ErrorCategory::Network,
+            None,
+            None,
+        );
         assert_eq!(agg.unique_groups_count(), 2);
     }
 
     // 5. Fingerprint normalization groups similar messages
     #[test]
     fn test_fingerprint_normalization() {
-        let fp1 = ErrorFingerprint::compute(&ErrorCategory::Network, "timeout after 5000ms on request 123");
-        let fp2 = ErrorFingerprint::compute(&ErrorCategory::Network, "timeout after 3000ms on request 456");
-        assert_eq!(fp1, fp2, "Similar messages with different numbers should group together");
+        let fp1 = ErrorFingerprint::compute(
+            &ErrorCategory::Network,
+            "timeout after 5000ms on request 123",
+        );
+        let fp2 = ErrorFingerprint::compute(
+            &ErrorCategory::Network,
+            "timeout after 3000ms on request 456",
+        );
+        assert_eq!(
+            fp1, fp2,
+            "Similar messages with different numbers should group together"
+        );
     }
 
     // 6. Different categories produce different fingerprints
@@ -557,13 +590,31 @@ mod tests {
     fn test_top_groups_sorted() {
         let agg = aggregator();
         for _ in 0..3 {
-            agg.record("error A", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+            agg.record(
+                "error A",
+                ErrorSeverity::Error,
+                ErrorCategory::Internal,
+                None,
+                None,
+            );
         }
         for _ in 0..7 {
-            agg.record("error B", ErrorSeverity::Warning, ErrorCategory::Network, None, None);
+            agg.record(
+                "error B",
+                ErrorSeverity::Warning,
+                ErrorCategory::Network,
+                None,
+                None,
+            );
         }
         for _ in 0..1 {
-            agg.record("error C", ErrorSeverity::Critical, ErrorCategory::Auth, None, None);
+            agg.record(
+                "error C",
+                ErrorSeverity::Critical,
+                ErrorCategory::Auth,
+                None,
+                None,
+            );
         }
 
         let groups = agg.top_groups(10);
@@ -578,9 +629,16 @@ mod tests {
     fn test_top_groups_limit() {
         let agg = aggregator();
         let unique_msgs = [
-            "alpha failure", "beta failure", "gamma failure",
-            "delta failure", "epsilon failure", "zeta failure",
-            "eta failure", "theta failure", "iota failure", "kappa failure",
+            "alpha failure",
+            "beta failure",
+            "gamma failure",
+            "delta failure",
+            "epsilon failure",
+            "zeta failure",
+            "eta failure",
+            "theta failure",
+            "iota failure",
+            "kappa failure",
         ];
         for msg in &unique_msgs {
             agg.record(
@@ -599,9 +657,27 @@ mod tests {
     #[test]
     fn test_max_severity_escalation() {
         let agg = aggregator();
-        agg.record("error X", ErrorSeverity::Warning, ErrorCategory::Internal, None, None);
-        agg.record("error X", ErrorSeverity::Critical, ErrorCategory::Internal, None, None);
-        agg.record("error X", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "error X",
+            ErrorSeverity::Warning,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
+        agg.record(
+            "error X",
+            ErrorSeverity::Critical,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
+        agg.record(
+            "error X",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
 
         let groups = agg.top_groups(1);
         assert_eq!(groups[0].max_severity, ErrorSeverity::Critical);
@@ -660,10 +736,34 @@ mod tests {
     #[test]
     fn test_summary_severity_breakdown() {
         let agg = aggregator();
-        agg.record("e1", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
-        agg.record("e2", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
-        agg.record("w1", ErrorSeverity::Warning, ErrorCategory::Network, None, None);
-        agg.record("c1", ErrorSeverity::Critical, ErrorCategory::Auth, None, None);
+        agg.record(
+            "e1",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
+        agg.record(
+            "e2",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
+        agg.record(
+            "w1",
+            ErrorSeverity::Warning,
+            ErrorCategory::Network,
+            None,
+            None,
+        );
+        agg.record(
+            "c1",
+            ErrorSeverity::Critical,
+            ErrorCategory::Auth,
+            None,
+            None,
+        );
 
         let summary = agg.summary(10);
         assert_eq!(summary.total_errors, 4);
@@ -676,8 +776,20 @@ mod tests {
     #[test]
     fn test_clear() {
         let agg = aggregator();
-        agg.record("e1", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
-        agg.record("e2", ErrorSeverity::Warning, ErrorCategory::Network, None, None);
+        agg.record(
+            "e1",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
+        agg.record(
+            "e2",
+            ErrorSeverity::Warning,
+            ErrorCategory::Network,
+            None,
+            None,
+        );
         assert_eq!(agg.total_errors(), 2);
 
         agg.clear();
@@ -690,8 +802,16 @@ mod tests {
     fn test_record_eviction() {
         let agg = ErrorAggregator::new(5);
         let unique_msgs = [
-            "alpha error", "beta error", "gamma error", "delta error", "epsilon error",
-            "zeta error", "eta error", "theta error", "iota error", "kappa error",
+            "alpha error",
+            "beta error",
+            "gamma error",
+            "delta error",
+            "epsilon error",
+            "zeta error",
+            "eta error",
+            "theta error",
+            "iota error",
+            "kappa error",
         ];
         for msg in &unique_msgs {
             agg.record(
@@ -711,7 +831,13 @@ mod tests {
     #[test]
     fn test_get_group_by_fingerprint() {
         let agg = aggregator();
-        agg.record("specific error", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "specific error",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
 
         let fp = ErrorFingerprint::compute(&ErrorCategory::Internal, "specific error");
         let group = agg.group(&fp).unwrap();
@@ -734,7 +860,13 @@ mod tests {
         let fp = ErrorFingerprint::compute(&ErrorCategory::Internal, "trending error");
 
         // Record some errors
-        agg.record("trending error", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "trending error",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
 
         let trend = agg.trend(&fp, chrono::Duration::minutes(1), 5);
         assert_eq!(trend.fingerprint, fp);
@@ -756,7 +888,13 @@ mod tests {
     #[test]
     fn test_summary_serializable() {
         let agg = aggregator();
-        agg.record("e1", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "e1",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
         let summary = agg.summary(5);
         let json = serde_json::to_string(&summary).unwrap();
         assert!(json.contains("\"total_errors\":1"));
@@ -767,7 +905,13 @@ mod tests {
     fn test_clone_shares_state() {
         let a1 = aggregator();
         let a2 = a1.clone();
-        a1.record("error", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        a1.record(
+            "error",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
         assert_eq!(a2.total_errors(), 1);
     }
 
@@ -782,9 +926,21 @@ mod tests {
     #[test]
     fn test_first_last_seen() {
         let agg = aggregator();
-        agg.record("timed error", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "timed error",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
         std::thread::sleep(std::time::Duration::from_millis(10));
-        agg.record("timed error", ErrorSeverity::Error, ErrorCategory::Internal, None, None);
+        agg.record(
+            "timed error",
+            ErrorSeverity::Error,
+            ErrorCategory::Internal,
+            None,
+            None,
+        );
 
         let groups = agg.top_groups(1);
         assert!(groups[0].last_seen >= groups[0].first_seen);

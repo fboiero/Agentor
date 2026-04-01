@@ -4,8 +4,8 @@ use crate::task_queue::TaskQueue;
 use crate::types::{AgentProfile, AgentRole, Artifact, ArtifactKind, Task, TaskStatus};
 use argentor_agent::{AgentRunner, ModelConfig};
 use argentor_compliance::{ComplianceEvent, ComplianceHookChain};
-use argentor_core::event_bus::{Event, EventBus};
 use argentor_core::error_aggregator::{ErrorAggregator, ErrorCategory, ErrorSeverity};
+use argentor_core::event_bus::{Event, EventBus};
 use argentor_core::{ArgentorError, ArgentorResult};
 use argentor_mcp::{McpProxy, ToolDiscovery};
 use argentor_security::{AuditLog, PermissionSet};
@@ -613,15 +613,18 @@ impl Orchestrator {
                     }
                 }
                 // Emit event: task completed
-                ctx.event_bus.publish(Event::new(
-                    "orchestrator.task.completed",
-                    serde_json::json!({
-                        "task_id": task_id.to_string(),
-                        "role": role.to_string(),
-                        "duration_ms": duration.as_millis() as u64,
-                        "needs_review": needs_review,
-                    }),
-                ).with_source(format!("{role}")));
+                ctx.event_bus.publish(
+                    Event::new(
+                        "orchestrator.task.completed",
+                        serde_json::json!({
+                            "task_id": task_id.to_string(),
+                            "role": role.to_string(),
+                            "duration_ms": duration.as_millis() as u64,
+                            "needs_review": needs_review,
+                        }),
+                    )
+                    .with_source(format!("{role}")),
+                );
 
                 info!(task_id = %task_id, role = %role, needs_review = needs_review, "Task completed");
                 Ok(())
@@ -641,14 +644,17 @@ impl Orchestrator {
                 );
 
                 // Emit event: task failed
-                ctx.event_bus.publish(Event::new(
-                    "orchestrator.task.failed",
-                    serde_json::json!({
-                        "task_id": task_id.to_string(),
-                        "role": role.to_string(),
-                        "error": e.to_string(),
-                    }),
-                ).with_source(format!("{role}")));
+                ctx.event_bus.publish(
+                    Event::new(
+                        "orchestrator.task.failed",
+                        serde_json::json!({
+                            "task_id": task_id.to_string(),
+                            "role": role.to_string(),
+                            "error": e.to_string(),
+                        }),
+                    )
+                    .with_source(format!("{role}")),
+                );
 
                 error!(task_id = %task_id, role = %role, error = %e, "Task failed");
                 {

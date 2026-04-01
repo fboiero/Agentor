@@ -414,7 +414,10 @@ mod tests {
         );
 
         let trace = r.finalize();
-        assert_eq!(trace.steps[0].data.as_ref().unwrap()["path"], "/tmp/test.txt");
+        assert_eq!(
+            trace.steps[0].data.as_ref().unwrap()["path"],
+            "/tmp/test.txt"
+        );
     }
 
     // 9. Set metadata

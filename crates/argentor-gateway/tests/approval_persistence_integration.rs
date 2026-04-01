@@ -509,13 +509,11 @@ async fn persistence_load_populates_hashmaps_correctly() {
     // Verify the HashMap keys match the original IDs.
     assert!(state2.deployments.read().await.contains_key(&dep_id));
     assert!(state2.agent_definitions.read().await.contains_key(&def_id));
-    assert!(
-        state2
-            .health_states
-            .read()
-            .await
-            .contains_key(&health_agent_id)
-    );
+    assert!(state2
+        .health_states
+        .read()
+        .await
+        .contains_key(&health_agent_id));
 
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -608,11 +606,7 @@ async fn persistence_full_state_roundtrip() {
         .await
         .insert(health.agent_id, health);
 
-    state
-        .events
-        .write()
-        .await
-        .push(sample_event("full-event"));
+    state.events.write().await.push(sample_event("full-event"));
 
     save_control_plane_state(&store, &state).await.unwrap();
 

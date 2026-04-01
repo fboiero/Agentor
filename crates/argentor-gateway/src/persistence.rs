@@ -128,10 +128,7 @@ impl PersistentStore {
         })?;
 
         let data: T = serde_json::from_str(&contents).map_err(|e| {
-            ArgentorError::Gateway(format!(
-                "corrupted snapshot file {}: {e}",
-                path.display()
-            ))
+            ArgentorError::Gateway(format!("corrupted snapshot file {}: {e}", path.display()))
         })?;
 
         Ok(Some(data))
@@ -301,8 +298,8 @@ pub async fn load_control_plane_state(
     {
         let mut healths = state.health_states.write().await;
         for val in &snapshot.health_states {
-            let health: crate::control_plane::AgentHealthInfo =
-                serde_json::from_value(val.clone()).map_err(|e| {
+            let health: crate::control_plane::AgentHealthInfo = serde_json::from_value(val.clone())
+                .map_err(|e| {
                     ArgentorError::Gateway(format!("failed to deserialize health state: {e}"))
                 })?;
             healths.insert(health.agent_id, health);
@@ -632,9 +629,7 @@ mod tests {
         let pool = TokenPoolSnapshot {
             saved_at: Utc::now(),
             version: 1,
-            tokens: vec![
-                serde_json::json!({"provider": "openai", "remaining": 50000}),
-            ],
+            tokens: vec![serde_json::json!({"provider": "openai", "remaining": 50000})],
         };
 
         store.save("tokens", &pool).unwrap();

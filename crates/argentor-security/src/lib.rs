@@ -37,6 +37,9 @@ pub mod tenant_limits;
 /// TLS and mutual-TLS configuration.
 pub mod tls;
 
+pub use alert_engine::{
+    Alert, AlertCondition, AlertEngine, AlertEngineStats, AlertRule, AlertSeverity,
+};
 pub use audit::AuditLog;
 pub use audit_query::{query_audit_log, AuditFilter, AuditQueryResult};
 pub use capability::{is_private_ip, Capability, PermissionSet, ShellCheckResult};
@@ -48,10 +51,5 @@ pub use observability::{
 pub use rate_limit::RateLimiter;
 pub use rbac::{RbacDecision, RbacPolicy, Role};
 pub use sanitizer::Sanitizer;
+pub use sla_tracker::{Incident, SlaComplianceReport, SlaDefinition, SlaStatus, SlaTracker};
 pub use tls::TlsConfig;
-pub use alert_engine::{
-    Alert, AlertCondition, AlertEngine, AlertEngineStats, AlertRule, AlertSeverity,
-};
-pub use sla_tracker::{
-    Incident, SlaComplianceReport, SlaDefinition, SlaStatus, SlaTracker,
-};

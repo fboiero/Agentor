@@ -134,7 +134,10 @@ impl Skill for XcapitSearchSkill {
             .to_string();
 
         if query.is_empty() {
-            return Ok(ToolResult::error(&call.id, "Missing or empty 'query' parameter"));
+            return Ok(ToolResult::error(
+                &call.id,
+                "Missing or empty 'query' parameter",
+            ));
         }
 
         let mut parsed = reqwest::Url::parse(&format!("{}/api/v1/search/", self.base_url))
@@ -156,10 +159,7 @@ impl Skill for XcapitSearchSkill {
                     ))
                 }
             }
-            Err(e) => Ok(ToolResult::error(
-                &call.id,
-                format!("Request failed: {e}"),
-            )),
+            Err(e) => Ok(ToolResult::error(&call.id, format!("Request failed: {e}"))),
         }
     }
 }
@@ -256,10 +256,7 @@ impl Skill for XcapitLeadInfoSkill {
                     ))
                 }
             }
-            Err(e) => Ok(ToolResult::error(
-                &call.id,
-                format!("Request failed: {e}"),
-            )),
+            Err(e) => Ok(ToolResult::error(&call.id, format!("Request failed: {e}"))),
         }
     }
 }
@@ -356,10 +353,7 @@ impl Skill for XcapitTicketInfoSkill {
                     ))
                 }
             }
-            Err(e) => Ok(ToolResult::error(
-                &call.id,
-                format!("Request failed: {e}"),
-            )),
+            Err(e) => Ok(ToolResult::error(&call.id, format!("Request failed: {e}"))),
         }
     }
 }
@@ -453,7 +447,10 @@ impl Skill for XcapitKbSearchSkill {
             .to_string();
 
         if subject.is_empty() {
-            return Ok(ToolResult::error(&call.id, "Missing or empty 'subject' parameter"));
+            return Ok(ToolResult::error(
+                &call.id,
+                "Missing or empty 'subject' parameter",
+            ));
         }
         if description.is_empty() {
             return Ok(ToolResult::error(
@@ -462,11 +459,11 @@ impl Skill for XcapitKbSearchSkill {
             ));
         }
 
-        let mut parsed = reqwest::Url::parse(&format!(
-            "{}/api/v1/knowledge/for-ticket",
-            self.base_url
-        ))
-        .map_err(|e| argentor_core::ArgentorError::Skill(format!("Invalid base URL: {e}")))?;
+        let mut parsed =
+            reqwest::Url::parse(&format!("{}/api/v1/knowledge/for-ticket", self.base_url))
+                .map_err(|e| {
+                    argentor_core::ArgentorError::Skill(format!("Invalid base URL: {e}"))
+                })?;
         parsed
             .query_pairs_mut()
             .append_pair("subject", &subject)
@@ -487,10 +484,7 @@ impl Skill for XcapitKbSearchSkill {
                     ))
                 }
             }
-            Err(e) => Ok(ToolResult::error(
-                &call.id,
-                format!("Request failed: {e}"),
-            )),
+            Err(e) => Ok(ToolResult::error(&call.id, format!("Request failed: {e}"))),
         }
     }
 }
@@ -519,9 +513,8 @@ impl XcapitCustomer360Skill {
         Self {
             descriptor: SkillDescriptor {
                 name: "xcapitsff_customer360".to_string(),
-                description:
-                    "Retrieve the 360-degree customer view by customer ID from XcapitSFF."
-                        .to_string(),
+                description: "Retrieve the 360-degree customer view by customer ID from XcapitSFF."
+                    .to_string(),
                 parameters_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -589,10 +582,7 @@ impl Skill for XcapitCustomer360Skill {
                     ))
                 }
             }
-            Err(e) => Ok(ToolResult::error(
-                &call.id,
-                format!("Request failed: {e}"),
-            )),
+            Err(e) => Ok(ToolResult::error(&call.id, format!("Request failed: {e}"))),
         }
     }
 }
@@ -610,7 +600,10 @@ pub fn register_xcapitsff_skills(registry: &mut SkillRegistry, base_url: &str) {
     let client = build_xcapitsff_client();
     registry.register(Arc::new(XcapitSearchSkill::new(base_url, client.clone())));
     registry.register(Arc::new(XcapitLeadInfoSkill::new(base_url, client.clone())));
-    registry.register(Arc::new(XcapitTicketInfoSkill::new(base_url, client.clone())));
+    registry.register(Arc::new(XcapitTicketInfoSkill::new(
+        base_url,
+        client.clone(),
+    )));
     registry.register(Arc::new(XcapitKbSearchSkill::new(base_url, client.clone())));
     registry.register(Arc::new(XcapitCustomer360Skill::new(base_url, client)));
 }
@@ -785,9 +778,16 @@ mod tests {
 
         let client = build_xcapitsff_client();
         let skill = XcapitSearchSkill::new(&server.uri(), client);
-        let call = make_call("xcapitsff_search", serde_json::json!({"query": "test query"}));
+        let call = make_call(
+            "xcapitsff_search",
+            serde_json::json!({"query": "test query"}),
+        );
         let result = skill.execute(call).await.unwrap();
-        assert!(!result.is_error, "Expected success, got: {}", result.content);
+        assert!(
+            !result.is_error,
+            "Expected success, got: {}",
+            result.content
+        );
         assert!(result.content.contains("results"));
     }
 
@@ -807,7 +807,11 @@ mod tests {
         let skill = XcapitLeadInfoSkill::new(&server.uri(), client);
         let call = make_call("xcapitsff_lead_info", serde_json::json!({"lead_id": 42}));
         let result = skill.execute(call).await.unwrap();
-        assert!(!result.is_error, "Expected success, got: {}", result.content);
+        assert!(
+            !result.is_error,
+            "Expected success, got: {}",
+            result.content
+        );
         assert!(result.content.contains("John Doe"));
     }
 
@@ -825,9 +829,16 @@ mod tests {
 
         let client = build_xcapitsff_client();
         let skill = XcapitTicketInfoSkill::new(&server.uri(), client);
-        let call = make_call("xcapitsff_ticket_info", serde_json::json!({"ticket_id": 99}));
+        let call = make_call(
+            "xcapitsff_ticket_info",
+            serde_json::json!({"ticket_id": 99}),
+        );
         let result = skill.execute(call).await.unwrap();
-        assert!(!result.is_error, "Expected success, got: {}", result.content);
+        assert!(
+            !result.is_error,
+            "Expected success, got: {}",
+            result.content
+        );
         assert!(result.content.contains("open"));
     }
 
@@ -852,7 +863,11 @@ mod tests {
             serde_json::json!({"subject": "login issue", "description": "cannot login"}),
         );
         let result = skill.execute(call).await.unwrap();
-        assert!(!result.is_error, "Expected success, got: {}", result.content);
+        assert!(
+            !result.is_error,
+            "Expected success, got: {}",
+            result.content
+        );
         assert!(result.content.contains("Reset password"));
     }
 
@@ -874,7 +889,11 @@ mod tests {
             serde_json::json!({"customer_id": 7}),
         );
         let result = skill.execute(call).await.unwrap();
-        assert!(!result.is_error, "Expected success, got: {}", result.content);
+        assert!(
+            !result.is_error,
+            "Expected success, got: {}",
+            result.content
+        );
         assert!(result.content.contains("Acme Corp"));
     }
 
@@ -952,6 +971,9 @@ mod tests {
     #[test]
     fn test_host_from_url_extracts_host() {
         assert_eq!(host_from_url("http://my-host:8000"), "my-host");
-        assert_eq!(host_from_url("https://api.example.com/path"), "api.example.com");
+        assert_eq!(
+            host_from_url("https://api.example.com/path"),
+            "api.example.com"
+        );
     }
 }

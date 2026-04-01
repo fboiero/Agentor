@@ -21,9 +21,7 @@ use argentor_agent::backends::LlmBackend;
 use argentor_agent::stream::StreamEvent;
 use argentor_agent::{AgentRunner, ModelConfig};
 use argentor_core::{ArgentorError, ArgentorResult, Message};
-use argentor_gateway::xcapitsff::{
-    PersonaConfig, TenantUsageTracker, UsagePeriod,
-};
+use argentor_gateway::xcapitsff::{PersonaConfig, TenantUsageTracker, UsagePeriod};
 use argentor_security::{AuditLog, PermissionSet};
 use argentor_session::Session;
 use argentor_skills::{SkillDescriptor, SkillRegistry};
@@ -85,7 +83,9 @@ impl LlmBackend for DemoBackend {
         self.call_count.fetch_add(1, Ordering::SeqCst);
         let mut responses = self.responses.lock().await;
         if responses.is_empty() {
-            Err(ArgentorError::Agent("DemoBackend: no more responses".into()))
+            Err(ArgentorError::Agent(
+                "DemoBackend: no more responses".into(),
+            ))
         } else {
             tokio::time::sleep(Duration::from_millis(60)).await;
             Ok(responses.remove(0))
@@ -164,7 +164,10 @@ fn agent_box(role: &str, content: &str, model: &str, duration_ms: u64, tokens: u
     }
     let total_lines = content.lines().count();
     if total_lines > 12 {
-        println!("  {color}│{RST}  {DIM}... ({} more lines){RST}", total_lines - 12);
+        println!(
+            "  {color}│{RST}  {DIM}... ({} more lines){RST}",
+            total_lines - 12
+        );
     }
     println!("  {color}└──────────────────────────────────────{RST}");
 }
@@ -183,7 +186,12 @@ fn score_bar(score: f64) -> String {
     } else {
         RED
     };
-    format!("{color}{}{}{RST} {:.0}%", "█".repeat(filled), "░".repeat(empty), score * 100.0)
+    format!(
+        "{color}{}{}{RST} {:.0}%",
+        "█".repeat(filled),
+        "░".repeat(empty),
+        score * 100.0
+    )
 }
 
 async fn run_agent(
@@ -197,13 +205,7 @@ async fn run_agent(
 ) -> (String, u64, u64) {
     let start = Instant::now();
     let backend = DemoBackend::new(model, vec![response]);
-    let runner = AgentRunner::from_backend(
-        Box::new(backend),
-        skills,
-        permissions,
-        audit,
-        3,
-    );
+    let runner = AgentRunner::from_backend(Box::new(backend), skills, permissions, audit, 3);
     let mut session = Session::new();
     let result = runner.run(&mut session, context).await.unwrap();
     let dur = start.elapsed().as_millis() as u64;
@@ -213,7 +215,11 @@ async fn run_agent(
 
 // ── Scripted responses ─────────────────────────────────────────
 
-fn ticket_route_response(category: &str, priority: &str, confidence: f64) -> argentor_agent::llm::LlmResponse {
+fn ticket_route_response(
+    category: &str,
+    priority: &str,
+    confidence: f64,
+) -> argentor_agent::llm::LlmResponse {
     argentor_agent::llm::LlmResponse::Done(format!(
         r#"{{"category": "{category}", "priority": "{priority}", "confidence": {confidence:.2}, "requires_human_review": false, "reasoning": "Clasificado automáticamente por contenido del mensaje."}}"#
     ))
@@ -255,7 +261,12 @@ fn support_response_insurance() -> argentor_agent::llm::LlmResponse {
     )
 }
 
-fn qualify_lead(company: &str, score: u32, class: &str, action: &str) -> argentor_agent::llm::LlmResponse {
+fn qualify_lead(
+    company: &str,
+    score: u32,
+    class: &str,
+    action: &str,
+) -> argentor_agent::llm::LlmResponse {
     argentor_agent::llm::LlmResponse::Done(format!(
         "## {company}\n\n\
          **Score: {score}/100** → **{class}**\n\n\
@@ -284,7 +295,9 @@ fn outreach_email(company: &str, contact: &str) -> argentor_agent::llm::LlmRespo
 #[tokio::main]
 async fn main() {
     let total_start = Instant::now();
-    let audit = Arc::new(AuditLog::new(std::path::PathBuf::from("/tmp/argentor-demo-saas")));
+    let audit = Arc::new(AuditLog::new(std::path::PathBuf::from(
+        "/tmp/argentor-demo-saas",
+    )));
     let skills = Arc::new(SkillRegistry::new());
     let permissions = PermissionSet::new();
     let usage = TenantUsageTracker::new();
@@ -295,7 +308,11 @@ async fn main() {
     // ACT 1 — Tenant Onboarding
     // ═══════════════════════════════════════════════════════════
 
-    act(1, "Tenant Onboarding", "2 empresas configuran sus agentes AI personalizados");
+    act(
+        1,
+        "Tenant Onboarding",
+        "2 empresas configuran sus agentes AI personalizados",
+    );
 
     // Tenant 1: Xcapit (fintech)
     let persona_xcapit = PersonaConfig {
@@ -303,13 +320,23 @@ async fn main() {
         tone: "friendly_professional".to_string(),
         language_style: "es_latam_informal".to_string(),
         signature: "— Sofía, equipo Xcapit".to_string(),
-        custom_instructions: "Siempre ofrecer videollamada para temas de fondos. Usar vos/tuteo.".to_string(),
+        custom_instructions: "Siempre ofrecer videollamada para temas de fondos. Usar vos/tuteo."
+            .to_string(),
     };
 
-    step("🏢", &format!("{BOLD}Tenant: Xcapit{RST} (fintech, inversión automatizada)"));
+    step(
+        "🏢",
+        &format!("{BOLD}Tenant: Xcapit{RST} (fintech, inversión automatizada)"),
+    );
     step("  ", &format!("Plan: {GRN}Enterprise{RST} | Región: LATAM"));
-    step("  ", &format!("Persona: {MAG}Sofía{RST} — friendly, es_latam, tuteo"));
-    step("  ", &format!("Agentes: sales_qualifier, outreach_composer, support_responder, ticket_router"));
+    step(
+        "  ",
+        &format!("Persona: {MAG}Sofía{RST} — friendly, es_latam, tuteo"),
+    );
+    step(
+        "  ",
+        &format!("Agentes: sales_qualifier, outreach_composer, support_responder, ticket_router"),
+    );
 
     println!();
 
@@ -319,12 +346,20 @@ async fn main() {
         tone: "formal_empathetic".to_string(),
         language_style: "es_latam_formal".to_string(),
         signature: "— Carlos, Atención al Cliente SeguroYa".to_string(),
-        custom_instructions: "Usar usted. Siempre mencionar número de póliza. Nunca dar consejos médicos.".to_string(),
+        custom_instructions:
+            "Usar usted. Siempre mencionar número de póliza. Nunca dar consejos médicos."
+                .to_string(),
     };
 
-    step("🏢", &format!("{BOLD}Tenant: SeguroYa{RST} (insurtech, seguros digitales)"));
+    step(
+        "🏢",
+        &format!("{BOLD}Tenant: SeguroYa{RST} (insurtech, seguros digitales)"),
+    );
     step("  ", &format!("Plan: {YLW}Pro{RST} | Región: LATAM"));
-    step("  ", &format!("Persona: {CYAN}Carlos{RST} — formal, empático, usted"));
+    step(
+        "  ",
+        &format!("Persona: {CYAN}Carlos{RST} — formal, empático, usted"),
+    );
     step("  ", &format!("Agentes: support_responder, ticket_router"));
 
     step("✅", &format!("{GRN}2 tenants configurados{RST}"));
@@ -333,22 +368,73 @@ async fn main() {
     // ACT 2 — Inbound Pipeline (Webhook → Lead Qualification)
     // ═══════════════════════════════════════════════════════════
 
-    act(2, "Inbound Pipeline", "Webhook recibe 5 leads de HubSpot → calificación batch paralela");
+    act(
+        2,
+        "Inbound Pipeline",
+        "Webhook recibe 5 leads de HubSpot → calificación batch paralela",
+    );
 
     step("📨", &format!("{DIM}POST /api/v1/proxy/webhook{RST}"));
-    step("  ", &format!("Source: HubSpot | Event: lead.created | Batch: 5 leads"));
-    step("  ", &format!("{DIM}HMAC-SHA256 validated ✓ | Audit logged ✓ | Forwarded to XcapitSFF ✓{RST}"));
+    step(
+        "  ",
+        &format!("Source: HubSpot | Event: lead.created | Batch: 5 leads"),
+    );
+    step(
+        "  ",
+        &format!("{DIM}HMAC-SHA256 validated ✓ | Audit logged ✓ | Forwarded to XcapitSFF ✓{RST}"),
+    );
 
     println!();
-    step("🔄", &format!("{BOLD}Batch qualification — 5 leads en paralelo{RST}"));
-    step("  ", &format!("{DIM}POST /api/v1/agent/batch (max_concurrent: 5, routing: fast_cheap){RST}"));
+    step(
+        "🔄",
+        &format!("{BOLD}Batch qualification — 5 leads en paralelo{RST}"),
+    );
+    step(
+        "  ",
+        &format!("{DIM}POST /api/v1/agent/batch (max_concurrent: 5, routing: fast_cheap){RST}"),
+    );
 
     let leads = vec![
-        ("MegaBank SA", "Iberia", "CTO", 91, "🔥 HOT", "P0 — contactar HOY"),
-        ("Acme Corp", "LATAM", "CFO", 82, "🔥 HOT", "P1 — demo en 24hs"),
-        ("TechStart SRL", "LATAM", "Dev Lead", 48, "🟡 WARM", "P2 — nurturing"),
-        ("Local Shop", "LATAM", "Owner", 22, "🔵 COLD", "P3 — newsletter"),
-        ("DataCo EU", "Europe", "VP Eng", 65, "🟠 WARM", "P2 — case study"),
+        (
+            "MegaBank SA",
+            "Iberia",
+            "CTO",
+            91,
+            "🔥 HOT",
+            "P0 — contactar HOY",
+        ),
+        (
+            "Acme Corp",
+            "LATAM",
+            "CFO",
+            82,
+            "🔥 HOT",
+            "P1 — demo en 24hs",
+        ),
+        (
+            "TechStart SRL",
+            "LATAM",
+            "Dev Lead",
+            48,
+            "🟡 WARM",
+            "P2 — nurturing",
+        ),
+        (
+            "Local Shop",
+            "LATAM",
+            "Owner",
+            22,
+            "🔵 COLD",
+            "P3 — newsletter",
+        ),
+        (
+            "DataCo EU",
+            "Europe",
+            "VP Eng",
+            65,
+            "🟠 WARM",
+            "P2 — case study",
+        ),
     ];
 
     println!();
@@ -376,44 +462,79 @@ async fn main() {
     let batch_dur = start.elapsed().as_millis();
 
     for (company, region, title, score, class, action) in &leads {
-        let score_color = if *score >= 70 { GRN } else if *score >= 45 { YLW } else { DIM };
+        let score_color = if *score >= 70 {
+            GRN
+        } else if *score >= 45 {
+            YLW
+        } else {
+            DIM
+        };
         println!("  {DIM}│{RST} {score_color}{score:>3}{RST} {class:<10} {BOLD}{company:<18}{RST} {DIM}{region}, {title}{RST}");
     }
 
     println!();
-    step("⚡", &format!("{GRN}5 leads calificados en {batch_dur}ms (paralelo, modelo: gpt-4o-mini){RST}"));
-    step("💰", &format!("{DIM}Costo: ~$0.002 (fast_cheap routing){RST}"));
+    step(
+        "⚡",
+        &format!("{GRN}5 leads calificados en {batch_dur}ms (paralelo, modelo: gpt-4o-mini){RST}"),
+    );
+    step(
+        "💰",
+        &format!("{DIM}Costo: ~$0.002 (fast_cheap routing){RST}"),
+    );
 
     // Track usage for tenant Xcapit
     for (_, _, _, score, _, _) in &leads {
-        usage.record("xcapit", "sales_qualifier", "gpt-4o-mini", 80, 40, 0.0004).await;
+        usage
+            .record("xcapit", "sales_qualifier", "gpt-4o-mini", 80, 40, 0.0004)
+            .await;
     }
 
     // ═══════════════════════════════════════════════════════════
     // ACT 3 — Support Flow (Multi-tenant)
     // ═══════════════════════════════════════════════════════════
 
-    act(3, "Support Flow", "2 tickets de diferentes tenants procesados con distintas personas");
+    act(
+        3,
+        "Support Flow",
+        "2 tickets de diferentes tenants procesados con distintas personas",
+    );
 
     // Ticket 1: Xcapit (fintech)
-    step("🎫", &format!("{BOLD}Ticket #1{RST} — Tenant: {MAG}Xcapit{RST} (Persona: Sofía)"));
-    step("  ", &format!("{DIM}\"No puedo retirar fondos, error INSUFFICIENT_GAS\"{RST}"));
+    step(
+        "🎫",
+        &format!("{BOLD}Ticket #1{RST} — Tenant: {MAG}Xcapit{RST} (Persona: Sofía)"),
+    );
+    step(
+        "  ",
+        &format!("{DIM}\"No puedo retirar fondos, error INSUFFICIENT_GAS\"{RST}"),
+    );
 
     println!();
-    step("  ", &format!("{BLU}ticket_router{RST} → clasificación rápida (fast_cheap)"));
+    step(
+        "  ",
+        &format!("{BLU}ticket_router{RST} → clasificación rápida (fast_cheap)"),
+    );
 
     let (route_result, dur, tok) = run_agent(
         "ticket_router",
         "No puedo retirar fondos, error INSUFFICIENT_GAS",
         ticket_route_response("technical", "high", 0.92),
         "gpt-4o-mini",
-        skills.clone(), permissions.clone(), audit.clone(),
-    ).await;
-    usage.record("xcapit", "ticket_router", "gpt-4o-mini", 30, 20, 0.0001).await;
+        skills.clone(),
+        permissions.clone(),
+        audit.clone(),
+    )
+    .await;
+    usage
+        .record("xcapit", "ticket_router", "gpt-4o-mini", 30, 20, 0.0001)
+        .await;
 
     agent_box("ticket_router", &route_result, "gpt-4o-mini", dur, tok);
 
-    step("  ", &format!("{GRN}support_responder{RST} → respuesta con persona Sofía (balanced)"));
+    step(
+        "  ",
+        &format!("{GRN}support_responder{RST} → respuesta con persona Sofía (balanced)"),
+    );
 
     let (support_result, dur, tok) = run_agent(
         "support_responder",
@@ -423,9 +544,24 @@ async fn main() {
         "claude-sonnet",
         skills.clone(), permissions.clone(), audit.clone(),
     ).await;
-    usage.record("xcapit", "support_responder", "claude-sonnet-4-6", 200, 150, 0.004).await;
+    usage
+        .record(
+            "xcapit",
+            "support_responder",
+            "claude-sonnet-4-6",
+            200,
+            150,
+            0.004,
+        )
+        .await;
 
-    agent_box("support_responder", &support_result, "claude-sonnet-4-6", dur, tok);
+    agent_box(
+        "support_responder",
+        &support_result,
+        "claude-sonnet-4-6",
+        dur,
+        tok,
+    );
 
     // Quality check
     step("  ", &format!("{CYAN}Quality Score:{RST}"));
@@ -440,24 +576,41 @@ async fn main() {
     println!();
 
     // Ticket 2: SeguroYa (insurtech)
-    step("🎫", &format!("{BOLD}Ticket #2{RST} — Tenant: {CYAN}SeguroYa{RST} (Persona: Carlos)"));
-    step("  ", &format!("{DIM}\"Quiero saber si mi póliza cubre limpieza dental\"{RST}"));
+    step(
+        "🎫",
+        &format!("{BOLD}Ticket #2{RST} — Tenant: {CYAN}SeguroYa{RST} (Persona: Carlos)"),
+    );
+    step(
+        "  ",
+        &format!("{DIM}\"Quiero saber si mi póliza cubre limpieza dental\"{RST}"),
+    );
 
     println!();
-    step("  ", &format!("{BLU}ticket_router{RST} → clasificación rápida"));
+    step(
+        "  ",
+        &format!("{BLU}ticket_router{RST} → clasificación rápida"),
+    );
 
     let (route_result2, dur, tok) = run_agent(
         "ticket_router",
         "Quiero saber si mi póliza cubre limpieza dental",
         ticket_route_response("billing", "medium", 0.88),
         "gpt-4o-mini",
-        skills.clone(), permissions.clone(), audit.clone(),
-    ).await;
-    usage.record("seguroya", "ticket_router", "gpt-4o-mini", 25, 18, 0.0001).await;
+        skills.clone(),
+        permissions.clone(),
+        audit.clone(),
+    )
+    .await;
+    usage
+        .record("seguroya", "ticket_router", "gpt-4o-mini", 25, 18, 0.0001)
+        .await;
 
     agent_box("ticket_router", &route_result2, "gpt-4o-mini", dur, tok);
 
-    step("  ", &format!("{GRN}support_responder{RST} → respuesta con persona Carlos (balanced)"));
+    step(
+        "  ",
+        &format!("{GRN}support_responder{RST} → respuesta con persona Carlos (balanced)"),
+    );
 
     let (support_result2, dur, tok) = run_agent(
         "support_responder",
@@ -467,9 +620,24 @@ async fn main() {
         "claude-sonnet",
         skills.clone(), permissions.clone(), audit.clone(),
     ).await;
-    usage.record("seguroya", "support_responder", "claude-sonnet-4-6", 180, 140, 0.0035).await;
+    usage
+        .record(
+            "seguroya",
+            "support_responder",
+            "claude-sonnet-4-6",
+            180,
+            140,
+            0.0035,
+        )
+        .await;
 
-    agent_box("support_responder", &support_result2, "claude-sonnet-4-6", dur, tok);
+    agent_box(
+        "support_responder",
+        &support_result2,
+        "claude-sonnet-4-6",
+        dur,
+        tok,
+    );
 
     println!("    {BOLD}Quality: {GRN}0.87{RST} ✅ Approved");
 
@@ -477,39 +645,89 @@ async fn main() {
     // ACT 4 — Outreach Campaign
     // ═══════════════════════════════════════════════════════════
 
-    act(4, "Outreach Campaign", "Mensajes personalizados para los 2 leads HOT");
+    act(
+        4,
+        "Outreach Campaign",
+        "Mensajes personalizados para los 2 leads HOT",
+    );
 
-    step("📧", &format!("{BOLD}Generando outreach para leads HOT{RST} (quality_max routing)"));
+    step(
+        "📧",
+        &format!("{BOLD}Generando outreach para leads HOT{RST} (quality_max routing)"),
+    );
 
     let (outreach1, dur, tok) = run_agent(
         "outreach_composer",
         "MegaBank SA — CTO — Iberia — Score 91 — HIGH affinity — Banking/custody",
         outreach_email("MegaBank SA", "CTO"),
         "claude-opus",
-        skills.clone(), permissions.clone(), audit.clone(),
-    ).await;
-    usage.record("xcapit", "outreach_composer", "claude-opus-4-6", 150, 200, 0.025).await;
+        skills.clone(),
+        permissions.clone(),
+        audit.clone(),
+    )
+    .await;
+    usage
+        .record(
+            "xcapit",
+            "outreach_composer",
+            "claude-opus-4-6",
+            150,
+            200,
+            0.025,
+        )
+        .await;
 
-    agent_box("outreach_composer", &outreach1, "claude-opus-4-6 (quality_max)", dur, tok);
+    agent_box(
+        "outreach_composer",
+        &outreach1,
+        "claude-opus-4-6 (quality_max)",
+        dur,
+        tok,
+    );
 
     let (outreach2, dur, tok) = run_agent(
         "outreach_composer",
         "Acme Corp — CFO — LATAM — Score 82 — HIGH affinity — Corporate treasury",
         outreach_email("Acme Corp", "CFO"),
         "claude-opus",
-        skills.clone(), permissions.clone(), audit.clone(),
-    ).await;
-    usage.record("xcapit", "outreach_composer", "claude-opus-4-6", 140, 190, 0.023).await;
+        skills.clone(),
+        permissions.clone(),
+        audit.clone(),
+    )
+    .await;
+    usage
+        .record(
+            "xcapit",
+            "outreach_composer",
+            "claude-opus-4-6",
+            140,
+            190,
+            0.023,
+        )
+        .await;
 
-    agent_box("outreach_composer", &outreach2, "claude-opus-4-6 (quality_max)", dur, tok);
+    agent_box(
+        "outreach_composer",
+        &outreach2,
+        "claude-opus-4-6 (quality_max)",
+        dur,
+        tok,
+    );
 
-    step("✅", &format!("{GRN}2 outreach emails generados con variantes A/B{RST}"));
+    step(
+        "✅",
+        &format!("{GRN}2 outreach emails generados con variantes A/B{RST}"),
+    );
 
     // ═══════════════════════════════════════════════════════════
     // ACT 5 — Smart Routing Demo
     // ═══════════════════════════════════════════════════════════
 
-    act(5, "Smart Model Routing", "Misma tarea, 3 niveles de modelo → trade-off costo vs calidad");
+    act(
+        5,
+        "Smart Model Routing",
+        "Misma tarea, 3 niveles de modelo → trade-off costo vs calidad",
+    );
 
     let routing_task = "Clasificar: 'El usuario no puede iniciar sesión desde celular'";
 
@@ -529,21 +747,34 @@ async fn main() {
             routing_task,
             ticket_route_response("technical", "medium", 0.85),
             model,
-            skills.clone(), permissions.clone(), audit.clone(),
-        ).await;
+            skills.clone(),
+            permissions.clone(),
+            audit.clone(),
+        )
+        .await;
         table_row(hint, model, cost, &format!("{dur}ms"));
     }
 
     println!("  {DIM}└──────────────┴────────────┴──────────┴──────────┘{RST}");
     println!();
-    step("💡", &format!("{YLW}fast_cheap es 175x más barato que quality_max{RST}"));
-    step("  ", &format!("{DIM}Ticket routing no necesita Opus — usar fast_cheap ahorra ~97%{RST}"));
+    step(
+        "💡",
+        &format!("{YLW}fast_cheap es 175x más barato que quality_max{RST}"),
+    );
+    step(
+        "  ",
+        &format!("{DIM}Ticket routing no necesita Opus — usar fast_cheap ahorra ~97%{RST}"),
+    );
 
     // ═══════════════════════════════════════════════════════════
     // ACT 6 — Billing Dashboard
     // ═══════════════════════════════════════════════════════════
 
-    act(6, "Billing Dashboard", "Consumo por tenant, agente y modelo");
+    act(
+        6,
+        "Billing Dashboard",
+        "Consumo por tenant, agente y modelo",
+    );
 
     // Xcapit usage
     let xcapit_usage = usage.get_usage("xcapit", &UsagePeriod::All).await;
@@ -559,7 +790,8 @@ async fn main() {
     println!("  {MAG}│{RST}  {BOLD}Por agente:{RST}");
     for (agent, summary) in &xcapit_usage.by_agent {
         let tokens = summary.tokens_in + summary.tokens_out;
-        println!("  {MAG}│{RST}    {agent:<22} {summary_count:>3} calls  {tokens:>6} tokens  ${cost:.4}",
+        println!(
+            "  {MAG}│{RST}    {agent:<22} {summary_count:>3} calls  {tokens:>6} tokens  ${cost:.4}",
             summary_count = summary.count,
             cost = summary.cost_usd,
         );
@@ -568,7 +800,8 @@ async fn main() {
     println!("  {MAG}│{RST}  {BOLD}Por modelo:{RST}");
     for (model, summary) in &xcapit_usage.by_model {
         let tokens = summary.tokens_in + summary.tokens_out;
-        println!("  {MAG}│{RST}    {model:<22} {summary_count:>3} calls  {tokens:>6} tokens  ${cost:.4}",
+        println!(
+            "  {MAG}│{RST}    {model:<22} {summary_count:>3} calls  {tokens:>6} tokens  ${cost:.4}",
             summary_count = summary.count,
             cost = summary.cost_usd,
         );
@@ -605,8 +838,10 @@ async fn main() {
     let total_duration = total_start.elapsed();
     let total_cost = xcapit_usage.total_cost_usd + seguroya_usage.total_cost_usd;
     let total_requests = xcapit_usage.request_count + seguroya_usage.request_count;
-    let total_tokens = xcapit_usage.total_tokens_in + xcapit_usage.total_tokens_out
-        + seguroya_usage.total_tokens_in + seguroya_usage.total_tokens_out;
+    let total_tokens = xcapit_usage.total_tokens_in
+        + xcapit_usage.total_tokens_out
+        + seguroya_usage.total_tokens_in
+        + seguroya_usage.total_tokens_out;
 
     println!();
     println!("{BG_MAG}{BOLD}{WHT}                                                          {RST}");
@@ -617,7 +852,10 @@ async fn main() {
     println!("  {BOLD}Agent requests:{RST}   {total_requests}");
     println!("  {BOLD}Total tokens:{RST}     {total_tokens}");
     println!("  {BOLD}Total cost:{RST}       ${total_cost:.4} USD");
-    println!("  {BOLD}Duration:{RST}         {:.1}s", total_duration.as_secs_f64());
+    println!(
+        "  {BOLD}Duration:{RST}         {:.1}s",
+        total_duration.as_secs_f64()
+    );
     println!("  {BOLD}Audit trail:{RST}      /tmp/argentor-demo-saas/");
     println!();
     println!("  {BOLD}Features demostradas:{RST}");

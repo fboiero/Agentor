@@ -368,10 +368,7 @@ impl CodeGraph {
         let affected_tests: Vec<String> = self
             .symbols
             .iter()
-            .filter(|s| {
-                s.name.starts_with("test_")
-                    && affected_files_set.contains(&s.file)
-            })
+            .filter(|s| s.name.starts_with("test_") && affected_files_set.contains(&s.file))
             .map(|s| s.name.clone())
             .collect();
 
@@ -668,8 +665,7 @@ impl CodeGraph {
                 } else {
                     format!(" {ret}")
                 };
-                let signature =
-                    format!("{pub_kw}{async_kw}fn {name}({params}){ret_str}");
+                let signature = format!("{pub_kw}{async_kw}fn {name}({params}){ret_str}");
 
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
@@ -703,10 +699,7 @@ impl CodeGraph {
                         Visibility::Private
                     },
                     language: Language::Rust,
-                    signature: Some(format!(
-                        "{}struct {name}",
-                        if is_pub { "pub " } else { "" }
-                    )),
+                    signature: Some(format!("{}struct {name}", if is_pub { "pub " } else { "" })),
                     parent: None,
                 });
                 continue;
@@ -727,10 +720,7 @@ impl CodeGraph {
                         Visibility::Private
                     },
                     language: Language::Rust,
-                    signature: Some(format!(
-                        "{}enum {name}",
-                        if is_pub { "pub " } else { "" }
-                    )),
+                    signature: Some(format!("{}enum {name}", if is_pub { "pub " } else { "" })),
                     parent: None,
                 });
                 continue;
@@ -751,10 +741,7 @@ impl CodeGraph {
                         Visibility::Private
                     },
                     language: Language::Rust,
-                    signature: Some(format!(
-                        "{}trait {name}",
-                        if is_pub { "pub " } else { "" }
-                    )),
+                    signature: Some(format!("{}trait {name}", if is_pub { "pub " } else { "" })),
                     parent: None,
                 });
                 continue;
@@ -831,11 +818,44 @@ impl CodeGraph {
 
         // Rust keywords and macros that look like calls but aren't
         let skip_keywords: HashSet<&str> = [
-            "if", "for", "while", "match", "return", "fn", "let", "mut", "pub", "use",
-            "struct", "enum", "trait", "impl", "type", "const", "mod", "where", "Some",
-            "None", "Ok", "Err", "vec", "println", "eprintln", "format", "write",
-            "writeln", "assert", "assert_eq", "assert_ne", "debug_assert",
-            "debug_assert_eq", "cfg", "derive", "allow", "warn", "deny",
+            "if",
+            "for",
+            "while",
+            "match",
+            "return",
+            "fn",
+            "let",
+            "mut",
+            "pub",
+            "use",
+            "struct",
+            "enum",
+            "trait",
+            "impl",
+            "type",
+            "const",
+            "mod",
+            "where",
+            "Some",
+            "None",
+            "Ok",
+            "Err",
+            "vec",
+            "println",
+            "eprintln",
+            "format",
+            "write",
+            "writeln",
+            "assert",
+            "assert_eq",
+            "assert_ne",
+            "debug_assert",
+            "debug_assert_eq",
+            "cfg",
+            "derive",
+            "allow",
+            "warn",
+            "deny",
         ]
         .into_iter()
         .collect();
@@ -1036,7 +1056,8 @@ impl CodeGraph {
     fn parse_typescript_items(&mut self, path: &str, content: &str) {
         let re_class = build_regex(r"^(\s*)(export\s+)?(abstract\s+)?class\s+(\w+)");
         let re_interface = build_regex(r"^(\s*)(export\s+)?interface\s+(\w+)");
-        let re_function = build_regex(r"^(\s*)(export\s+)?(async\s+)?function\s+(\w+)\s*\(([^)]*)\)");
+        let re_function =
+            build_regex(r"^(\s*)(export\s+)?(async\s+)?function\s+(\w+)\s*\(([^)]*)\)");
         let re_const_fn = build_regex(r"^(\s*)(export\s+)?const\s+(\w+)\s*=\s*(?:async\s+)?\(");
         let re_export_const = build_regex(r"^(\s*)(export\s+)const\s+(\w+)\s*[=:]");
         let re_export_type = build_regex(r"^(\s*)(export\s+)?type\s+(\w+)");
@@ -1251,10 +1272,7 @@ impl CodeGraph {
                 let name = caps.get(2).map_or("", |m| m.as_str());
                 let params = caps.get(3).map_or("", |m| m.as_str());
 
-                let is_exported = name
-                    .chars()
-                    .next()
-                    .map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
 
                 let kind = if receiver.is_some() {
                     SymbolKind::Method
@@ -1288,10 +1306,7 @@ impl CodeGraph {
             // Structs
             if let Some(caps) = re_struct.captures(trimmed) {
                 let name = caps.get(1).map_or("", |m| m.as_str());
-                let is_exported = name
-                    .chars()
-                    .next()
-                    .map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
                     kind: SymbolKind::Struct,
@@ -1312,10 +1327,7 @@ impl CodeGraph {
             // Interfaces
             if let Some(caps) = re_interface.captures(trimmed) {
                 let name = caps.get(1).map_or("", |m| m.as_str());
-                let is_exported = name
-                    .chars()
-                    .next()
-                    .map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
                     kind: SymbolKind::Interface,
@@ -1336,10 +1348,7 @@ impl CodeGraph {
             // Constants / variables
             if let Some(caps) = re_const.captures(trimmed) {
                 let name = caps.get(1).map_or("", |m| m.as_str());
-                let is_exported = name
-                    .chars()
-                    .next()
-                    .map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
                     kind: SymbolKind::Constant,
@@ -1414,18 +1423,9 @@ mod tests {
 
     #[test]
     fn test_detect_language_typescript() {
-        assert_eq!(
-            CodeGraph::detect_language("index.ts"),
-            Language::TypeScript
-        );
-        assert_eq!(
-            CodeGraph::detect_language("App.tsx"),
-            Language::TypeScript
-        );
-        assert_eq!(
-            CodeGraph::detect_language("util.js"),
-            Language::TypeScript
-        );
+        assert_eq!(CodeGraph::detect_language("index.ts"), Language::TypeScript);
+        assert_eq!(CodeGraph::detect_language("App.tsx"), Language::TypeScript);
+        assert_eq!(CodeGraph::detect_language("util.js"), Language::TypeScript);
         assert_eq!(
             CodeGraph::detect_language("Component.jsx"),
             Language::TypeScript
@@ -1444,10 +1444,7 @@ mod tests {
     #[test]
     fn test_detect_language_unknown() {
         assert_eq!(CodeGraph::detect_language("data.csv"), Language::Unknown);
-        assert_eq!(
-            CodeGraph::detect_language("Dockerfile"),
-            Language::Unknown
-        );
+        assert_eq!(CodeGraph::detect_language("Dockerfile"), Language::Unknown);
         assert_eq!(CodeGraph::detect_language("notes.md"), Language::Unknown);
     }
 
@@ -1589,7 +1586,9 @@ pub type Result<T> = std::result::Result<T, Error>;
             .iter()
             .find(|d| d.to_module.contains("HashMap"))
             .expect("should find HashMap import");
-        assert!(hashmap_dep.imported_symbols.contains(&"HashMap".to_string()));
+        assert!(hashmap_dep
+            .imported_symbols
+            .contains(&"HashMap".to_string()));
 
         let config_dep = deps
             .iter()
@@ -1783,24 +1782,14 @@ export type AgentId = string;
         let deps = graph.dependencies();
         assert!(deps.len() >= 2, "should have at least 2 imports");
 
-        let express_dep = deps
-            .iter()
-            .find(|d| d.to_module == "express")
-            .unwrap();
-        assert!(express_dep
-            .imported_symbols
-            .contains(&"Router".to_string()));
+        let express_dep = deps.iter().find(|d| d.to_module == "express").unwrap();
+        assert!(express_dep.imported_symbols.contains(&"Router".to_string()));
         assert!(express_dep
             .imported_symbols
             .contains(&"Request".to_string()));
 
-        let axios_dep = deps
-            .iter()
-            .find(|d| d.to_module == "axios")
-            .unwrap();
-        assert!(axios_dep
-            .imported_symbols
-            .contains(&"axios".to_string()));
+        let axios_dep = deps.iter().find(|d| d.to_module == "axios").unwrap();
+        assert!(axios_dep.imported_symbols.contains(&"axios".to_string()));
     }
 
     // -- Go parsing ---------------------------------------------------------
@@ -1944,10 +1933,7 @@ var defaultTimeout = 30
         graph.parse_file("agent.py", sample_python_code());
 
         let rust_syms = graph.symbols_in_file("src/runner.rs");
-        assert!(
-            !rust_syms.is_empty(),
-            "should have symbols from runner.rs"
-        );
+        assert!(!rust_syms.is_empty(), "should have symbols from runner.rs");
         assert!(rust_syms.iter().all(|s| s.file == "src/runner.rs"));
 
         let py_syms = graph.symbols_in_file("agent.py");
@@ -1967,10 +1953,7 @@ var defaultTimeout = 30
 
         // process is called by run, so run should be directly affected
         assert!(
-            impact
-                .directly_affected
-                .iter()
-                .any(|a| a.contains("run")),
+            impact.directly_affected.iter().any(|a| a.contains("run")),
             "run should be directly affected by changes to process"
         );
         assert_eq!(impact.target_symbol, "process");

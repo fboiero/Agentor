@@ -39,6 +39,8 @@ pub mod http_fetch;
 pub mod human_approval;
 /// Semantic memory store and search skills.
 pub mod memory;
+/// SDK client code generator for Python and TypeScript.
+pub mod sdk_generator;
 /// Shell command execution skill.
 pub mod shell;
 /// Stdin-based interactive approval channel.
@@ -47,8 +49,6 @@ pub mod stdin_approval;
 pub mod task_status;
 /// Test runner skill for multi-language test execution and result parsing.
 pub mod test_runner;
-/// SDK client code generator for Python and TypeScript.
-pub mod sdk_generator;
 /// XcapitSFF backend integration skills.
 pub mod xcapitsff_skills;
 

@@ -377,8 +377,11 @@ impl ToolSelector {
         let doc_tf = Self::term_frequencies(&doc_tokens);
 
         // Collect all terms appearing in either.
-        let all_terms: std::collections::HashSet<&String> =
-            query_tf.keys().copied().chain(doc_tf.keys().copied()).collect();
+        let all_terms: std::collections::HashSet<&String> = query_tf
+            .keys()
+            .copied()
+            .chain(doc_tf.keys().copied())
+            .collect();
 
         // Compute TF-IDF vectors and cosine similarity.
         let mut dot_product: f32 = 0.0;
@@ -409,11 +412,7 @@ impl ToolSelector {
         for token in tokens {
             *counts.entry(token).or_insert(0.0) += 1.0;
         }
-        let max_count = counts
-            .values()
-            .copied()
-            .fold(0.0_f32, f32::max)
-            .max(1.0);
+        let max_count = counts.values().copied().fold(0.0_f32, f32::max).max(1.0);
         for count in counts.values_mut() {
             *count /= max_count;
         }
@@ -684,7 +683,10 @@ mod tests {
         ];
         selector.build_vocabulary(&tools);
 
-        let score = selector.tfidf_similarity("read file contents from disk", "read file contents from disk");
+        let score = selector.tfidf_similarity(
+            "read file contents from disk",
+            "read file contents from disk",
+        );
         // Identical texts should have very high similarity (close to 1.0).
         assert!(
             score > 0.9,
