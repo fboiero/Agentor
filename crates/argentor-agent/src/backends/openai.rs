@@ -19,6 +19,7 @@ pub struct OpenAiBackend {
 }
 
 impl OpenAiBackend {
+    /// Create a new OpenAI API backend with the given configuration.
     pub fn new(config: ModelConfig) -> Self {
         Self {
             config,
@@ -328,6 +329,7 @@ impl LlmBackend for OpenAiBackend {
     }
 }
 
+/// Parse an OpenAI API JSON response into an `LlmResponse`.
 pub fn parse_openai_response(body: &serde_json::Value) -> ArgentorResult<LlmResponse> {
     let choice = &body["choices"][0];
     let message = &choice["message"];

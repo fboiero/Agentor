@@ -2,6 +2,14 @@
 name = "argentor-cli"
 version.workspace = true
 edition.workspace = true
+publish = false
+description = "Command-line interface and REPL for the Argentor AI agent framework"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true
@@ -70,3 +78,7 @@ path = "examples/generate_sdks.rs"
 [[example]]
 name = "demo_full_pipeline"
 path = "examples/demo_full_pipeline.rs"
+
+[[example]]
+name = "demo_skills_toolkit"
+path = "examples/demo_skills_toolkit.rs"

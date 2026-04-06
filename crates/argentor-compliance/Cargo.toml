@@ -2,6 +2,13 @@
 name = "argentor-compliance"
 version.workspace = true
 edition.workspace = true
+description = "GDPR, ISO 27001, ISO 42001, and DPGA compliance modules for Argentor"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true

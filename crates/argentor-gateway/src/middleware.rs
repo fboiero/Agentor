@@ -1,3 +1,4 @@
+use crate::rate_limit_per_key::{PerKeyRateLimiter, RateLimitResult};
 use argentor_security::RateLimiter;
 use axum::{
     extract::{Query, Request, State},
@@ -17,6 +18,7 @@ pub struct AuthConfig {
 }
 
 impl AuthConfig {
+    /// Create a new auth config with the given API keys.
     pub fn new(api_keys: Vec<String>) -> Self {
         Self { api_keys }
     }
@@ -30,8 +32,12 @@ impl AuthConfig {
 /// Shared middleware state.
 #[derive(Clone)]
 pub struct MiddlewareState {
+    /// Global rate limiter.
     pub rate_limiter: Arc<RateLimiter>,
+    /// Authentication configuration.
     pub auth: AuthConfig,
+    /// Optional per-API-key rate limiter.
+    pub per_key_rate_limiter: Option<Arc<PerKeyRateLimiter>>,
 }
 
 /// Auth middleware: validates API key from header or query param.
@@ -72,8 +78,10 @@ pub async fn auth_middleware(
     }
 }
 
+/// Query parameters for API key authentication.
 #[derive(serde::Deserialize, Default)]
 pub struct AuthQuery {
+    /// Optional API key passed as a query parameter.
     pub api_key: Option<String>,
 }
 
@@ -95,6 +103,107 @@ pub async fn rate_limit_middleware(
     }
 
     next.run(request).await
+}
+
+/// Extract the API key from the request headers.
+///
+/// Checks `Authorization: Bearer <key>` first, then `X-API-Key`.
+fn extract_api_key(headers: &HeaderMap) -> Option<String> {
+    // Check Authorization: Bearer <key>
+    if let Some(auth) = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+    {
+        return Some(auth.to_string());
+    }
+
+    // Check X-API-Key header
+    if let Some(key) = headers.get("x-api-key").and_then(|v| v.to_str().ok()) {
+        return Some(key.to_string());
+    }
+
+    None
+}
+
+/// Per-API-key rate limiting middleware.
+///
+/// Extracts the API key from `Authorization: Bearer <key>` or `X-API-Key` header
+/// and checks it against the per-key rate limiter. Returns 429 Too Many Requests
+/// with standard rate limit headers when the key is over its quota.
+///
+/// If no per-key rate limiter is configured, or if no API key is present in the
+/// request, the request is passed through without rate limiting.
+pub async fn per_key_rate_limit_middleware(
+    State(state): State<Arc<MiddlewareState>>,
+    headers: HeaderMap,
+    request: Request,
+    next: Next,
+) -> Response {
+    let limiter = match &state.per_key_rate_limiter {
+        Some(l) => l,
+        None => return next.run(request).await,
+    };
+
+    let api_key = match extract_api_key(&headers) {
+        Some(k) => k,
+        None => return next.run(request).await,
+    };
+
+    // Safety: all `.parse()` calls below convert numeric `.to_string()` output
+    // (pure ASCII digits) into `HeaderValue`, which is infallible for ASCII.
+    #[allow(clippy::unwrap_used)]
+    match limiter.check(&api_key) {
+        RateLimitResult::Allow => {
+            // Add rate limit info headers to the response
+            let mut response = next.run(request).await;
+            if let Some(stats) = limiter.stats(&api_key) {
+                let headers = response.headers_mut();
+                headers.insert(
+                    "X-RateLimit-Limit",
+                    stats
+                        .config
+                        .requests_per_minute
+                        .to_string()
+                        .parse()
+                        .unwrap(),
+                );
+                let remaining = stats
+                    .config
+                    .requests_per_minute
+                    .saturating_sub(stats.requests_this_minute);
+                headers.insert(
+                    "X-RateLimit-Remaining",
+                    remaining.to_string().parse().unwrap(),
+                );
+            }
+            response
+        }
+        RateLimitResult::Deny {
+            reason,
+            retry_after,
+        } => {
+            warn!(
+                api_key = %api_key,
+                reason = %reason,
+                retry_after = retry_after,
+                "Per-key rate limit exceeded"
+            );
+            let body = serde_json::json!({
+                "error": "rate_limit_exceeded",
+                "message": reason.to_string(),
+                "retry_after": retry_after,
+            });
+            let mut response = (StatusCode::TOO_MANY_REQUESTS, body.to_string()).into_response();
+            response
+                .headers_mut()
+                .insert("Retry-After", retry_after.to_string().parse().unwrap());
+            response
+                .headers_mut()
+                .insert("X-RateLimit-Remaining", "0".parse().unwrap());
+            response
+        }
+    }
 }
 
 #[cfg(test)]

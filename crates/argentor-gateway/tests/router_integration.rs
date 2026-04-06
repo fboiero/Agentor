@@ -186,16 +186,20 @@ async fn test_health_route_mounted() {
 #[tokio::test]
 async fn test_metrics_route_mounted() {
     let (app, _tmp) = build_full_gateway().await;
-    // No metrics collector configured, so the handler returns 503 — but the
-    // route itself is mounted (not 404).
-    let (status, _body) = get(&app, "/metrics").await;
+    // Request-level metrics are always available via the observability middleware,
+    // so /metrics now returns 200 even without an explicit AgentMetricsCollector.
+    let (status, body) = get(&app, "/metrics").await;
     assert_ne!(
         status,
         StatusCode::NOT_FOUND,
         "GET /metrics must not be 404"
     );
-    // Without a collector we expect 503 SERVICE_UNAVAILABLE.
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(status, StatusCode::OK);
+    let body_str = String::from_utf8_lossy(&body);
+    assert!(
+        body_str.contains("argentor_http_requests_total")
+            || body_str.contains("argentor_active_connections")
+    );
 }
 
 // ---- Dashboard ------------------------------------------------------------

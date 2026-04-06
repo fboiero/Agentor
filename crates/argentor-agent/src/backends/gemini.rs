@@ -19,6 +19,7 @@ pub struct GeminiBackend {
 }
 
 impl GeminiBackend {
+    /// Create a new Gemini API backend with the given configuration.
     pub fn new(config: ModelConfig) -> Self {
         Self {
             config,
@@ -310,6 +311,7 @@ impl LlmBackend for GeminiBackend {
     }
 }
 
+/// Parse a Gemini API JSON response into an `LlmResponse`.
 pub fn parse_gemini_response(body: &serde_json::Value) -> ArgentorResult<LlmResponse> {
     let candidates = body["candidates"]
         .as_array()

@@ -2,6 +2,13 @@
 name = "argentor-builtins"
 version.workspace = true
 edition.workspace = true
+description = "40+ built-in skills (web search, crypto, file ops, security) for Argentor"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true
@@ -20,6 +27,10 @@ tracing.workspace = true
 regex.workspace = true
 uuid.workspace = true
 chrono.workspace = true
+sha2.workspace = true
+hmac.workspace = true
+base64.workspace = true
+hex.workspace = true
 fantoccini = { version = "0.21", optional = true }
 bollard = { version = "0.17", optional = true }
 git2.workspace = true

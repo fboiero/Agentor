@@ -9,6 +9,7 @@ pub struct ContextWindow {
 }
 
 impl ContextWindow {
+    /// Create a new context window with the given message capacity.
     pub fn new(max_messages: usize) -> Self {
         Self {
             messages: Vec::new(),
@@ -17,19 +18,23 @@ impl ContextWindow {
         }
     }
 
+    /// Set the system prompt for this context window.
     pub fn set_system_prompt(&mut self, prompt: impl Into<String>) {
         self.system_prompt = Some(prompt.into());
     }
 
+    /// Get the current system prompt, if set.
     pub fn system_prompt(&self) -> Option<&str> {
         self.system_prompt.as_deref()
     }
 
+    /// Append a message and truncate if over capacity.
     pub fn push(&mut self, message: Message) {
         self.messages.push(message);
         self.truncate();
     }
 
+    /// Get all messages in the context window.
     pub fn messages(&self) -> &[Message] {
         &self.messages
     }
@@ -52,6 +57,7 @@ impl ContextWindow {
         sys_tokens + msg_tokens
     }
 
+    /// Remove all messages from the context window.
     pub fn clear(&mut self) {
         self.messages.clear();
     }

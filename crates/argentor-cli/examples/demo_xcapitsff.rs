@@ -15,7 +15,7 @@
 
 use argentor_agent::backends::LlmBackend;
 use argentor_agent::stream::StreamEvent;
-use argentor_agent::{AgentRunner, LlmBackend as _, ModelConfig};
+use argentor_agent::AgentRunner;
 use argentor_core::{ArgentorError, ArgentorResult, Message};
 use argentor_security::{AuditLog, PermissionSet};
 use argentor_session::Session;

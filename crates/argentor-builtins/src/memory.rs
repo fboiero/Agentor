@@ -16,6 +16,7 @@ pub struct MemoryStoreSkill {
 }
 
 impl MemoryStoreSkill {
+    /// Create a new memory-store skill using the given vector store and embedding provider.
     pub fn new(store: Arc<dyn VectorStore>, embedder: Arc<dyn EmbeddingProvider>) -> Self {
         Self {
             descriptor: SkillDescriptor {
@@ -125,6 +126,7 @@ pub struct MemorySearchSkill {
 }
 
 impl MemorySearchSkill {
+    /// Create a new memory-search skill using the given vector store and embedding provider.
     pub fn new(store: Arc<dyn VectorStore>, embedder: Arc<dyn EmbeddingProvider>) -> Self {
         Self {
             descriptor: SkillDescriptor {

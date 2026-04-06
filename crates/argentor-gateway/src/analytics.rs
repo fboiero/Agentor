@@ -28,8 +28,135 @@ use tokio::sync::RwLock;
 // Cost model
 // ---------------------------------------------------------------------------
 
-/// Estimated cost per 1 000 tokens (blended input/output).
-const COST_PER_1K_TOKENS: f64 = 0.003;
+/// Legacy fallback: estimated cost per 1 000 tokens (blended input/output).
+const DEFAULT_COST_PER_1K_TOKENS: f64 = 0.003;
+
+/// Per-model pricing with separate input/output token costs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelPricing {
+    /// Cost per 1 000 input tokens in USD.
+    pub input_cost_per_1k: f64,
+    /// Cost per 1 000 output tokens in USD.
+    pub output_cost_per_1k: f64,
+}
+
+impl ModelPricing {
+    /// Blended cost per 1 000 tokens (average of input + output).
+    pub fn blended_cost_per_1k(&self) -> f64 {
+        (self.input_cost_per_1k + self.output_cost_per_1k) / 2.0
+    }
+}
+
+/// Configurable pricing table, keyed by model identifier.
+///
+/// When a model is not found in the table, `fallback_cost_per_1k` is used
+/// (defaults to the legacy `0.003` value for backward compatibility).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PricingTable {
+    /// Per-model pricing entries.
+    pub models: HashMap<String, ModelPricing>,
+    /// Fallback blended cost per 1 000 tokens when model is not in the table.
+    pub fallback_cost_per_1k: f64,
+}
+
+impl Default for PricingTable {
+    fn default() -> Self {
+        default_pricing()
+    }
+}
+
+impl PricingTable {
+    /// Look up the blended cost per 1 000 tokens for a model.
+    ///
+    /// Falls back to `fallback_cost_per_1k` when the model is unknown.
+    pub fn cost_per_1k(&self, model: Option<&str>) -> f64 {
+        model
+            .and_then(|m| self.models.get(m))
+            .map(ModelPricing::blended_cost_per_1k)
+            .unwrap_or(self.fallback_cost_per_1k)
+    }
+}
+
+/// Returns a [`PricingTable`] with reasonable defaults for well-known models.
+///
+/// Prices reflect approximate public API pricing as of early 2025.
+pub fn default_pricing() -> PricingTable {
+    let mut models = HashMap::new();
+
+    // Anthropic Claude
+    models.insert(
+        "claude-sonnet-4-20250514".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.003,
+            output_cost_per_1k: 0.015,
+        },
+    );
+    models.insert(
+        "claude-opus-4-20250514".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.015,
+            output_cost_per_1k: 0.075,
+        },
+    );
+    models.insert(
+        "claude-3-5-sonnet-20241022".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.003,
+            output_cost_per_1k: 0.015,
+        },
+    );
+    models.insert(
+        "claude-3-5-haiku-20241022".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.001,
+            output_cost_per_1k: 0.005,
+        },
+    );
+
+    // OpenAI
+    models.insert(
+        "gpt-4o".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.0025,
+            output_cost_per_1k: 0.01,
+        },
+    );
+    models.insert(
+        "gpt-4o-mini".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.00015,
+            output_cost_per_1k: 0.0006,
+        },
+    );
+    models.insert(
+        "gpt-4-turbo".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.01,
+            output_cost_per_1k: 0.03,
+        },
+    );
+
+    // Google Gemini
+    models.insert(
+        "gemini-2.0-flash".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.0001,
+            output_cost_per_1k: 0.0004,
+        },
+    );
+    models.insert(
+        "gemini-1.5-pro".into(),
+        ModelPricing {
+            input_cost_per_1k: 0.00125,
+            output_cost_per_1k: 0.005,
+        },
+    );
+
+    PricingTable {
+        models,
+        fallback_cost_per_1k: DEFAULT_COST_PER_1K_TOKENS,
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Types — Events
@@ -277,14 +404,29 @@ struct TenantData {
 #[derive(Clone)]
 pub struct AnalyticsEngine {
     data: Arc<RwLock<HashMap<String, TenantData>>>,
+    pricing: Arc<PricingTable>,
 }
 
 impl AnalyticsEngine {
-    /// Create a new empty analytics engine.
+    /// Create a new empty analytics engine with default pricing.
     pub fn new() -> Self {
         Self {
             data: Arc::new(RwLock::new(HashMap::new())),
+            pricing: Arc::new(PricingTable::default()),
         }
+    }
+
+    /// Create a new analytics engine with custom pricing.
+    pub fn with_pricing(pricing: PricingTable) -> Self {
+        Self {
+            data: Arc::new(RwLock::new(HashMap::new())),
+            pricing: Arc::new(pricing),
+        }
+    }
+
+    /// Returns a reference to the current pricing table.
+    pub fn pricing(&self) -> &PricingTable {
+        &self.pricing
     }
 
     /// Record a customer interaction event.
@@ -350,7 +492,8 @@ impl AnalyticsEngine {
         let avg_response_time_ms = if total > 0 { total_duration / total } else { 0 };
 
         let total_tokens: u64 = interactions.iter().map(|i| i.tokens_used).sum();
-        let cost_total_usd = (total_tokens as f64 / 1000.0) * COST_PER_1K_TOKENS;
+        let cost_per_1k = self.pricing.cost_per_1k(None);
+        let cost_total_usd = (total_tokens as f64 / 1000.0) * cost_per_1k;
         let cost_per_interaction_usd = if total > 0 {
             cost_total_usd / total as f64
         } else {
@@ -372,7 +515,7 @@ impl AnalyticsEngine {
             let entry = by_agent.entry(i.agent_role.clone()).or_default();
             entry.interactions += 1;
             entry.avg_duration_ms += i.duration_ms; // accumulate, will divide later
-            entry.cost_usd += (i.tokens_used as f64 / 1000.0) * COST_PER_1K_TOKENS;
+            entry.cost_usd += (i.tokens_used as f64 / 1000.0) * cost_per_1k;
             if i.outcome == InteractionOutcome::Resolved {
                 entry.resolution_rate += 1.0; // count, will divide later
             }
@@ -386,7 +529,7 @@ impl AnalyticsEngine {
             entry.0 += q.overall_score;
             entry.1 += 1;
         }
-        for (role, dashboard) in by_agent.iter_mut() {
+        for (role, dashboard) in &mut by_agent {
             let count = dashboard.interactions;
             if count > 0 {
                 dashboard.resolution_rate /= count as f64;
@@ -418,7 +561,7 @@ impl AnalyticsEngine {
         }
 
         // Daily trend
-        let trend = build_daily_trend(&interactions, &quality);
+        let trend = build_daily_trend(&interactions, &quality, cost_per_1k);
 
         AnalyticsDashboard {
             tenant_id: tenant_id.to_string(),
@@ -566,7 +709,7 @@ impl AnalyticsEngine {
             .filter(|q| q.timestamp >= cutoff)
             .collect();
 
-        build_daily_trend(&interactions, &quality)
+        build_daily_trend(&interactions, &quality, self.pricing.cost_per_1k(None))
     }
 }
 
@@ -598,6 +741,7 @@ fn period_to_cutoff(period: &str) -> DateTime<Utc> {
 fn build_daily_trend(
     interactions: &[&InteractionEvent],
     quality: &[&QualityEvent],
+    cost_per_1k: f64,
 ) -> Vec<DailyMetric> {
     // Group interactions by date
     let mut by_date: HashMap<NaiveDate, (u64, u64, u64, u64)> = HashMap::new(); // (count, resolved, escalated, tokens)
@@ -641,7 +785,7 @@ fn build_daily_trend(
                 .get(&date)
                 .map(|(sum, cnt)| if *cnt > 0 { sum / *cnt as f32 } else { 0.0 })
                 .unwrap_or(0.0);
-            let cost_usd = (tokens as f64 / 1000.0) * COST_PER_1K_TOKENS;
+            let cost_usd = (tokens as f64 / 1000.0) * cost_per_1k;
             DailyMetric {
                 date: date.format("%Y-%m-%d").to_string(),
                 interactions: count,
@@ -747,6 +891,7 @@ async fn trends_handler(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use axum::body::Body;

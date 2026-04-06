@@ -17,8 +17,16 @@ RUN cargo build --release --bin argentor && strip /build/target/release/argentor
 
 # Stage 3: Minimal runtime image (~80MB)
 FROM debian:bookworm-slim AS runtime
+
+LABEL org.opencontainers.image.title="Argentor" \
+      org.opencontainers.image.description="Autonomous AI agent framework — secure, sandboxed, multi-agent orchestration" \
+      org.opencontainers.image.url="https://github.com/fboiero/Agentor" \
+      org.opencontainers.image.source="https://github.com/fboiero/Agentor" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.vendor="Argentor"
+
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates libssl3 && \
+    apt-get install -y --no-install-recommends ca-certificates libssl3 wget && \
     rm -rf /var/lib/apt/lists/* && \
     useradd -r -s /usr/sbin/nologin -d /app argentor
 
@@ -39,7 +47,7 @@ RUN mkdir -p /app/data/audit /app/data/sessions /app/data/transcripts && \
 
 USER argentor
 
-EXPOSE 3000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
     CMD ["/app/argentor", "health"]

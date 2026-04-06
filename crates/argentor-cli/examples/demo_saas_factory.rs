@@ -19,7 +19,7 @@
 
 use argentor_agent::backends::LlmBackend;
 use argentor_agent::stream::StreamEvent;
-use argentor_agent::{AgentRunner, ModelConfig};
+use argentor_agent::AgentRunner;
 use argentor_core::{ArgentorError, ArgentorResult, Message};
 use argentor_gateway::xcapitsff::{PersonaConfig, TenantUsageTracker, UsagePeriod};
 use argentor_security::{AuditLog, PermissionSet};
@@ -195,7 +195,7 @@ fn score_bar(score: f64) -> String {
 }
 
 async fn run_agent(
-    role: &str,
+    _role: &str,
     context: &str,
     response: argentor_agent::llm::LlmResponse,
     model: &str,
@@ -335,7 +335,7 @@ async fn main() {
     );
     step(
         "  ",
-        &format!("Agentes: sales_qualifier, outreach_composer, support_responder, ticket_router"),
+        "Agentes: sales_qualifier, outreach_composer, support_responder, ticket_router",
     );
 
     println!();
@@ -360,7 +360,7 @@ async fn main() {
         "  ",
         &format!("Persona: {CYAN}Carlos{RST} — formal, empático, usted"),
     );
-    step("  ", &format!("Agentes: support_responder, ticket_router"));
+    step("  ", "Agentes: support_responder, ticket_router");
 
     step("✅", &format!("{GRN}2 tenants configurados{RST}"));
 
@@ -377,7 +377,7 @@ async fn main() {
     step("📨", &format!("{DIM}POST /api/v1/proxy/webhook{RST}"));
     step(
         "  ",
-        &format!("Source: HubSpot | Event: lead.created | Batch: 5 leads"),
+        "Source: HubSpot | Event: lead.created | Batch: 5 leads",
     );
     step(
         "  ",
@@ -441,7 +441,7 @@ async fn main() {
     let start = Instant::now();
     let mut handles = Vec::new();
 
-    for (company, region, title, score, class, action) in &leads {
+    for (company, _region, _title, score, class, action) in &leads {
         let s = skills.clone();
         let p = permissions.clone();
         let a = audit.clone();
@@ -461,7 +461,7 @@ async fn main() {
     }
     let batch_dur = start.elapsed().as_millis();
 
-    for (company, region, title, score, class, action) in &leads {
+    for (company, region, title, score, class, _action) in &leads {
         let score_color = if *score >= 70 {
             GRN
         } else if *score >= 45 {
@@ -483,7 +483,7 @@ async fn main() {
     );
 
     // Track usage for tenant Xcapit
-    for (_, _, _, score, _, _) in &leads {
+    for (_, _, _, _score, _, _) in &leads {
         usage
             .record("xcapit", "sales_qualifier", "gpt-4o-mini", 80, 40, 0.0004)
             .await;

@@ -43,26 +43,37 @@ impl Language {
 /// Summary of test execution results.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestSummary {
+    /// Total number of tests discovered.
     pub total: usize,
+    /// Number of tests that passed.
     pub passed: usize,
+    /// Number of tests that failed.
     pub failed: usize,
+    /// Number of tests that were skipped or ignored.
     pub skipped: usize,
+    /// Total execution time in seconds.
     pub duration_secs: f64,
 }
 
 /// A single test result entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestEntry {
+    /// Fully qualified test name.
     pub name: String,
+    /// Outcome (e.g., "passed", "failed", "ignored").
     pub status: String,
+    /// Execution time in milliseconds, if available.
     pub duration_ms: Option<u64>,
+    /// Failure message or additional details.
     pub message: Option<String>,
 }
 
 /// Full structured test output.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestOutput {
+    /// Aggregate pass/fail/skip counts and timing.
     pub summary: TestSummary,
+    /// Individual test results.
     pub tests: Vec<TestEntry>,
 }
 

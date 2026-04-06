@@ -1,6 +1,10 @@
+/// Anthropic Claude API backend.
 pub mod claude;
+/// Claude Code (local CLI) backend.
 pub mod claude_code;
+/// Google Gemini API backend.
 pub mod gemini;
+/// OpenAI API backend.
 pub mod openai;
 
 use crate::llm::LlmResponse;

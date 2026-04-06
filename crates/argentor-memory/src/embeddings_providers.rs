@@ -1,7 +1,25 @@
 //! Multiple embedding provider backends implementing [`EmbeddingProvider`].
 //!
-//! Includes API-based providers (OpenAI, Cohere, Voyage) with placeholder
-//! implementations (no reqwest dependency yet), plus fully functional
+//! Includes API-backed providers ([`OpenAiEmbeddingProvider`],
+//! [`CohereEmbeddingProvider`], [`VoyageEmbeddingProvider`]) that call their
+//! respective HTTP APIs to compute real embeddings.
+//!
+//! # Feature flag: `http-embeddings`
+//!
+//! The actual HTTP calls require the **`http-embeddings`** Cargo feature, which
+//! pulls in `reqwest`. When the feature is **disabled** (the default), calling
+//! `embed()` on any API-backed provider returns a descriptive error suggesting
+//! the user either enable the feature or use [`LocalEmbedding`].
+//!
+//! ```toml
+//! # Enable real HTTP embedding calls:
+//! argentor-memory = { version = "0.1", features = ["http-embeddings"] }
+//! ```
+//!
+//! For embeddings that work out of the box without external dependencies, use
+//! the [`LocalEmbedding`] provider (deterministic, hash-based, zero API keys).
+//!
+//! Also provides fully functional utilities:
 //! [`CachedEmbeddingProvider`], [`BatchEmbeddingProvider`],
 //! [`EmbeddingProviderFactory`], and [`EmbeddingConfig`].
 
@@ -31,62 +49,137 @@ fn fnv1a_hash(data: &[u8]) -> u64 {
 }
 
 // ===========================================================================
-// API request/response structures (used when reqwest becomes available)
+// API request/response structures
 // ===========================================================================
 
 /// OpenAI embeddings API request body.
 #[derive(Debug, Serialize)]
 pub struct OpenAiEmbeddingRequest {
+    /// Model identifier (e.g., `"text-embedding-3-small"`).
     pub model: String,
+    /// Texts to embed.
     pub input: Vec<String>,
 }
 
 /// A single embedding object from the OpenAI response.
 #[derive(Debug, Deserialize)]
 pub struct OpenAiEmbeddingObject {
+    /// The embedding vector.
     pub embedding: Vec<f32>,
+    /// Position of this embedding in the input batch.
     pub index: usize,
 }
 
 /// OpenAI embeddings API response body.
 #[derive(Debug, Deserialize)]
 pub struct OpenAiEmbeddingResponse {
+    /// Embedding results, one per input text.
     pub data: Vec<OpenAiEmbeddingObject>,
+    /// Model that produced the embeddings.
     pub model: String,
 }
 
-/// Cohere embed API request body.
+/// Cohere embed API request body (v2).
 #[derive(Debug, Serialize)]
 pub struct CohereEmbedRequest {
+    /// Model identifier (e.g., `"embed-english-v3.0"`).
     pub model: String,
+    /// Texts to embed.
     pub texts: Vec<String>,
+    /// Input type hint (e.g., `"search_document"`, `"search_query"`).
     pub input_type: String,
+    /// Which embedding types to return.
+    pub embedding_types: Vec<String>,
 }
 
-/// Cohere embed API response body.
+/// Cohere embed API v2 response body.
 #[derive(Debug, Deserialize)]
 pub struct CohereEmbedResponse {
-    pub embeddings: Vec<Vec<f32>>,
+    /// Embedding vectors keyed by type. We request `"float"`.
+    pub embeddings: CohereEmbeddingsMap,
+}
+
+/// Container for different embedding type outputs from Cohere.
+#[derive(Debug, Deserialize)]
+pub struct CohereEmbeddingsMap {
+    /// Float embeddings, one vector per input text.
+    #[serde(default)]
+    pub float: Vec<Vec<f32>>,
 }
 
 /// Voyage AI embeddings API request body.
 #[derive(Debug, Serialize)]
 pub struct VoyageEmbeddingRequest {
+    /// Model identifier.
     pub model: String,
+    /// Texts to embed.
     pub input: Vec<String>,
 }
 
 /// A single embedding object from the Voyage response.
 #[derive(Debug, Deserialize)]
 pub struct VoyageEmbeddingObject {
+    /// The embedding vector.
     pub embedding: Vec<f32>,
+    /// Position of this embedding in the input batch.
     pub index: usize,
 }
 
 /// Voyage AI embeddings API response body.
 #[derive(Debug, Deserialize)]
 pub struct VoyageEmbeddingResponse {
+    /// Embedding results, one per input text.
     pub data: Vec<VoyageEmbeddingObject>,
+}
+
+// ===========================================================================
+// Response parsing helpers (testable without HTTP)
+// ===========================================================================
+
+/// Parse an OpenAI embedding response JSON into a single embedding vector.
+///
+/// Expects the standard OpenAI response shape with `data[0].embedding`.
+/// Returns `Err` if the response is missing required fields.
+pub fn parse_openai_embedding_response(json: &serde_json::Value) -> ArgentorResult<Vec<f32>> {
+    let response: OpenAiEmbeddingResponse = serde_json::from_value(json.clone())
+        .map_err(|e| ArgentorError::Agent(format!("Failed to parse OpenAI response: {e}")))?;
+    response
+        .data
+        .into_iter()
+        .next()
+        .map(|obj| obj.embedding)
+        .ok_or_else(|| {
+            ArgentorError::Agent("OpenAI response contains no embedding data".to_string())
+        })
+}
+
+/// Parse a Cohere v2 embed response JSON into a single embedding vector.
+///
+/// Expects the v2 shape: `embeddings.float[0]`.
+/// Returns `Err` if the response is missing required fields.
+pub fn parse_cohere_embedding_response(json: &serde_json::Value) -> ArgentorResult<Vec<f32>> {
+    let response: CohereEmbedResponse = serde_json::from_value(json.clone())
+        .map_err(|e| ArgentorError::Agent(format!("Failed to parse Cohere response: {e}")))?;
+    response.embeddings.float.into_iter().next().ok_or_else(|| {
+        ArgentorError::Agent("Cohere response contains no float embeddings".to_string())
+    })
+}
+
+/// Parse a Voyage AI embedding response JSON into a single embedding vector.
+///
+/// Expects the standard Voyage shape: `data[0].embedding`.
+/// Returns `Err` if the response is missing required fields.
+pub fn parse_voyage_embedding_response(json: &serde_json::Value) -> ArgentorResult<Vec<f32>> {
+    let response: VoyageEmbeddingResponse = serde_json::from_value(json.clone())
+        .map_err(|e| ArgentorError::Agent(format!("Failed to parse Voyage response: {e}")))?;
+    response
+        .data
+        .into_iter()
+        .next()
+        .map(|obj| obj.embedding)
+        .ok_or_else(|| {
+            ArgentorError::Agent("Voyage response contains no embedding data".to_string())
+        })
 }
 
 // ===========================================================================
@@ -95,14 +188,16 @@ pub struct VoyageEmbeddingResponse {
 
 /// Embedding provider backed by the OpenAI embeddings API.
 ///
-/// Currently returns a placeholder error because `reqwest` is not in
-/// `argentor-memory` dependencies. Wire via `argentor-agent` HTTP client later.
+/// Stores the API key, model, and dimension configuration. Calling [`embed()`]
+/// performs a real HTTP request when the `http-embeddings` feature is enabled.
+/// Without the feature, it returns an error. For local/offline embeddings, use
+/// [`LocalEmbedding`].
 pub struct OpenAiEmbeddingProvider {
-    #[allow(dead_code)]
+    #[cfg_attr(not(feature = "http-embeddings"), allow(dead_code))]
     api_key: String,
     model: String,
     dimensions: usize,
-    #[allow(dead_code)]
+    #[cfg_attr(not(feature = "http-embeddings"), allow(dead_code))]
     base_url: String,
 }
 
@@ -160,10 +255,40 @@ impl OpenAiEmbeddingProvider {
 
 #[async_trait]
 impl EmbeddingProvider for OpenAiEmbeddingProvider {
+    #[cfg(feature = "http-embeddings")]
+    async fn embed(&self, text: &str) -> ArgentorResult<Vec<f32>> {
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&self.base_url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .json(&serde_json::json!({
+                "model": self.model,
+                "input": text,
+            }))
+            .send()
+            .await
+            .map_err(|e| ArgentorError::Http(format!("OpenAI embedding request failed: {e}")))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let body = response.text().await.unwrap_or_default();
+            return Err(ArgentorError::Http(format!(
+                "OpenAI API error {status}: {body}"
+            )));
+        }
+
+        let json: serde_json::Value = response.json().await.map_err(|e| {
+            ArgentorError::Http(format!("Failed to read OpenAI response body: {e}"))
+        })?;
+
+        parse_openai_embedding_response(&json)
+    }
+
+    #[cfg(not(feature = "http-embeddings"))]
     async fn embed(&self, _text: &str) -> ArgentorResult<Vec<f32>> {
         Err(ArgentorError::Http(
-            "OpenAI embedding: reqwest not available in argentor-memory, \
-             use argentor-agent HTTP client to wire the actual API call"
+            "HTTP embeddings not enabled. Enable the 'http-embeddings' feature flag \
+             or use LocalEmbedding for offline embeddings."
                 .to_string(),
         ))
     }
@@ -177,14 +302,18 @@ impl EmbeddingProvider for OpenAiEmbeddingProvider {
 // 2. CohereEmbeddingProvider
 // ===========================================================================
 
-/// Embedding provider backed by the Cohere embed API.
+/// Embedding provider backed by the Cohere embed API (v2).
 ///
-/// Placeholder — returns an error until reqwest is available.
+/// Stores the API key, model, and dimension configuration. Calling [`embed()`]
+/// performs a real HTTP request when the `http-embeddings` feature is enabled.
+/// Without the feature, it returns an error. For local/offline embeddings, use
+/// [`LocalEmbedding`].
 pub struct CohereEmbeddingProvider {
-    #[allow(dead_code)]
+    #[cfg_attr(not(feature = "http-embeddings"), allow(dead_code))]
     api_key: String,
     model: String,
     dimensions: usize,
+    #[cfg_attr(not(feature = "http-embeddings"), allow(dead_code))]
     input_type: String,
 }
 
@@ -236,10 +365,42 @@ impl CohereEmbeddingProvider {
 
 #[async_trait]
 impl EmbeddingProvider for CohereEmbeddingProvider {
+    #[cfg(feature = "http-embeddings")]
+    async fn embed(&self, text: &str) -> ArgentorResult<Vec<f32>> {
+        let client = reqwest::Client::new();
+        let response = client
+            .post("https://api.cohere.com/v2/embed")
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .json(&serde_json::json!({
+                "model": self.model,
+                "texts": [text],
+                "input_type": self.input_type,
+                "embedding_types": ["float"],
+            }))
+            .send()
+            .await
+            .map_err(|e| ArgentorError::Http(format!("Cohere embedding request failed: {e}")))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let body = response.text().await.unwrap_or_default();
+            return Err(ArgentorError::Http(format!(
+                "Cohere API error {status}: {body}"
+            )));
+        }
+
+        let json: serde_json::Value = response.json().await.map_err(|e| {
+            ArgentorError::Http(format!("Failed to read Cohere response body: {e}"))
+        })?;
+
+        parse_cohere_embedding_response(&json)
+    }
+
+    #[cfg(not(feature = "http-embeddings"))]
     async fn embed(&self, _text: &str) -> ArgentorResult<Vec<f32>> {
         Err(ArgentorError::Http(
-            "Cohere embedding: reqwest not available in argentor-memory, \
-             use argentor-agent HTTP client to wire the actual API call"
+            "HTTP embeddings not enabled. Enable the 'http-embeddings' feature flag \
+             or use LocalEmbedding for offline embeddings."
                 .to_string(),
         ))
     }
@@ -255,9 +416,12 @@ impl EmbeddingProvider for CohereEmbeddingProvider {
 
 /// Embedding provider backed by the Voyage AI embeddings API.
 ///
-/// Placeholder — returns an error until reqwest is available.
+/// Stores the API key, model, and dimension configuration. Calling [`embed()`]
+/// performs a real HTTP request when the `http-embeddings` feature is enabled.
+/// Without the feature, it returns an error. For local/offline embeddings, use
+/// [`LocalEmbedding`].
 pub struct VoyageEmbeddingProvider {
-    #[allow(dead_code)]
+    #[cfg_attr(not(feature = "http-embeddings"), allow(dead_code))]
     api_key: String,
     model: String,
     dimensions: usize,
@@ -287,6 +451,7 @@ impl VoyageEmbeddingProvider {
         match model {
             "voyage-2" | "voyage-large-2" => 1024,
             "voyage-lite-02-instruct" => 1024,
+            "voyage-3" => 1024,
             "voyage-code-2" => 1536,
             _ => 1024,
         }
@@ -300,10 +465,40 @@ impl VoyageEmbeddingProvider {
 
 #[async_trait]
 impl EmbeddingProvider for VoyageEmbeddingProvider {
+    #[cfg(feature = "http-embeddings")]
+    async fn embed(&self, text: &str) -> ArgentorResult<Vec<f32>> {
+        let client = reqwest::Client::new();
+        let response = client
+            .post("https://api.voyageai.com/v1/embeddings")
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .json(&serde_json::json!({
+                "model": self.model,
+                "input": [text],
+            }))
+            .send()
+            .await
+            .map_err(|e| ArgentorError::Http(format!("Voyage embedding request failed: {e}")))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let body = response.text().await.unwrap_or_default();
+            return Err(ArgentorError::Http(format!(
+                "Voyage API error {status}: {body}"
+            )));
+        }
+
+        let json: serde_json::Value = response.json().await.map_err(|e| {
+            ArgentorError::Http(format!("Failed to read Voyage response body: {e}"))
+        })?;
+
+        parse_voyage_embedding_response(&json)
+    }
+
+    #[cfg(not(feature = "http-embeddings"))]
     async fn embed(&self, _text: &str) -> ArgentorResult<Vec<f32>> {
         Err(ArgentorError::Http(
-            "Voyage embedding: reqwest not available in argentor-memory, \
-             use argentor-agent HTTP client to wire the actual API call"
+            "HTTP embeddings not enabled. Enable the 'http-embeddings' feature flag \
+             or use LocalEmbedding for offline embeddings."
                 .to_string(),
         ))
     }
@@ -320,8 +515,11 @@ impl EmbeddingProvider for VoyageEmbeddingProvider {
 /// Statistics about cache usage.
 #[derive(Debug, Clone, Default)]
 pub struct CacheStats {
+    /// Number of cache hits.
     pub hits: u64,
+    /// Number of cache misses.
     pub misses: u64,
+    /// Current number of entries in the cache.
     pub size: usize,
 }
 
@@ -626,12 +824,13 @@ mod tests {
         assert_eq!(p.dimension(), 1536);
     }
 
+    #[cfg(not(feature = "http-embeddings"))]
     #[tokio::test]
-    async fn test_openai_provider_returns_placeholder_error() {
+    async fn test_openai_provider_returns_feature_error() {
         let p = OpenAiEmbeddingProvider::new("sk-test", None);
         let err = p.embed("hello").await.unwrap_err();
         let msg = format!("{err}");
-        assert!(msg.contains("reqwest not available"), "got: {msg}");
+        assert!(msg.contains("HTTP embeddings not enabled"), "got: {msg}");
     }
 
     #[test]
@@ -654,12 +853,13 @@ mod tests {
         assert_eq!(p.dimension(), 384);
     }
 
+    #[cfg(not(feature = "http-embeddings"))]
     #[tokio::test]
-    async fn test_cohere_provider_returns_placeholder_error() {
+    async fn test_cohere_provider_returns_feature_error() {
         let p = CohereEmbeddingProvider::new("key", None);
         let err = p.embed("hello").await.unwrap_err();
         let msg = format!("{err}");
-        assert!(msg.contains("reqwest not available"), "got: {msg}");
+        assert!(msg.contains("HTTP embeddings not enabled"), "got: {msg}");
     }
 
     #[test]
@@ -675,12 +875,136 @@ mod tests {
         assert_eq!(p.dimension(), 1536);
     }
 
+    #[cfg(not(feature = "http-embeddings"))]
     #[tokio::test]
-    async fn test_voyage_provider_returns_placeholder_error() {
+    async fn test_voyage_provider_returns_feature_error() {
         let p = VoyageEmbeddingProvider::new("key", None);
         let err = p.embed("hello").await.unwrap_err();
         let msg = format!("{err}");
-        assert!(msg.contains("reqwest not available"), "got: {msg}");
+        assert!(msg.contains("HTTP embeddings not enabled"), "got: {msg}");
+    }
+
+    // -- Response parsing tests -------------------------------------------
+
+    #[test]
+    fn test_parse_openai_embedding_response_valid() {
+        let json = serde_json::json!({
+            "data": [
+                {
+                    "embedding": [0.1, 0.2, 0.3, 0.4],
+                    "index": 0
+                }
+            ],
+            "model": "text-embedding-3-small"
+        });
+        let result = parse_openai_embedding_response(&json).unwrap();
+        assert_eq!(result, vec![0.1, 0.2, 0.3, 0.4]);
+    }
+
+    #[test]
+    fn test_parse_openai_embedding_response_empty_data() {
+        let json = serde_json::json!({
+            "data": [],
+            "model": "text-embedding-3-small"
+        });
+        let err = parse_openai_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("no embedding data"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_parse_openai_embedding_response_invalid_shape() {
+        let json = serde_json::json!({ "error": "bad request" });
+        let err = parse_openai_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("Failed to parse"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_parse_openai_embedding_response_multiple_picks_first() {
+        let json = serde_json::json!({
+            "data": [
+                { "embedding": [1.0, 2.0], "index": 0 },
+                { "embedding": [3.0, 4.0], "index": 1 }
+            ],
+            "model": "text-embedding-3-small"
+        });
+        let result = parse_openai_embedding_response(&json).unwrap();
+        assert_eq!(result, vec![1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_parse_cohere_embedding_response_valid() {
+        let json = serde_json::json!({
+            "embeddings": {
+                "float": [
+                    [0.5, 0.6, 0.7]
+                ]
+            }
+        });
+        let result = parse_cohere_embedding_response(&json).unwrap();
+        assert_eq!(result, vec![0.5, 0.6, 0.7]);
+    }
+
+    #[test]
+    fn test_parse_cohere_embedding_response_empty_float() {
+        let json = serde_json::json!({
+            "embeddings": {
+                "float": []
+            }
+        });
+        let err = parse_cohere_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("no float embeddings"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_parse_cohere_embedding_response_invalid_shape() {
+        let json = serde_json::json!({ "message": "unauthorized" });
+        let err = parse_cohere_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("Failed to parse"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_parse_cohere_embedding_response_missing_float_key() {
+        // If "float" key is absent, serde default gives empty vec.
+        let json = serde_json::json!({
+            "embeddings": {}
+        });
+        let err = parse_cohere_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("no float embeddings"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_parse_voyage_embedding_response_valid() {
+        let json = serde_json::json!({
+            "data": [
+                {
+                    "embedding": [0.9, 0.8, 0.7, 0.6, 0.5],
+                    "index": 0
+                }
+            ]
+        });
+        let result = parse_voyage_embedding_response(&json).unwrap();
+        assert_eq!(result, vec![0.9, 0.8, 0.7, 0.6, 0.5]);
+    }
+
+    #[test]
+    fn test_parse_voyage_embedding_response_empty_data() {
+        let json = serde_json::json!({ "data": [] });
+        let err = parse_voyage_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("no embedding data"), "got: {msg}");
+    }
+
+    #[test]
+    fn test_parse_voyage_embedding_response_invalid_shape() {
+        let json = serde_json::json!({ "error": "invalid key" });
+        let err = parse_voyage_embedding_response(&json).unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("Failed to parse"), "got: {msg}");
     }
 
     // -- CachedEmbeddingProvider tests ------------------------------------

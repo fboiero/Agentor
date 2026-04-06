@@ -254,7 +254,7 @@ impl ConversationMemory {
     /// Return total turn count for a customer.
     pub async fn turn_count(&self, customer_id: &str) -> usize {
         let store = self.turns.read().await;
-        store.get(customer_id).map_or(0, |t| t.len())
+        store.get(customer_id).map_or(0, Vec::len)
     }
 }
 

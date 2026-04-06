@@ -395,7 +395,7 @@ mod tests {
     // 16. Float values keep decimals
     #[test]
     fn test_format_value_float() {
-        assert_eq!(format_value(3.14), "3.14");
+        assert_eq!(format_value(2.719), "2.719");
     }
 
     // 17. MetricPoint serializable

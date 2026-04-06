@@ -24,6 +24,8 @@ pub mod error_aggregator;
 pub mod event_bus;
 /// Multi-format metrics export for monitoring integration.
 pub mod metrics_export;
+/// OpenTelemetry distributed tracing support.
+pub mod telemetry;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

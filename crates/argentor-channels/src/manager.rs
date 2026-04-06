@@ -11,6 +11,7 @@ pub struct ChannelManager {
 }
 
 impl ChannelManager {
+    /// Create a new empty channel manager.
     pub fn new() -> Self {
         Self {
             channels: HashMap::new(),

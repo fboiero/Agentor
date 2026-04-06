@@ -15,10 +15,17 @@ use std::sync::{Arc, RwLock};
 /// Predefined plan tiers plus a fully custom option.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TenantPlan {
+    /// Free tier with minimal quotas.
     Free,
+    /// Professional tier with moderate quotas.
     Pro,
+    /// Enterprise tier with high quotas.
     Enterprise,
-    Custom { limits: TenantLimits },
+    /// Fully custom limits defined at registration time.
+    Custom {
+        /// The custom limits configuration.
+        limits: TenantLimits,
+    },
 }
 
 impl TenantPlan {
@@ -46,18 +53,24 @@ impl TenantPlan {
 /// Configurable resource limits for a single tenant.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TenantLimits {
+    /// Maximum API requests allowed per UTC day.
     pub max_requests_per_day: u64,
+    /// Maximum tokens that may be consumed in a calendar month.
     pub max_tokens_per_month: u64,
+    /// Sliding-window rate limit (requests per second).
     pub max_requests_per_second: f64,
+    /// Maximum in-flight requests at any given time.
     pub max_concurrent_requests: u32,
+    /// Monthly spending cap in USD (0.0 = unlimited).
     pub max_cost_per_month_usd: f64,
-    /// Empty means all models are allowed.
+    /// Allowlisted model identifiers. Empty means all models are allowed.
     pub allowed_models: Vec<String>,
-    /// Empty means all agents are allowed.
+    /// Allowlisted agent identifiers. Empty means all agents are allowed.
     pub allowed_agents: Vec<String>,
 }
 
 impl TenantLimits {
+    /// Returns the default limits for the Free tier.
     pub fn free() -> Self {
         Self {
             max_requests_per_day: 100,
@@ -70,6 +83,7 @@ impl TenantLimits {
         }
     }
 
+    /// Returns the default limits for the Pro tier.
     pub fn pro() -> Self {
         Self {
             max_requests_per_day: 5_000,
@@ -82,6 +96,7 @@ impl TenantLimits {
         }
     }
 
+    /// Returns the default limits for the Enterprise tier.
     pub fn enterprise() -> Self {
         Self {
             max_requests_per_day: 100_000,
@@ -111,38 +126,61 @@ pub fn default_plans() -> HashMap<String, TenantLimits> {
 /// Result of a `check_request` call.
 #[derive(Debug, Clone)]
 pub struct TenantCheckResult {
+    /// Whether the request is allowed.
     pub allowed: bool,
+    /// Reason the request was denied (e.g., `"daily_limit_exceeded"`).
     pub reason: Option<String>,
+    /// Remaining daily request quota.
     pub remaining_daily_requests: u64,
+    /// Remaining monthly token quota.
     pub remaining_monthly_tokens: u64,
+    /// Remaining monthly budget in USD.
     pub remaining_monthly_budget_usd: f64,
+    /// UTC time when the rate limit window resets, if applicable.
     pub rate_limit_reset_at: Option<DateTime<Utc>>,
 }
 
 /// Full usage snapshot for a tenant.
 #[derive(Debug, Clone)]
 pub struct TenantUsageStatus {
+    /// Tenant identifier.
     pub tenant_id: String,
+    /// Plan name (e.g., "Free", "Pro", "Enterprise").
     pub plan: String,
+    /// Requests made today.
     pub daily_requests: u64,
+    /// Daily request cap.
     pub daily_limit: u64,
+    /// Tokens consumed this month.
     pub monthly_tokens: u64,
+    /// Monthly token cap.
     pub monthly_limit: u64,
+    /// Cost accumulated this month (USD).
     pub monthly_cost_usd: f64,
+    /// Monthly spending cap (USD).
     pub monthly_budget_usd: f64,
+    /// In-flight request count.
     pub concurrent_requests: u32,
+    /// Maximum concurrent requests allowed.
     pub concurrent_limit: u32,
+    /// Highest utilization ratio across all dimensions (0.0 -- 100.0).
     pub utilization_percent: f64,
+    /// Whether the tenant is currently throttled.
     pub is_throttled: bool,
+    /// UTC timestamp of the most recent request.
     pub last_request_at: Option<DateTime<Utc>>,
 }
 
 /// Lightweight summary used by `list_tenants`.
 #[derive(Debug, Clone)]
 pub struct TenantSummary {
+    /// Tenant identifier.
     pub tenant_id: String,
+    /// Plan name.
     pub plan: String,
+    /// Highest utilization ratio across all dimensions (0.0 -- 100.0).
     pub utilization_percent: f64,
+    /// Whether the tenant is currently throttled.
     pub is_throttled: bool,
 }
 
@@ -204,7 +242,7 @@ impl TenantState {
     /// Prune the sliding window to only keep entries within the last second.
     fn prune_sliding_window(&mut self, now: DateTime<Utc>) {
         let cutoff = now - chrono::Duration::seconds(1);
-        while self.recent_requests.front().map_or(false, |t| *t < cutoff) {
+        while self.recent_requests.front().is_some_and(|t| *t < cutoff) {
             self.recent_requests.pop_front();
         }
     }
@@ -253,6 +291,7 @@ impl TenantLimitManager {
     /// Register a tenant with the given plan. If the tenant already exists
     /// the previous state is replaced.
     pub fn register_tenant(&self, tenant_id: &str, plan: TenantPlan) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut map = self.inner.write().expect("rwlock poisoned");
         map.insert(tenant_id.to_string(), TenantState::new(plan));
     }
@@ -262,6 +301,7 @@ impl TenantLimitManager {
     /// This does **not** consume a slot; call [`record_usage`] afterwards to
     /// actually account for consumed resources.
     pub fn check_request(&self, tenant_id: &str) -> TenantCheckResult {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut map = self.inner.write().expect("rwlock poisoned");
         let state = match map.get_mut(tenant_id) {
             Some(s) => s,
@@ -284,6 +324,8 @@ impl TenantLimitManager {
         // 1) Daily request limit
         if state.daily_requests >= state.limits.max_requests_per_day {
             state.is_throttled = true;
+            // Safety: midnight (0, 0, 0) is always a valid time.
+            #[allow(clippy::expect_used)]
             let tomorrow = (state.daily_reset_date + chrono::Duration::days(1))
                 .and_hms_opt(0, 0, 0)
                 .expect("valid date");
@@ -417,6 +459,7 @@ impl TenantLimitManager {
     /// Record token and cost usage **after** a request completes.
     /// Also decrements the concurrent-request counter.
     pub fn record_usage(&self, tenant_id: &str, tokens_in: u64, tokens_out: u64, cost_usd: f64) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut map = self.inner.write().expect("rwlock poisoned");
         if let Some(state) = map.get_mut(tenant_id) {
             state.monthly_tokens += tokens_in + tokens_out;
@@ -427,6 +470,7 @@ impl TenantLimitManager {
 
     /// Return a full usage snapshot for the tenant.
     pub fn get_status(&self, tenant_id: &str) -> Option<TenantUsageStatus> {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut map = self.inner.write().expect("rwlock poisoned");
         let state = map.get_mut(tenant_id)?;
         state.maybe_reset_daily();
@@ -450,6 +494,7 @@ impl TenantLimitManager {
 
     /// List all registered tenants as lightweight summaries.
     pub fn list_tenants(&self) -> Vec<TenantSummary> {
+        #[allow(clippy::expect_used)] // lock poisoning
         let map = self.inner.read().expect("rwlock poisoned");
         map.iter()
             .map(|(id, state)| TenantSummary {
@@ -464,6 +509,7 @@ impl TenantLimitManager {
     /// Upgrade (or downgrade) a tenant to a different plan.
     /// Preserves accumulated usage counters; only the limits change.
     pub fn upgrade_plan(&self, tenant_id: &str, new_plan: TenantPlan) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut map = self.inner.write().expect("rwlock poisoned");
         if let Some(state) = map.get_mut(tenant_id) {
             state.limits = new_plan.limits();
@@ -475,6 +521,7 @@ impl TenantLimitManager {
 
     /// Reset monthly counters for a tenant (tokens + cost).
     pub fn reset_monthly(&self, tenant_id: &str) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut map = self.inner.write().expect("rwlock poisoned");
         if let Some(state) = map.get_mut(tenant_id) {
             state.monthly_tokens = 0;
@@ -485,6 +532,7 @@ impl TenantLimitManager {
 
     /// Check whether a specific model is allowed for the tenant.
     pub fn is_model_allowed(&self, tenant_id: &str, model: &str) -> bool {
+        #[allow(clippy::expect_used)] // lock poisoning
         let map = self.inner.read().expect("rwlock poisoned");
         match map.get(tenant_id) {
             Some(state) => {
@@ -500,6 +548,7 @@ impl TenantLimitManager {
 
     /// Check whether a specific agent role is allowed for the tenant.
     pub fn is_agent_allowed(&self, tenant_id: &str, agent_role: &str) -> bool {
+        #[allow(clippy::expect_used)] // lock poisoning
         let map = self.inner.read().expect("rwlock poisoned");
         match map.get(tenant_id) {
             Some(state) => {

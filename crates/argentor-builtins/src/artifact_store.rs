@@ -9,16 +9,22 @@ use tokio::sync::RwLock;
 /// Implementations can be in-memory (testing) or filesystem-based.
 #[async_trait]
 pub trait ArtifactBackend: Send + Sync {
+    /// Store content under the given key and kind label.
     async fn store(&self, key: &str, content: &str, kind: &str) -> ArgentorResult<String>;
+    /// Retrieve stored content by key.
     async fn retrieve(&self, key: &str) -> ArgentorResult<Option<String>>;
+    /// List all stored artifact entries.
     async fn list(&self) -> ArgentorResult<Vec<ArtifactEntry>>;
 }
 
 /// Metadata about a stored artifact.
 #[derive(Debug, Clone)]
 pub struct ArtifactEntry {
+    /// Unique key identifying the artifact.
     pub key: String,
+    /// Kind label (e.g., "report", "code").
     pub kind: String,
+    /// Content length in bytes.
     pub size: usize,
 }
 
@@ -28,6 +34,7 @@ pub struct InMemoryArtifactBackend {
 }
 
 impl InMemoryArtifactBackend {
+    /// Create a new empty in-memory artifact backend.
     pub fn new() -> Self {
         Self {
             store: RwLock::new(HashMap::new()),
@@ -74,6 +81,7 @@ pub struct ArtifactStoreSkill {
 }
 
 impl ArtifactStoreSkill {
+    /// Create a new artifact store skill backed by the given storage.
     pub fn new(backend: Arc<dyn ArtifactBackend>) -> Self {
         Self {
             descriptor: SkillDescriptor {

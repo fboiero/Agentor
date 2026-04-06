@@ -1,11 +1,26 @@
 use crate::failover::RetryPolicy;
 use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
 
+/// Default Ollama host, overridable via `OLLAMA_HOST` env var.
+static OLLAMA_HOST: LazyLock<String> = LazyLock::new(|| {
+    std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".to_string())
+});
+
+/// Default vLLM host, overridable via `VLLM_HOST` env var.
+static VLLM_HOST: LazyLock<String> = LazyLock::new(|| {
+    std::env::var("VLLM_HOST").unwrap_or_else(|_| "http://localhost:8000".to_string())
+});
+
+/// Supported LLM provider backends.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LlmProvider {
+    /// Anthropic Claude API.
     Claude,
+    /// OpenAI API (GPT-4, etc.).
     OpenAi,
+    /// OpenRouter multi-provider proxy.
     OpenRouter,
     /// Groq cloud inference — OpenAI-compatible API, free tier with rate limits.
     Groq,
@@ -35,20 +50,30 @@ pub enum LlmProvider {
     VLlm,
 }
 
+/// Configuration for an LLM model used by the agent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelConfig {
+    /// Which LLM provider to use.
     pub provider: LlmProvider,
+    /// Model identifier (e.g., `"claude-sonnet-4-20250514"`, `"gpt-4o"`).
     pub model_id: String,
+    /// API key for authentication (ignored for local providers).
     pub api_key: String,
+    /// Override the default API base URL for this provider.
     pub api_base_url: Option<String>,
+    /// Sampling temperature (0.0 = deterministic, 1.0 = creative). Default: 0.7.
     #[serde(default = "default_temperature")]
     pub temperature: f32,
+    /// Maximum tokens to generate per response. Default: 4096.
     #[serde(default = "default_max_tokens")]
     pub max_tokens: u32,
+    /// Maximum agentic loop turns before stopping. Default: 20.
     #[serde(default = "default_max_turns")]
     pub max_turns: u32,
+    /// Fallback model configs tried in order if the primary fails.
     #[serde(default)]
     pub fallback_models: Vec<ModelConfig>,
+    /// Retry policy for transient errors.
     #[serde(default)]
     pub retry_policy: Option<RetryPolicy>,
 }
@@ -66,6 +91,44 @@ fn default_max_turns() -> u32 {
 }
 
 impl ModelConfig {
+    /// Returns `true` if this config has a usable API key.
+    ///
+    /// Providers that don't need a key (ClaudeCode, Ollama, VLlm) always return `true`.
+    pub fn is_available(&self) -> bool {
+        match self.provider {
+            // Local providers — no API key required.
+            LlmProvider::ClaudeCode | LlmProvider::Ollama | LlmProvider::VLlm => true,
+            _ => !self.api_key.is_empty(),
+        }
+    }
+
+    /// Validate the configuration and return a list of issues (empty = valid).
+    ///
+    /// Does not panic — callers can log warnings or refuse to start depending on
+    /// the severity of the issues.
+    pub fn validate_config(&self) -> Vec<String> {
+        let mut issues = Vec::new();
+        if !self.is_available() {
+            issues.push(format!(
+                "Provider {:?} for model '{}' has no API key configured",
+                self.provider, self.model_id,
+            ));
+        }
+        if self.max_tokens == 0 {
+            issues.push("max_tokens is 0".to_string());
+        }
+        if self.max_turns == 0 {
+            issues.push("max_turns is 0".to_string());
+        }
+        for (i, fb) in self.fallback_models.iter().enumerate() {
+            for issue in fb.validate_config() {
+                issues.push(format!("fallback[{i}]: {issue}"));
+            }
+        }
+        issues
+    }
+
+    /// Return the provider's API base URL (custom or default).
     pub fn base_url(&self) -> &str {
         if let Some(url) = &self.api_base_url {
             url
@@ -77,14 +140,14 @@ impl ModelConfig {
                 LlmProvider::Groq => "https://api.groq.com/openai",
                 LlmProvider::ClaudeCode => "local://claude-cli",
                 LlmProvider::Gemini => "https://generativelanguage.googleapis.com",
-                LlmProvider::Ollama => "http://localhost:11434",
+                LlmProvider::Ollama => &OLLAMA_HOST,
                 LlmProvider::Mistral => "https://api.mistral.ai",
                 LlmProvider::XAi => "https://api.x.ai",
                 LlmProvider::AzureOpenAi => "https://models.inference.ai.azure.com",
                 LlmProvider::Cerebras => "https://api.cerebras.ai",
                 LlmProvider::Together => "https://api.together.xyz",
                 LlmProvider::DeepSeek => "https://api.deepseek.com",
-                LlmProvider::VLlm => "http://localhost:8000",
+                LlmProvider::VLlm => &VLLM_HOST,
             }
         }
     }

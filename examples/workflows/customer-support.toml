@@ -1,0 +1,127 @@
+# Customer Support Pipeline
+#
+# Workflow: classify ticket -> route -> respond -> quality check -> escalate if needed
+#
+# Usage:
+#   let def = WorkflowDsl::load_file("examples/workflows/customer-support.toml")?;
+#   engine.register_workflow(def).await;
+
+[workflow]
+name = "customer-support-pipeline"
+description = "Classify, route, and respond to customer support tickets with quality gating"
+version = "1.0"
+author = "Argentor Team"
+tags = ["support", "customer", "routing"]
+timeout_seconds = 1800
+
+[variables]
+sla_minutes = "30"
+quality_threshold = "70"
+
+[[steps]]
+id = "classify"
+name = "Classify Ticket"
+type = "agent"
+role = "support_classifier"
+prompt = """
+Classify the following support ticket:
+
+{{input}}
+
+Determine:
+- Category: billing, technical, account, general
+- Urgency: critical, high, medium, low
+- Sentiment: positive, neutral, negative, angry
+- Language: detected language code
+"""
+tools = ["sentiment_analysis", "language_detect"]
+timeout_seconds = 30
+
+[[steps]]
+id = "check_urgent"
+name = "Check Urgency"
+type = "condition"
+condition = "urgency == critical"
+on_true = "escalate_immediate"
+on_false = "respond"
+depends_on = ["classify"]
+
+[[steps]]
+id = "escalate_immediate"
+name = "Escalate Critical Ticket"
+type = "assign_human"
+team = "support_l2"
+message = "CRITICAL ticket requires immediate human attention: {{input}}"
+depends_on = ["check_urgent"]
+
+[[steps]]
+id = "respond"
+name = "Generate Response"
+type = "agent"
+role = "support_agent"
+prompt = """
+Generate a helpful, empathetic response to this support ticket.
+
+Ticket: {{input}}
+Classification: {{steps.classify.output}}
+
+Guidelines:
+- Match the customer's language
+- Address all concerns raised
+- Provide actionable next steps
+- Maintain a professional, warm tone
+"""
+tools = ["knowledge_base", "faq_search", "account_lookup"]
+depends_on = ["check_urgent"]
+timeout_seconds = 60
+on_failure = "retry"
+retry = 2
+
+[[steps]]
+id = "quality_check"
+name = "Quality Review"
+type = "agent"
+role = "qa_reviewer"
+prompt = """
+Review this support response for quality. Score 0-100.
+
+Original ticket: {{input}}
+Generated response: {{steps.respond.output}}
+
+Check:
+- Accuracy of information
+- Tone and empathy
+- Completeness (all questions answered?)
+- Actionable next steps provided?
+"""
+depends_on = ["respond"]
+timeout_seconds = 30
+
+[[steps]]
+id = "check_quality"
+name = "Quality Gate"
+type = "condition"
+condition = "quality_score > 70"
+on_true = "send_response"
+on_false = "escalate_quality"
+depends_on = ["quality_check"]
+
+[[steps]]
+id = "send_response"
+name = "Send Response"
+type = "notification"
+channel = "email"
+message = "{{steps.respond.output}}"
+depends_on = ["check_quality"]
+
+[[steps]]
+id = "escalate_quality"
+name = "Escalate Low-Quality Response"
+type = "assign_human"
+team = "support_l1"
+message = "AI response did not meet quality threshold. Please review and respond manually."
+depends_on = ["check_quality"]
+
+[triggers]
+on_event = "new_ticket"
+webhook = true

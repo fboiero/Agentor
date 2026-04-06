@@ -17,12 +17,16 @@ use tracing::{info, warn};
 /// - Custom groups defined in argentor.toml
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolGroup {
+    /// Unique group name (e.g., "minimal", "coding", "web").
     pub name: String,
+    /// Human-readable description of this group's purpose.
     pub description: String,
+    /// Skill names included in this group.
     pub skills: Vec<String>,
 }
 
 impl ToolGroup {
+    /// Create a new tool group with the given name, description, and skill list.
     pub fn new(
         name: impl Into<String>,
         description: impl Into<String>,
@@ -42,7 +46,13 @@ pub fn default_tool_groups() -> Vec<ToolGroup> {
         ToolGroup::new(
             "minimal",
             "Basic utilities — safe for any context",
-            vec!["echo".into(), "time".into(), "help".into()],
+            vec![
+                "echo".into(),
+                "time".into(),
+                "help".into(),
+                "calculator".into(),
+                "datetime".into(),
+            ],
         ),
         ToolGroup::new(
             "coding",
@@ -53,12 +63,23 @@ pub fn default_tool_groups() -> Vec<ToolGroup> {
                 "shell".into(),
                 "memory_store".into(),
                 "memory_search".into(),
+                "regex".into(),
+                "json_query".into(),
+                "diff".into(),
+                "calculator".into(),
             ],
         ),
         ToolGroup::new(
             "web",
-            "HTTP and browser access for web tasks",
-            vec!["http_fetch".into(), "browser".into()],
+            "HTTP, browser, search, and scraping for web tasks",
+            vec![
+                "http_fetch".into(),
+                "browser".into(),
+                "web_search".into(),
+                "web_scraper".into(),
+                "rss_reader".into(),
+                "dns_lookup".into(),
+            ],
         ),
         ToolGroup::new(
             "orchestration",
@@ -83,6 +104,13 @@ pub fn default_tool_groups() -> Vec<ToolGroup> {
                 "shell".into(),
                 "memory_store".into(),
                 "memory_search".into(),
+                "regex".into(),
+                "json_query".into(),
+                "diff".into(),
+                "calculator".into(),
+                "hash".into(),
+                "encode_decode".into(),
+                "secret_scanner".into(),
             ],
         ),
         ToolGroup::new(
@@ -95,6 +123,37 @@ pub fn default_tool_groups() -> Vec<ToolGroup> {
                 "file_write".into(),
                 "memory_store".into(),
                 "memory_search".into(),
+                "dns_lookup".into(),
+                "hash".into(),
+                "secret_scanner".into(),
+            ],
+        ),
+        ToolGroup::new(
+            "data",
+            "Data processing — JSON, text, regex, validation, encoding",
+            vec![
+                "calculator".into(),
+                "text_transform".into(),
+                "json_query".into(),
+                "regex".into(),
+                "data_validator".into(),
+                "datetime".into(),
+                "encode_decode".into(),
+                "hash".into(),
+                "uuid_generator".into(),
+                "diff".into(),
+                "summarizer".into(),
+            ],
+        ),
+        ToolGroup::new(
+            "security",
+            "Security scanning — prompt guard, secret detection, hashing",
+            vec![
+                "prompt_guard".into(),
+                "secret_scanner".into(),
+                "hash".into(),
+                "data_validator".into(),
+                "encode_decode".into(),
             ],
         ),
         ToolGroup::new(
@@ -106,12 +165,26 @@ pub fn default_tool_groups() -> Vec<ToolGroup> {
 }
 
 /// Central registry for all available skills.
+///
+/// # Examples
+///
+/// ```rust
+/// use argentor_skills::SkillRegistry;
+///
+/// let registry = SkillRegistry::new();
+/// assert_eq!(registry.skill_count(), 0);
+///
+/// // List available tool groups:
+/// let groups = registry.list_groups();
+/// assert!(!groups.is_empty()); // default groups are pre-loaded
+/// ```
 pub struct SkillRegistry {
     skills: HashMap<String, Arc<dyn Skill>>,
     groups: HashMap<String, ToolGroup>,
 }
 
 impl SkillRegistry {
+    /// Create a new registry with default tool groups.
     pub fn new() -> Self {
         let groups: HashMap<String, ToolGroup> = default_tool_groups()
             .into_iter()
@@ -124,6 +197,7 @@ impl SkillRegistry {
         }
     }
 
+    /// Register a skill in the registry.
     pub fn register(&mut self, skill: Arc<dyn Skill>) {
         let name = skill.descriptor().name.clone();
         info!(skill = %name, "Registered skill");
@@ -143,10 +217,12 @@ impl SkillRegistry {
         }
     }
 
+    /// Look up a skill by name.
     pub fn get(&self, name: &str) -> Option<&Arc<dyn Skill>> {
         self.skills.get(name)
     }
 
+    /// List descriptors for all registered skills.
     pub fn list_descriptors(&self) -> Vec<&SkillDescriptor> {
         self.skills.values().map(|s| s.descriptor()).collect()
     }
@@ -355,6 +431,7 @@ impl SkillRegistry {
         }
     }
 
+    /// Return the total number of registered skills.
     pub fn skill_count(&self) -> usize {
         self.skills.len()
     }

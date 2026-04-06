@@ -1545,6 +1545,7 @@ console.log(health);
 // ===========================================================================
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -1594,7 +1595,7 @@ mod tests {
 
     #[test]
     fn test_sdk_generator_default() {
-        let _gen = SdkGenerator::default();
+        let _gen = SdkGenerator;
     }
 
     // -----------------------------------------------------------------------

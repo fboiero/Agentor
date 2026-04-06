@@ -16,6 +16,7 @@ pub struct BrowserSkill {
 }
 
 impl BrowserSkill {
+    /// Create a new browser skill with an HTTP client.
     pub fn new() -> Self {
         // reqwest::Client::builder().build() only fails if TLS backend
         // initialization fails, which indicates a fundamentally broken

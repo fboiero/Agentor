@@ -708,7 +708,7 @@ mod tests {
         let collector = TraceCollector::default();
         assert_eq!(collector.count(), 0);
 
-        let propagator = ContextPropagator::default();
+        let propagator = ContextPropagator;
         let headers = propagator.inject(&CorrelationContext::new("test"));
         assert!(!headers.is_empty());
     }

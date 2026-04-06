@@ -176,21 +176,38 @@ pub fn default_xcapit_profiles() -> HashMap<String, XcapitAgentProfile> {
 }
 
 /// Resolve API keys from environment into the profile's model config.
+///
+/// If the corresponding environment variable is missing or empty, a warning is
+/// logged and the provider will be unavailable (the key stays empty).
 fn resolve_api_keys(config: &mut ModelConfig) {
     if config.api_key.is_empty() {
-        config.api_key = match config.provider {
+        let (env_var, provider_label) = match config.provider {
             argentor_agent::config::LlmProvider::Claude
             | argentor_agent::config::LlmProvider::ClaudeCode => {
-                std::env::var("ANTHROPIC_API_KEY").unwrap_or_default()
+                ("ANTHROPIC_API_KEY", "Anthropic/Claude")
             }
-            argentor_agent::config::LlmProvider::OpenAi => {
-                std::env::var("OPENAI_API_KEY").unwrap_or_default()
-            }
-            argentor_agent::config::LlmProvider::Gemini => {
-                std::env::var("GEMINI_API_KEY").unwrap_or_default()
-            }
-            _ => std::env::var("OPENAI_API_KEY").unwrap_or_default(),
+            argentor_agent::config::LlmProvider::OpenAi => ("OPENAI_API_KEY", "OpenAI"),
+            argentor_agent::config::LlmProvider::Gemini => ("GEMINI_API_KEY", "Gemini"),
+            _ => ("OPENAI_API_KEY", "OpenAI-compatible"),
         };
+
+        match std::env::var(env_var) {
+            Ok(key) if !key.is_empty() => {
+                config.api_key = key;
+            }
+            _ => {
+                tracing::warn!(
+                    provider = provider_label,
+                    env_var = env_var,
+                    model = %config.model_id,
+                    "API key not found — {} provider will be unavailable. \
+                     Set {} to enable it.",
+                    provider_label,
+                    env_var,
+                );
+                // Leave api_key empty; callers must check before using.
+            }
+        }
     }
     for fallback in &mut config.fallback_models {
         resolve_api_keys(fallback);
@@ -245,11 +262,20 @@ impl Default for XcapitConfig {
                 "stripe".to_string(),
                 "intercom".to_string(),
             ],
-            webhook_hmac_secret: std::env::var("WEBHOOK_SECRET").unwrap_or_default(),
-            cors_origins: vec![
-                "http://localhost:8000".to_string(),
-                "http://xcapitsff:8000".to_string(),
-            ],
+            webhook_hmac_secret: std::env::var("WEBHOOK_SECRET").unwrap_or_else(|_| {
+                tracing::warn!(
+                    "WEBHOOK_SECRET not set — webhook HMAC validation disabled. \
+                     Set WEBHOOK_SECRET for production use."
+                );
+                String::new()
+            }),
+            cors_origins: std::env::var("XCAPITSFF_CORS_ORIGINS")
+                .map(|v| v.split(',').map(|s| s.trim().to_string()).collect())
+                .unwrap_or_else(|_| {
+                    let base = std::env::var("XCAPITSFF_URL")
+                        .unwrap_or_else(|_| "http://localhost:8000".to_string());
+                    vec![base, "http://xcapitsff:8000".to_string()]
+                }),
         }
     }
 }
@@ -320,8 +346,8 @@ impl XcapitState {
             tenant_limits: TenantLimitManager::new(),
             conversation_memory: ConversationMemory::new(),
             prompt_manager: {
-                let mut pm = PromptManager::new();
-                argentor_agent::prompt_manager::register_xcapit_templates(&mut pm);
+                let pm = PromptManager::new();
+                argentor_agent::prompt_manager::register_xcapit_templates(&pm);
                 pm
             },
             analytics: crate::analytics::AnalyticsEngine::new(),
@@ -2283,7 +2309,7 @@ mod tests {
     #[test]
     fn test_profile_has_fallback() {
         let profiles = default_xcapit_profiles();
-        for (_, profile) in &profiles {
+        for profile in profiles.values() {
             assert_eq!(
                 profile.model.fallback_models.len(),
                 1,

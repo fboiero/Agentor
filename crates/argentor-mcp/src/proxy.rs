@@ -11,22 +11,34 @@ use tracing::{info, warn};
 /// A log entry for a proxied tool call.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProxyLogEntry {
+    /// Unique call identifier.
     pub call_id: String,
+    /// Name of the tool that was invoked.
     pub tool_name: String,
+    /// Identifier of the agent that made the call.
     pub agent_id: String,
+    /// UTC timestamp of the call.
     pub timestamp: DateTime<Utc>,
+    /// Execution time in milliseconds.
     pub duration_ms: u64,
+    /// Whether the call succeeded.
     pub success: bool,
+    /// Error message, if the call failed.
     pub error: Option<String>,
 }
 
 /// Per-agent metrics tracked by the proxy.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProxyAgentMetrics {
+    /// Total number of tool calls made by this agent.
     pub total_calls: u64,
+    /// Number of successful calls.
     pub successful_calls: u64,
+    /// Number of failed calls.
     pub failed_calls: u64,
+    /// Cumulative execution time in milliseconds.
     pub total_duration_ms: u64,
+    /// Number of calls denied by permission checks.
     pub denied_calls: u64,
 }
 
@@ -46,6 +58,7 @@ pub struct McpProxy {
 }
 
 impl McpProxy {
+    /// Create a new proxy backed by the given skill registry and permission set.
     pub fn new(skills: Arc<SkillRegistry>, permissions: PermissionSet) -> Self {
         Self {
             skills,

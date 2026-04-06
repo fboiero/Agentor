@@ -22,11 +22,14 @@ use tracing::{debug, error, info, warn};
 /// (uses `&'static str` for `jsonrpc`).
 #[derive(Debug, Clone, Deserialize)]
 pub struct IncomingRequest {
+    /// Protocol version (expected `"2.0"`).
     #[allow(dead_code)]
     pub jsonrpc: String,
-    /// `None` for notifications.
+    /// Request id. `None` for notifications.
     pub id: Option<u64>,
+    /// RPC method name.
     pub method: String,
+    /// Optional method parameters.
     #[serde(default)]
     pub params: Option<serde_json::Value>,
 }
@@ -34,11 +37,15 @@ pub struct IncomingRequest {
 /// Outgoing JSON-RPC 2.0 response.
 #[derive(Debug, Clone, Serialize)]
 pub struct OutgoingResponse {
+    /// Protocol version (always `"2.0"`).
     pub jsonrpc: &'static str,
+    /// Request id this response corresponds to.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
+    /// Successful result payload.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<serde_json::Value>,
+    /// Error payload.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<OutgoingError>,
 }
@@ -46,15 +53,18 @@ pub struct OutgoingResponse {
 /// Outgoing JSON-RPC 2.0 error object.
 #[derive(Debug, Clone, Serialize)]
 pub struct OutgoingError {
+    /// Numeric error code.
     pub code: i64,
+    /// Human-readable error message.
     pub message: String,
+    /// Optional structured error data.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<serde_json::Value>,
 }
 
 impl OutgoingResponse {
     /// Build a success response.
-    fn success(id: u64, result: serde_json::Value) -> Self {
+    pub(crate) fn success(id: u64, result: serde_json::Value) -> Self {
         Self {
             jsonrpc: "2.0",
             id: Some(id),
@@ -64,7 +74,7 @@ impl OutgoingResponse {
     }
 
     /// Build an error response.
-    fn error(id: Option<u64>, code: i64, message: impl Into<String>) -> Self {
+    pub(crate) fn error(id: Option<u64>, code: i64, message: impl Into<String>) -> Self {
         Self {
             jsonrpc: "2.0",
             id,

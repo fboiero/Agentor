@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
 
 use argentor_agent::{AgentRunner, LlmProvider, ModelConfig};
 use argentor_gateway::{AuthConfig, GatewayServer, SessionStrategy, WebhookConfig};
@@ -456,7 +456,7 @@ async fn test_webhook_forwards_to_agent_pipeline() {
     let body: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(body["webhook"], "ci");
     assert_eq!(body["status"], "error");
-    assert!(body["error"].as_str().unwrap().len() > 0);
+    assert!(!body["error"].as_str().unwrap().is_empty());
 }
 
 #[tokio::test]

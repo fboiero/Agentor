@@ -48,7 +48,7 @@ pub use audit_export::{
 };
 pub use audit_query::{query_audit_log, AuditFilter, AuditQueryResult};
 pub use capability::{is_private_ip, Capability, PermissionSet, ShellCheckResult};
-pub use encrypted_store::EncryptedStore;
+pub use encrypted_store::{decrypt_value, derive_key, encrypt_value, EncryptedStore, KEY_SIZE};
 pub use observability::{
     AgentMetricsCollector, AgentMetricsSummary, MetricEvent, MetricsSummary, SecurityEventType,
     ToolMetricsSummary,

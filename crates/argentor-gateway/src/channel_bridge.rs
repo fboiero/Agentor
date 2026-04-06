@@ -6,7 +6,7 @@
 //! them via a shared event loop.
 
 use crate::router::{InboundMessage, MessageRouter};
-use argentor_channels::{Channel, ChannelEvent, ChannelManager, ChannelMessage};
+use argentor_channels::{ChannelEvent, ChannelManager, ChannelMessage};
 use argentor_core::{ArgentorError, ArgentorResult};
 use std::collections::HashMap;
 use std::sync::Arc;

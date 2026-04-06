@@ -2,8 +2,11 @@ use crate::circuit_breaker::{CircuitBreakerRegistry, CircuitConfig};
 use crate::config::ModelConfig;
 use crate::context::ContextWindow;
 use crate::debug_recorder::{DebugRecorder, StepType};
+use crate::guardrails::{GuardrailEngine, GuardrailResult, RuleSeverity};
+use crate::hooks::{HookChain, HookDecision, HookEvent};
 use crate::identity::AgentPersonality;
 use crate::llm::{LlmClient, LlmResponse};
+use crate::permission_mode::{PermissionDecision, PermissionEvaluator};
 use crate::response_cache::{CacheKey, CacheMessage, ResponseCache};
 use crate::stream::StreamEvent;
 use argentor_core::{ArgentorError, ArgentorResult, Message, Role};
@@ -27,6 +30,37 @@ type OptionalProxy = Option<(Arc<argentor_mcp::McpProxy>, String)>;
 
 /// The Agent Runner: orchestrates the agentic loop.
 /// Prompt -> LLM -> ToolCall -> Execute Skill -> Backfill -> Repeat.
+///
+/// # Examples
+///
+/// ```no_run
+/// use argentor_agent::{AgentRunner, ModelConfig, LlmProvider};
+/// use argentor_security::{AuditLog, PermissionSet};
+/// use argentor_skills::SkillRegistry;
+/// use argentor_builtins::register_builtins;
+/// use std::sync::Arc;
+/// use std::path::PathBuf;
+///
+/// let mut registry = SkillRegistry::new();
+/// register_builtins(&mut registry);
+/// let skills = Arc::new(registry);
+/// let permissions = PermissionSet::new();
+/// let audit = Arc::new(AuditLog::new(PathBuf::from("/tmp/audit")));
+/// let config = ModelConfig {
+///     provider: LlmProvider::Claude,
+///     model_id: "claude-sonnet-4-20250514".into(),
+///     api_key: "your-key".into(),
+///     api_base_url: None,
+///     temperature: 0.7,
+///     max_tokens: 4096,
+///     max_turns: 10,
+///     fallback_models: vec![],
+///     retry_policy: None,
+/// };
+///
+/// let agent = AgentRunner::new(config, skills, permissions, audit)
+///     .with_default_guardrails();
+/// ```
 pub struct AgentRunner {
     llm: LlmClient,
     skills: Arc<SkillRegistry>,
@@ -42,9 +76,16 @@ pub struct AgentRunner {
     circuit_breakers: CircuitBreakerRegistry,
     /// Debug recorder for step-by-step trace capture.
     debug_recorder: DebugRecorder,
+    /// Optional guardrail engine for input/output validation and sanitization.
+    guardrails: Option<GuardrailEngine>,
+    /// Optional hook chain for intercepting tool calls and agent events.
+    hooks: Option<HookChain>,
+    /// Optional permission evaluator for global tool authorization modes.
+    permission_evaluator: Option<PermissionEvaluator>,
 }
 
 impl AgentRunner {
+    /// Create a new agent runner with the given model config, skills, permissions, and audit log.
     pub fn new(
         config: ModelConfig,
         skills: Arc<SkillRegistry>,
@@ -63,6 +104,9 @@ impl AgentRunner {
             cache: None,
             circuit_breakers: CircuitBreakerRegistry::new(CircuitConfig::default()),
             debug_recorder: DebugRecorder::disabled(),
+            guardrails: None,
+            hooks: None,
+            permission_evaluator: None,
         }
     }
 
@@ -85,6 +129,9 @@ impl AgentRunner {
             cache: None,
             circuit_breakers: CircuitBreakerRegistry::new(CircuitConfig::default()),
             debug_recorder: DebugRecorder::disabled(),
+            guardrails: None,
+            hooks: None,
+            permission_evaluator: None,
         }
     }
 
@@ -135,7 +182,9 @@ impl AgentRunner {
 
     /// Get cache statistics (if caching is enabled).
     pub fn cache_stats(&self) -> Option<crate::response_cache::CacheStats> {
-        self.cache.as_ref().map(|c| c.stats())
+        self.cache
+            .as_ref()
+            .map(super::response_cache::ResponseCache::stats)
     }
 
     /// Get the circuit breaker registry.
@@ -143,7 +192,58 @@ impl AgentRunner {
         &self.circuit_breakers
     }
 
+    /// Enable guardrails with the provided engine. Guardrails validate input before
+    /// LLM calls, output after LLM responses, and tool call arguments/results.
+    pub fn with_guardrails(mut self, engine: GuardrailEngine) -> Self {
+        self.guardrails = Some(engine);
+        self
+    }
+
+    /// Enable guardrails with default rules (PII, prompt injection, toxicity, max length).
+    pub fn with_default_guardrails(mut self) -> Self {
+        self.guardrails = Some(GuardrailEngine::new());
+        self
+    }
+
+    /// Get a reference to the guardrail engine (if enabled).
+    pub fn guardrails(&self) -> Option<&GuardrailEngine> {
+        self.guardrails.as_ref()
+    }
+
+    /// Attach a hook chain for intercepting tool calls and agent events.
+    ///
+    /// Hooks are evaluated before and after each tool call (and optionally
+    /// around LLM calls). A `Deny` decision prevents the tool from executing;
+    /// a `Modify` decision replaces the arguments.
+    pub fn with_hooks(mut self, hooks: HookChain) -> Self {
+        self.hooks = Some(hooks);
+        self
+    }
+
+    /// Get a reference to the hook chain (if configured).
+    pub fn hooks(&self) -> Option<&HookChain> {
+        self.hooks.as_ref()
+    }
+
+    /// Set a permission evaluator for global tool authorization control.
+    ///
+    /// When set, every tool call is checked against the evaluator *before*
+    /// being dispatched to the skill registry or MCP proxy.
+    pub fn with_permission_mode(mut self, evaluator: PermissionEvaluator) -> Self {
+        self.permission_evaluator = Some(evaluator);
+        self
+    }
+
+    /// Get a reference to the permission evaluator (if configured).
+    pub fn permission_evaluator(&self) -> Option<&PermissionEvaluator> {
+        self.permission_evaluator.as_ref()
+    }
+
     /// Run the agentic loop for a session. Returns the final assistant response.
+    #[tracing::instrument(
+        skip(self, session, user_input),
+        fields(session_id = %session.id, max_turns = self.max_turns)
+    )]
     pub async fn run(&self, session: &mut Session, user_input: &str) -> ArgentorResult<String> {
         let session_id = session.id;
 
@@ -210,6 +310,38 @@ impl AgentRunner {
                 return Ok(cached);
             }
 
+            // --- Pre-LLM Input Guardrails ---
+            if let Some(engine) = &self.guardrails {
+                let latest_input = context
+                    .messages()
+                    .last()
+                    .map(|m| m.content.as_str())
+                    .unwrap_or("");
+                let gr = engine.check_input(latest_input);
+                self.log_guardrail_result(session_id, "input", &gr);
+                if !gr.passed {
+                    return Err(ArgentorError::Agent(format!(
+                        "Input blocked by guardrails: {}",
+                        gr.violations
+                            .iter()
+                            .filter(|v| v.severity == RuleSeverity::Block)
+                            .map(|v| v.message.as_str())
+                            .collect::<Vec<_>>()
+                            .join("; ")
+                    )));
+                }
+            }
+
+            // --- Pre-LLM Hook ---
+            if let Some(hooks) = &self.hooks {
+                let pre_llm = HookEvent::PreLlmCall {
+                    provider: provider_name.to_string(),
+                    message_count: context.messages().len(),
+                    turn,
+                };
+                let _ = hooks.evaluate(&pre_llm);
+            }
+
             self.debug_recorder.record(
                 StepType::LlmCall,
                 format!("Turn {turn}: calling {provider_name}"),
@@ -217,14 +349,22 @@ impl AgentRunner {
             );
             let llm_start = std::time::Instant::now();
 
-            let response = self
-                .llm
-                .chat(
-                    context.system_prompt(),
-                    context.messages(),
-                    &tool_descriptors,
-                )
-                .await;
+            let llm_span = tracing::info_span!(
+                "llm_call",
+                provider = %provider_name,
+                turn = turn,
+                session_id = %session_id,
+            );
+            let response = {
+                let _guard = llm_span.enter();
+                self.llm
+                    .chat(
+                        context.system_prompt(),
+                        context.messages(),
+                        &tool_descriptors,
+                    )
+                    .await
+            };
 
             let llm_duration = llm_start.elapsed().as_millis() as u64;
 
@@ -252,8 +392,27 @@ impl AgentRunner {
                 }
             };
 
+            // --- Post-LLM Hook ---
+            if let Some(hooks) = &self.hooks {
+                let response_type = match &response {
+                    LlmResponse::Done(_) => "done",
+                    LlmResponse::Text(_) => "text",
+                    LlmResponse::ToolUse { .. } => "tool_use",
+                };
+                let post_llm = HookEvent::PostLlmCall {
+                    provider: provider_name.to_string(),
+                    response_type: response_type.to_string(),
+                    duration_ms: llm_duration,
+                    turn,
+                };
+                let _ = hooks.evaluate(&post_llm);
+            }
+
             match response {
                 LlmResponse::Done(text) => {
+                    // --- Post-LLM Output Guardrails ---
+                    let text = self.apply_output_guardrails(session_id, text)?;
+
                     // Cache the final response
                     if let Some(cache) = &self.cache {
                         let estimate = (text.len() / 4) as u64;
@@ -312,18 +471,58 @@ impl AgentRunner {
                             "Executing tool call"
                         );
 
+                        // --- Pre-Tool Hook Evaluation ---
+                        let mut effective_call = call.clone();
+                        if let Some(hooks) = &self.hooks {
+                            let pre_event = HookEvent::PreToolUse {
+                                tool_name: call.name.clone(),
+                                arguments: call.arguments.clone(),
+                                call_id: call.id.clone(),
+                            };
+                            match hooks.evaluate(&pre_event) {
+                                HookDecision::Deny { reason } => {
+                                    warn!(tool = %call.name, reason = %reason, "Hook denied tool call");
+                                    self.debug_recorder.record(
+                                        StepType::Custom("hook_deny".into()),
+                                        format!("Hook denied tool '{}': {}", call.name, reason),
+                                        None,
+                                    );
+                                    let error_msg = Message::new(
+                                        Role::User,
+                                        format!("Tool '{}' denied by hook: {}", call.name, reason),
+                                        session_id,
+                                    );
+                                    session.add_message(error_msg.clone());
+                                    context.push(error_msg);
+                                    continue;
+                                }
+                                HookDecision::Modify { new_arguments } => {
+                                    info!(tool = %call.name, "Hook modified tool arguments");
+                                    self.debug_recorder.record(
+                                        StepType::Custom("hook_modify".into()),
+                                        format!("Hook modified arguments for tool '{}'", call.name),
+                                        None,
+                                    );
+                                    effective_call.arguments = new_arguments;
+                                }
+                                HookDecision::Allow | HookDecision::Continue => {}
+                            }
+                        }
+
                         self.audit.log_action(
                             session_id,
                             "tool_call",
-                            Some(call.name.clone()),
+                            Some(effective_call.name.clone()),
                             serde_json::json!({
-                                "call_id": call.id,
-                                "arguments": call.arguments,
+                                "call_id": effective_call.id,
+                                "arguments": effective_call.arguments,
                             }),
                             AuditOutcome::Success,
                         );
 
-                        let result = self.execute_tool(call.clone()).await;
+                        let tool_start = std::time::Instant::now();
+                        let result = self.execute_tool(effective_call.clone()).await;
+                        let tool_duration = tool_start.elapsed().as_millis() as u64;
 
                         match result {
                             Ok(tool_result) => {
@@ -335,6 +534,19 @@ impl AgentRunner {
                                     ),
                                     None,
                                 );
+
+                                // --- Post-Tool Hook Evaluation (informational) ---
+                                if let Some(hooks) = &self.hooks {
+                                    let post_event = HookEvent::PostToolUse {
+                                        tool_name: call.name.clone(),
+                                        result: tool_result.content.clone(),
+                                        is_error: tool_result.is_error,
+                                        call_id: tool_result.call_id.clone(),
+                                        duration_ms: tool_duration,
+                                    };
+                                    let _ = hooks.evaluate(&post_event);
+                                }
+
                                 let outcome = if tool_result.is_error {
                                     AuditOutcome::Error
                                 } else {
@@ -352,11 +564,16 @@ impl AgentRunner {
                                     outcome,
                                 );
 
+                                // --- Post-Tool Result Guardrails ---
+                                // Sanitize tool output to prevent data leakage (PII, secrets)
+                                let sanitized_content =
+                                    self.sanitize_tool_result(session_id, &tool_result.content);
+
                                 // Backfill tool result as a user message (tool role)
                                 let result_content = serde_json::json!({
                                     "type": "tool_result",
                                     "tool_use_id": tool_result.call_id,
-                                    "content": tool_result.content,
+                                    "content": sanitized_content,
                                     "is_error": tool_result.is_error,
                                 });
                                 let tool_msg = Message::new(
@@ -403,11 +620,55 @@ impl AgentRunner {
         )))
     }
 
-    /// Execute a tool call — routes through MCP proxy if configured.
+    /// Execute a tool call — checks permission mode first, then routes through
+    /// MCP proxy if configured, otherwise falls back to the skill registry.
+    #[tracing::instrument(
+        skip(self, call),
+        fields(tool_name = %call.name, call_id = %call.id)
+    )]
     async fn execute_tool(
         &self,
         call: argentor_core::ToolCall,
     ) -> ArgentorResult<argentor_core::ToolResult> {
+        // --- Permission mode check ---
+        if let Some(evaluator) = &self.permission_evaluator {
+            match evaluator.check(&call.name, &call.arguments) {
+                PermissionDecision::Allow => {
+                    // Fall through to normal execution
+                }
+                PermissionDecision::Deny { reason } => {
+                    warn!(tool = %call.name, reason = %reason, "Tool denied by permission mode");
+                    return Ok(argentor_core::ToolResult::error(
+                        &call.id,
+                        format!("Permission denied: {reason}"),
+                    ));
+                }
+                PermissionDecision::Captured {
+                    tool_name,
+                    arguments,
+                } => {
+                    info!(tool = %tool_name, "Tool call captured (plan-only mode)");
+                    return Ok(argentor_core::ToolResult::success(
+                        &call.id,
+                        format!(
+                            "Captured (plan mode): tool={tool_name}, args={}",
+                            serde_json::to_string(&arguments).unwrap_or_default()
+                        ),
+                    ));
+                }
+                PermissionDecision::RequiresApproval {
+                    tool_name,
+                    description,
+                } => {
+                    warn!(tool = %tool_name, description = %description, "Tool requires approval");
+                    return Ok(argentor_core::ToolResult::error(
+                        &call.id,
+                        format!("Requires approval: {description}"),
+                    ));
+                }
+            }
+        }
+
         if let Some((proxy, agent_id)) = &self.proxy {
             proxy.execute(call, agent_id).await
         } else {
@@ -421,6 +682,10 @@ impl AgentRunner {
     /// the caller in real time via the provided `event_tx` channel.  Text responses
     /// are streamed token-by-token; tool calls are accumulated and then executed
     /// (non-streaming) before the next turn.
+    #[tracing::instrument(
+        skip(self, session, user_input, event_tx),
+        fields(session_id = %session.id, max_turns = self.max_turns, streaming = true)
+    )]
     pub async fn run_streaming(
         &self,
         session: &mut Session,
@@ -476,6 +741,9 @@ impl AgentRunner {
 
             match response {
                 LlmResponse::Done(text) => {
+                    // --- Post-LLM Output Guardrails (streaming) ---
+                    let text = self.apply_output_guardrails(session_id, text)?;
+
                     let assistant_msg = Message::assistant(&text, session_id);
                     session.add_message(assistant_msg.clone());
                     context.push(assistant_msg);
@@ -554,10 +822,14 @@ impl AgentRunner {
                                     outcome,
                                 );
 
+                                // --- Post-Tool Result Guardrails (streaming) ---
+                                let sanitized_content =
+                                    self.sanitize_tool_result(session_id, &tool_result.content);
+
                                 let result_content = serde_json::json!({
                                     "type": "tool_result",
                                     "tool_use_id": tool_result.call_id,
-                                    "content": tool_result.content,
+                                    "content": sanitized_content,
                                     "is_error": tool_result.is_error,
                                 });
                                 let tool_msg = Message::new(
@@ -606,5 +878,105 @@ impl AgentRunner {
             "Agentic loop exceeded maximum of {} turns",
             self.max_turns
         )))
+    }
+
+    // -- Guardrail helpers ---------------------------------------------------
+
+    /// Apply output guardrails to LLM response text. Returns sanitized text or error.
+    fn apply_output_guardrails(
+        &self,
+        session_id: uuid::Uuid,
+        text: String,
+    ) -> ArgentorResult<String> {
+        let Some(engine) = &self.guardrails else {
+            return Ok(text);
+        };
+
+        let gr = engine.check_output(&text, None);
+        self.log_guardrail_result(session_id, "output", &gr);
+
+        if !gr.passed {
+            return Err(ArgentorError::Agent(format!(
+                "Output blocked by guardrails: {}",
+                gr.violations
+                    .iter()
+                    .filter(|v| v.severity == RuleSeverity::Block)
+                    .map(|v| v.message.as_str())
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            )));
+        }
+
+        // Use sanitized text if available (e.g. PII redacted)
+        Ok(gr.sanitized_text.unwrap_or(text))
+    }
+
+    /// Sanitize tool results via guardrails. Warn-only (never blocks tool results).
+    fn sanitize_tool_result(&self, session_id: uuid::Uuid, content: &str) -> String {
+        let Some(engine) = &self.guardrails else {
+            return content.to_string();
+        };
+
+        let gr = engine.check_output(content, None);
+
+        if !gr.violations.is_empty() {
+            self.log_guardrail_result(session_id, "tool_result", &gr);
+        }
+
+        // Always return sanitized or original — never block tool results
+        gr.sanitized_text.unwrap_or_else(|| content.to_string())
+    }
+
+    /// Log guardrail check result to debug recorder and audit log.
+    fn log_guardrail_result(&self, session_id: uuid::Uuid, phase: &str, result: &GuardrailResult) {
+        if result.violations.is_empty() {
+            return;
+        }
+
+        let violation_details: Vec<serde_json::Value> = result
+            .violations
+            .iter()
+            .map(|v| {
+                serde_json::json!({
+                    "rule": v.rule_name,
+                    "severity": format!("{:?}", v.severity),
+                    "message": v.message,
+                })
+            })
+            .collect();
+
+        self.debug_recorder.record(
+            StepType::Custom(format!("guardrails_{phase}")),
+            format!(
+                "Guardrails {phase}: {} violation(s), passed={}",
+                result.violations.len(),
+                result.passed
+            ),
+            Some(serde_json::json!({
+                "violations": violation_details,
+                "processing_time_ms": result.processing_time_ms,
+                "sanitized": result.sanitized_text.is_some(),
+            })),
+        );
+
+        let outcome = if result.passed {
+            AuditOutcome::Success
+        } else {
+            AuditOutcome::Error
+        };
+
+        self.audit.log_action(
+            session_id,
+            format!("guardrails_{phase}"),
+            None,
+            serde_json::json!({
+                "violations_count": result.violations.len(),
+                "passed": result.passed,
+                "block_violations": result.violations.iter()
+                    .filter(|v| v.severity == RuleSeverity::Block)
+                    .count(),
+            }),
+            outcome,
+        );
     }
 }

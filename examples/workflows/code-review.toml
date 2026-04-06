@@ -1,0 +1,90 @@
+# Code Review Pipeline
+#
+# Workflow: code analysis -> security scan -> final review -> notify
+#
+# Usage:
+#   let def = WorkflowDsl::load_file("examples/workflows/code-review.toml")?;
+#   engine.register_workflow(def).await;
+
+[workflow]
+name = "code-review-pipeline"
+description = "Automated code review with security scanning and final report"
+version = "1.0"
+author = "Argentor Team"
+tags = ["ci", "code-review", "security"]
+timeout_seconds = 600
+
+[variables]
+repo = "argentor"
+severity_threshold = "high"
+
+[[steps]]
+id = "analyze"
+name = "Code Analysis"
+type = "agent"
+role = "code_analyst"
+prompt = """
+Analyze the following code for quality issues, complexity, and best-practice \
+violations: {{input}}
+
+Focus on:
+- Code smells and anti-patterns
+- Complexity hotspots
+- Missing error handling
+- Performance concerns
+"""
+tools = ["code_analysis", "file_read", "ast_parser"]
+timeout_seconds = 120
+
+[[steps]]
+id = "security"
+name = "Security Scan"
+type = "agent"
+role = "security_auditor"
+prompt = """
+Scan for security vulnerabilities in the code.
+Previous analysis findings: {{steps.analyze.output}}
+
+Check for:
+- SQL injection, XSS, CSRF
+- Hardcoded secrets
+- Unsafe deserialization
+- Dependency vulnerabilities
+"""
+tools = ["secret_scanner", "dependency_audit", "prompt_guard"]
+depends_on = ["analyze"]
+timeout_seconds = 120
+
+[[steps]]
+id = "review"
+name = "Final Review"
+type = "agent"
+role = "tech_lead"
+prompt = """
+Review the code analysis and security findings, then produce a final report.
+
+Code analysis: {{steps.analyze.output}}
+Security scan: {{steps.security.output}}
+
+Produce a structured report with:
+1. Summary (pass/fail recommendation)
+2. Critical issues (must fix)
+3. Suggestions (nice to have)
+4. Security findings
+"""
+depends_on = ["analyze", "security"]
+timeout_seconds = 180
+
+[[steps]]
+id = "notify"
+name = "Send Notification"
+type = "http"
+url = "{{env.WEBHOOK_URL}}"
+method = "POST"
+body = '{"repo": "{{var.repo}}", "status": "complete", "report": "{{steps.review.output}}"}'
+depends_on = ["review"]
+on_failure = "skip"
+
+[triggers]
+cron = "0 9 * * MON"
+webhook = true

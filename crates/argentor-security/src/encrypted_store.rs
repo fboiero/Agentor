@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 /// AES-256-GCM nonce size in bytes.
 const NONCE_SIZE: usize = 12;
 /// AES-256 key size in bytes.
-const KEY_SIZE: usize = 32;
+pub const KEY_SIZE: usize = 32;
 /// PBKDF2 iteration count for key derivation.
 const PBKDF2_ITERATIONS: u32 = 100_000;
 /// Salt size in bytes.
@@ -141,7 +141,7 @@ impl EncryptedStore {
 }
 
 /// Derive a 256-bit key from a passphrase using PBKDF2-HMAC-SHA256 (pure Rust).
-fn derive_key(passphrase: &str, salt: &[u8]) -> [u8; KEY_SIZE] {
+pub fn derive_key(passphrase: &str, salt: &[u8]) -> [u8; KEY_SIZE] {
     // PBKDF2-HMAC-SHA256 implementation using sha2
     use sha2::{Digest, Sha256};
 
@@ -214,7 +214,7 @@ fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
 /// Encrypt a value with AES-256-GCM.
 ///
 /// Format: [salt:16][nonce:12][ciphertext+tag]
-fn encrypt_value(key: &[u8; KEY_SIZE], plaintext: &[u8]) -> Result<Vec<u8>, String> {
+pub fn encrypt_value(key: &[u8; KEY_SIZE], plaintext: &[u8]) -> Result<Vec<u8>, String> {
     use sha2::{Digest, Sha256};
 
     // Generate random salt and nonce
@@ -246,7 +246,7 @@ fn encrypt_value(key: &[u8; KEY_SIZE], plaintext: &[u8]) -> Result<Vec<u8>, Stri
 }
 
 /// Decrypt a value encrypted with `encrypt_value`.
-fn decrypt_value(key: &[u8; KEY_SIZE], data: &[u8]) -> Result<Vec<u8>, String> {
+pub fn decrypt_value(key: &[u8; KEY_SIZE], data: &[u8]) -> Result<Vec<u8>, String> {
     use sha2::{Digest, Sha256};
 
     let min_size = SALT_SIZE + NONCE_SIZE + 32; // salt + nonce + tag

@@ -49,6 +49,7 @@ where
         > + Send
         + Sync,
 {
+    /// Create a new callback-based approval channel.
     pub fn new(callback: F) -> Self {
         Self { callback }
     }
@@ -78,6 +79,7 @@ pub struct HumanApprovalSkill {
 }
 
 impl HumanApprovalSkill {
+    /// Create a new HITL approval skill with the given channel.
     pub fn new(channel: Arc<dyn ApprovalChannel>) -> Self {
         Self {
             descriptor: SkillDescriptor {

@@ -13,9 +13,20 @@
 //! - [`PersistentPersonaStore`] — JSON-file persona configuration store.
 //! - [`TranscriptStore`] — Trait for transcript persistence.
 //! - [`FileTranscriptStore`] — File-system-backed transcript store.
+//!
+//! # Feature flags
+//!
+//! | Flag     | Effect                                                      |
+//! |----------|-------------------------------------------------------------|
+//! | `sqlite` | Enables [`SqliteBackend`] — real SQLite-backed persistence. |
 
+/// Git-like conversation tree with branching, forking, and comparison.
+pub mod conversation_tree;
 /// Core session type and lifecycle.
 pub mod session;
+/// Real SQLite-backed persistence (sessions, messages, usage, personas).
+#[cfg(feature = "sqlite")]
+pub mod sqlite_backend;
 /// SQLite-style persistence layer for sessions, usage, and personas.
 pub mod sqlite_store;
 /// Session persistence backends.
@@ -24,6 +35,8 @@ pub mod store;
 pub mod transcript;
 
 pub use session::Session;
+#[cfg(feature = "sqlite")]
+pub use sqlite_backend::SqliteBackend;
 pub use sqlite_store::{
     PersistentPersonaStore, PersistentUsageStore, PersonaConfig, SqliteSessionStore, UsageRecord,
 };

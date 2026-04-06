@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use argentor_core::{Message, Role, ToolCall, ToolResult};

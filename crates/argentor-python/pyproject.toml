@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "argentor"
+version = "0.1.0"
+description = "Python bindings for the Argentor AI agent framework"
+requires-python = ">=3.9"
+license = { text = "AGPL-3.0-only" }
+keywords = ["ai", "agent", "framework", "rust", "wasm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

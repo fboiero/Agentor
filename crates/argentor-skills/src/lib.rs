@@ -17,12 +17,16 @@
 pub mod loader;
 /// Markdown-based prompt and callable skills.
 pub mod markdown_skill;
+/// Skill marketplace: catalog, search, dependency resolution, and publishing.
+pub mod marketplace;
 /// Plugin system with manifest and event hooks.
 pub mod plugin;
 /// Central skill registry and tool groups.
 pub mod registry;
 /// Core skill trait and descriptor.
 pub mod skill;
+/// Fluent builder for defining skills without boilerplate (like `@tool` in Python SDKs).
+pub mod tool_builder;
 /// Skill vetting, signing, and secure registry index.
 pub mod vetting;
 /// Wasmtime-based WASM skill runtime.
@@ -30,8 +34,14 @@ pub mod wasm_runtime;
 
 pub use loader::{SkillConfig, SkillLoader};
 pub use markdown_skill::{LoadedMarkdownSkills, MarkdownSkill, MarkdownSkillLoader};
+pub use marketplace::{
+    builtin_catalog_entries, CompatibilityResult, MarketplaceCatalog, MarketplaceClient,
+    MarketplaceEntry, MarketplaceManager, MarketplaceSearch, SearchResponse, SkillDependency,
+    SortBy, UpgradeInfo,
+};
 pub use plugin::{Plugin, PluginEvent, PluginManifest, PluginRegistry};
 pub use registry::{SkillRegistry, ToolGroup};
 pub use skill::{Skill, SkillDescriptor};
+pub use tool_builder::ToolBuilder;
 pub use vetting::{SkillIndex, SkillManifest, SkillVetter, VettingResult};
 pub use wasm_runtime::WasmSkillRuntime;

@@ -37,15 +37,21 @@ struct SlackApiResponse {
 /// Represents an incoming Slack event (simplified).
 #[derive(Debug, Deserialize)]
 pub struct SlackEventPayload {
+    /// The inner event object, if present.
     pub event: Option<SlackEvent>,
 }
 
+/// A single Slack event (simplified).
 #[derive(Debug, Deserialize)]
 pub struct SlackEvent {
+    /// The event type identifier.
     #[serde(rename = "type")]
     pub event_type: String,
+    /// Channel where the event occurred.
     pub channel: Option<String>,
+    /// User who triggered the event.
     pub user: Option<String>,
+    /// Text content of the message, if any.
     pub text: Option<String>,
 }
 

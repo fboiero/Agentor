@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 520" font-family="'SF Mono','Fira Code',monospace" font-size="11">
+  <rect width="650" height="520" fill="#0d1117" rx="12"/>
+  <text x="325" y="32" text-anchor="middle" fill="#f85149" font-size="15" font-weight="bold">Security Architecture — 6 Layers</text>
+  <!-- Layer 1 -->
+  <rect x="30" y="50" width="590" height="55" fill="#1c2128" stroke="#58a6ff" stroke-width="1.5" rx="6"/>
+  <text x="50" y="72" fill="#58a6ff" font-size="11" font-weight="bold">Layer 1: AUTHENTICATION</text>
+  <rect x="50" y="80" width="95" height="20" fill="#0d1117" stroke="#30363d" rx="3"/>
+  <text x="97" y="94" text-anchor="middle" fill="#e6edf3" font-size="9">API Key</text>
+  <rect x="155" y="80" width="95" height="20" fill="#0d1117" stroke="#30363d" rx="3"/>
+  <text x="202" y="94" text-anchor="middle" fill="#e6edf3" font-size="9">JWT/OAuth2</text>
+  <rect x="260" y="80" width="95" height="20" fill="#0d1117" stroke="#30363d" rx="3"/>
+  <text x="307" y="94" text-anchor="middle" fill="#e6edf3" font-size="9">OIDC</text>
+  <rect x="365" y="80" width="95" height="20" fill="#0d1117" stroke="#30363d" rx="3"/>
+  <text x="412" y="94" text-anchor="middle" fill="#e6edf3" font-size="9">SAML 2.0</text>
+  <rect x="470" y="80" width="135" height="20" fill="#0d1117" stroke="#30363d" rx="3"/>
+  <text x="537" y="94" text-anchor="middle" fill="#e6edf3" font-size="9">Session Tokens</text>
+  <!-- Layer 2 -->
+  <rect x="30" y="115" width="590" height="50" fill="#1c2128" stroke="#bc8cff" stroke-width="1.5" rx="6"/>
+  <text x="50" y="137" fill="#bc8cff" font-size="11" font-weight="bold">Layer 2: RBAC (Role-Based Access Control)</text>
+  <text x="50" y="155" fill="#8b949e" font-size="9">Roles: Admin | Developer | Analyst | Viewer — Policies: allow/deny per resource per action</text>
+  <!-- Layer 3 -->
+  <rect x="30" y="175" width="590" height="60" fill="#1c2128" stroke="#3fb950" stroke-width="1.5" rx="6"/>
+  <text x="50" y="197" fill="#3fb950" font-size="11" font-weight="bold">Layer 3: CAPABILITY-BASED PERMISSIONS</text>
+  <text x="50" y="213" fill="#e6edf3" font-size="9">Skills declare: FileRead{paths} | FileWrite{paths} | ShellExec | NetworkAccess{hosts}</text>
+  <text x="50" y="227" fill="#8b949e" font-size="9">PermissionSet grants subset → principle of least privilege → argument-level validation</text>
+  <!-- Layer 4 -->
+  <rect x="30" y="245" width="590" height="65" fill="#1c2128" stroke="#d29922" stroke-width="1.5" rx="6"/>
+  <text x="50" y="267" fill="#d29922" font-size="11" font-weight="bold">Layer 4: WASM SANDBOXING (wasmtime)</text>
+  <text x="50" y="283" fill="#e6edf3" font-size="9">Linear memory isolation | Fuel limits (CPU budget) | WASI stdio only</text>
+  <text x="50" y="298" fill="#8b949e" font-size="9">Ed25519 signature verification | SHA-256 checksums | Static analysis (import scanning)</text>
+  <!-- Layer 5 -->
+  <rect x="30" y="320" width="590" height="55" fill="#1c2128" stroke="#f85149" stroke-width="1.5" rx="6"/>
+  <text x="50" y="342" fill="#f85149" font-size="11" font-weight="bold">Layer 5: GUARDRAILS PIPELINE (3 hook points)</text>
+  <rect x="50" y="350" width="160" height="18" fill="#f8514922" stroke="#f85149" rx="3"/>
+  <text x="130" y="363" text-anchor="middle" fill="#f85149" font-size="9">Pre-LLM: input scan</text>
+  <rect x="225" y="350" width="180" height="18" fill="#f8514922" stroke="#f85149" rx="3"/>
+  <text x="315" y="363" text-anchor="middle" fill="#f85149" font-size="9">Post-LLM: output validate</text>
+  <rect x="420" y="350" width="185" height="18" fill="#f8514922" stroke="#f85149" rx="3"/>
+  <text x="512" y="363" text-anchor="middle" fill="#f85149" font-size="9">Post-Tool: leak prevention</text>
+  <!-- Layer 6 -->
+  <rect x="30" y="385" width="590" height="65" fill="#1c2128" stroke="#58a6ff" stroke-width="1.5" rx="6"/>
+  <text x="50" y="407" fill="#58a6ff" font-size="11" font-weight="bold">Layer 6: ENCRYPTION &amp; AUDIT</text>
+  <text x="50" y="423" fill="#e6edf3" font-size="9">AES-256-GCM credential vault | PBKDF2-HMAC-SHA256 key derivation | TLS/mTLS</text>
+  <text x="50" y="438" fill="#8b949e" font-size="9">Append-only audit log | SIEM export: Splunk | Elasticsearch | CEF | Syslog | JSON-LD</text>
+  <!-- Bottom stats -->
+  <rect x="30" y="465" width="590" height="40" fill="#161b22" stroke="#30363d" rx="6"/>
+  <text x="130" y="490" text-anchor="middle" fill="#3fb950" font-size="10">0 unsafe blocks</text>
+  <text x="300" y="490" text-anchor="middle" fill="#58a6ff" font-size="10">0 panics in prod</text>
+  <text x="480" y="490" text-anchor="middle" fill="#d29922" font-size="10">0 unwraps in prod</text>
+</svg>

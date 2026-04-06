@@ -10,44 +10,61 @@ use tracing::{info, warn};
 /// Skill entry from the TOML configuration file.
 #[derive(Debug, Clone, Deserialize)]
 pub struct SkillConfig {
+    /// Unique skill name.
     pub name: String,
+    /// Human-readable description of the skill.
     pub description: String,
+    /// Whether this is a WASM or native skill.
     #[serde(rename = "type")]
     pub skill_type: SkillType,
+    /// Path to the WASM binary (required for WASM skills).
     pub path: Option<PathBuf>,
+    /// JSON Schema describing the skill's input parameters.
     #[serde(default)]
     pub parameters_schema: serde_json::Value,
+    /// Capabilities this skill is allowed to use.
     #[serde(default)]
     pub capabilities: CapabilityConfig,
 }
 
+/// Whether a skill is implemented as WASM or native Rust.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SkillType {
+    /// WebAssembly module loaded via wasmtime.
     Wasm,
+    /// Native Rust implementation compiled into the binary.
     Native,
 }
 
 /// Capabilities declared in config for a skill.
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct CapabilityConfig {
+    /// Allowed file read paths (glob patterns).
     #[serde(default)]
     pub file_read: Vec<String>,
+    /// Allowed file write paths (glob patterns).
     #[serde(default)]
     pub file_write: Vec<String>,
+    /// Allowed network hosts (e.g., `"api.example.com"`).
     #[serde(default)]
     pub network_access: Vec<String>,
+    /// Allowed shell commands.
     #[serde(default)]
     pub shell_exec: Vec<String>,
+    /// Allowed environment variable names.
     #[serde(default)]
     pub env_read: Vec<String>,
+    /// Allowed browser access origins.
     #[serde(default)]
     pub browser_access: Vec<String>,
+    /// Whether the skill may issue database queries.
     #[serde(default)]
     pub database_query: bool,
 }
 
 impl CapabilityConfig {
+    /// Convert the config fields into a list of [`Capability`] values.
     pub fn to_capabilities(&self) -> Vec<Capability> {
         let mut caps = Vec::new();
 
@@ -95,6 +112,7 @@ pub struct SkillLoader {
 }
 
 impl SkillLoader {
+    /// Create a new skill loader backed by a WASM runtime.
     pub fn new() -> ArgentorResult<Self> {
         Ok(Self {
             wasm_runtime: WasmSkillRuntime::new()?,

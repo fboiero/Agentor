@@ -27,8 +27,12 @@ pub mod control_plane;
 pub mod dashboard;
 /// Graceful shutdown manager with cleanup hooks and connection draining.
 pub mod graceful_shutdown;
+/// REST API endpoints for the skill marketplace.
+pub mod marketplace_api;
 /// Authentication and rate-limiting middleware.
 pub mod middleware;
+/// End-to-end observability: tracing, metrics, and request instrumentation.
+pub mod observability;
 /// OpenAPI 3.0 specification generator for Argentor REST API.
 pub mod openapi;
 /// JSON file-based persistence for control plane state.
@@ -41,12 +45,20 @@ pub mod pricing_page;
 pub mod proxy_management;
 /// X-RateLimit-* response headers for API consumers.
 pub mod rate_limit_headers;
+/// Per-API-key rate limiting with sliding windows and token quotas.
+pub mod rate_limit_per_key;
+/// Multi-region routing for LLM requests based on data residency rules.
+pub mod region_router;
 /// REST API endpoints for managing agents, sessions, skills, and connections.
 pub mod rest_api;
 /// HTTP and WebSocket route definitions.
 pub mod router;
 /// Gateway server builder and runner.
 pub mod server;
+/// SSO/SAML authentication module for enterprise single sign-on.
+pub mod sso;
+/// Server-Sent Events streaming for real-time agent conversations.
+pub mod streaming;
 /// Trace visualization system for debugging agent execution.
 pub mod trace_viewer;
 /// Webhook endpoint configuration and handling.
@@ -58,17 +70,18 @@ pub mod ws_approval;
 /// XcapitSFF integration — agent execution, webhook proxy, health checks.
 pub mod xcapitsff;
 
-pub use billing::{
-    billing_router, BillingManager, BillingPlan, BillingState, Invoice, InvoiceLineItem,
-    InvoiceStatus, Subscription, SubscriptionStatus, WebhookProcessResult,
-};
 pub use analytics::{
-    analytics_router, AgentPerformance, AnalyticsDashboard, AnalyticsEngine, AnalyticsState,
-    ConversionFunnel, DailyMetric, FunnelStage, InteractionEvent, InteractionOutcome, QualityEvent,
+    analytics_router, default_pricing, AgentPerformance, AnalyticsDashboard, AnalyticsEngine,
+    AnalyticsState, ConversionFunnel, DailyMetric, FunnelStage, InteractionEvent,
+    InteractionOutcome, ModelPricing, PricingTable, QualityEvent,
 };
 pub use auth::{
     AuthConfig as JwtAuthConfig, AuthMiddlewareState, AuthMode, AuthService, AuthenticatedUser,
     JwtClaims,
+};
+pub use billing::{
+    billing_router, BillingManager, BillingPlan, BillingState, Invoice, InvoiceLineItem,
+    InvoiceStatus, Subscription, SubscriptionStatus, WebhookProcessResult,
 };
 pub use channel_bridge::ChannelBridge;
 pub use control_plane::{control_plane_router, ControlPlaneState};
@@ -76,7 +89,12 @@ pub use dashboard::dashboard_router;
 pub use graceful_shutdown::{
     HookResult, ShutdownHook, ShutdownManager, ShutdownPhase, ShutdownReport,
 };
+pub use marketplace_api::{marketplace_router, MarketplaceApiState};
 pub use middleware::AuthConfig;
+pub use observability::{
+    request_tracing_middleware, ObservabilityConfig, ObservabilityMiddlewareState,
+    ObservabilityStack, RequestMetrics,
+};
 pub use openapi::{
     argentor_openapi_spec, ApiEndpoint, ApiParameter, ApiResponse, HttpMethod, OpenApiGenerator,
 };
@@ -85,8 +103,20 @@ pub use playground::playground_router;
 pub use pricing_page::pricing_router;
 pub use proxy_management::{proxy_management_router, ProxyManagementState};
 pub use rate_limit_headers::{RateLimitHeaders, RateLimitInfo};
+pub use rate_limit_per_key::{
+    DenyReason, KeyUsageStats, PerKeyRateLimiter, RateLimitConfig, RateLimitResult,
+};
+pub use region_router::{DataClassification, RegionRouter, RegionRule, RoutingDecision};
 pub use rest_api::{api_router, RestApiState};
-pub use server::GatewayServer;
+pub use server::{GatewayServer, GracefulShutdownConfig};
+pub use sso::{
+    sso_auth_middleware, sso_router, SsoConfig, SsoManager, SsoMiddlewareState, SsoProvider,
+    SsoState, UserIdentity,
+};
+pub use streaming::{
+    sse_chat_handler, stream_event_to_sse, streaming_router, SseEvent, StreamRequest,
+    StreamingState,
+};
 pub use trace_viewer::{
     trace_viewer_router, CostBreakdown, StepCost, TimelineLane, TraceFilter, TraceStore,
     TraceSummary as TraceViewerSummary, TraceTimeline, TraceViewerState,

@@ -18,6 +18,7 @@ members = [
 ]
 exclude = [
     "skills/*",
+    "crates/argentor-python",  # PyO3 cdylib — build with maturin, not cargo test --workspace
 ]
 
 [workspace.package]
@@ -25,6 +26,11 @@ version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-only"
 repository = "https://github.com/fboiero/Argentor"
+authors = ["Federico Boiero <fboiero@xcapit.com>"]
+homepage = "https://github.com/fboiero/Argentor"
+readme = "README.md"
+keywords = ["ai", "agent", "wasm", "mcp", "orchestration"]
+categories = ["command-line-utilities", "web-programming"]
 
 [workspace.dependencies]
 # Core
@@ -42,7 +48,7 @@ async-trait = "0.1"
 # Web
 axum = { version = "0.8", features = ["ws"] }
 tower = { version = "0.5", features = ["full"] }
-reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream", "multipart"], default-features = false }
 fantoccini = "0.21"
 
 # WASM
@@ -51,6 +57,12 @@ wasmtime-wasi = "28"
 
 # Text processing
 regex = "1"
+
+# Crypto & Encoding
+sha2 = "0.10"
+hmac = "0.12"
+base64 = "0.22"
+hex = "0.4"
 
 # Observability
 tracing = "0.1"
@@ -63,23 +75,26 @@ notify = { version = "7", features = ["macos_fsevent"] }
 bollard = "0.17"
 git2 = "0.19"
 
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
 # Testing
 wiremock = "0.6"
 
 # Internal crates
-argentor-core = { path = "crates/argentor-core" }
-argentor-security = { path = "crates/argentor-security" }
-argentor-session = { path = "crates/argentor-session" }
-argentor-skills = { path = "crates/argentor-skills" }
-argentor-agent = { path = "crates/argentor-agent" }
-argentor-channels = { path = "crates/argentor-channels" }
-argentor-gateway = { path = "crates/argentor-gateway" }
-argentor-builtins = { path = "crates/argentor-builtins" }
-argentor-memory = { path = "crates/argentor-memory" }
-argentor-mcp = { path = "crates/argentor-mcp" }
-argentor-orchestrator = { path = "crates/argentor-orchestrator" }
-argentor-compliance = { path = "crates/argentor-compliance" }
-argentor-a2a = { path = "crates/argentor-a2a" }
+argentor-core = { path = "crates/argentor-core", version = "0.1.0" }
+argentor-security = { path = "crates/argentor-security", version = "0.1.0" }
+argentor-session = { path = "crates/argentor-session", version = "0.1.0" }
+argentor-skills = { path = "crates/argentor-skills", version = "0.1.0" }
+argentor-agent = { path = "crates/argentor-agent", version = "0.1.0" }
+argentor-channels = { path = "crates/argentor-channels", version = "0.1.0" }
+argentor-gateway = { path = "crates/argentor-gateway", version = "0.1.0" }
+argentor-builtins = { path = "crates/argentor-builtins", version = "0.1.0" }
+argentor-memory = { path = "crates/argentor-memory", version = "0.1.0" }
+argentor-mcp = { path = "crates/argentor-mcp", version = "0.1.0" }
+argentor-orchestrator = { path = "crates/argentor-orchestrator", version = "0.1.0" }
+argentor-compliance = { path = "crates/argentor-compliance", version = "0.1.0" }
+argentor-a2a = { path = "crates/argentor-a2a", version = "0.1.0" }
 futures-util = "0.3"
 tokio-stream = "0.1"
 
@@ -95,3 +110,9 @@ redundant_closure_for_method_calls = "warn"
 
 [workspace.lints.rust]
 missing_docs = "warn"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

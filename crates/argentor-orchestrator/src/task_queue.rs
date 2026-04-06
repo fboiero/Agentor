@@ -10,6 +10,7 @@ pub struct TaskQueue {
 }
 
 impl TaskQueue {
+    /// Create a new empty task queue.
     pub fn new() -> Self {
         Self {
             tasks: HashMap::new(),

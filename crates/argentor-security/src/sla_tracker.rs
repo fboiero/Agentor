@@ -267,7 +267,7 @@ impl SlaTracker {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(sla_name)
-            .map(|s| s.status())
+            .map(SlaState::status)
     }
 
     /// Get the status of all tracked SLAs.
@@ -276,7 +276,7 @@ impl SlaTracker {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .values()
-            .map(|s| s.status())
+            .map(SlaState::status)
             .collect()
     }
 

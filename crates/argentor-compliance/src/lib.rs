@@ -26,6 +26,8 @@ pub mod iso42001;
 pub mod persistence;
 /// Compliance report types and generation.
 pub mod report;
+/// Automated compliance report generation across all frameworks.
+pub mod report_generator;
 
 pub use dpga::{DpgaAssessment, DpgaIndicator, DpgaInput};
 pub use gdpr::{ConsentRecord, ConsentStore, DataSubjectRequest, GdprModule};
@@ -34,3 +36,4 @@ pub use iso27001::{AccessControlEvent, Iso27001Module, SecurityIncident};
 pub use iso42001::{AiSystemRecord, BiasCheck, Iso42001Module, TransparencyLog};
 pub use persistence::JsonReportStore;
 pub use report::{ComplianceFramework, ComplianceReport, ComplianceStatus, Finding, Severity};
+pub use report_generator::{ComplianceReportGenerator, ExecutiveSummary, FrameworkSummary};

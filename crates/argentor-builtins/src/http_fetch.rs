@@ -231,6 +231,7 @@ pub struct HttpFetchSkill {
 }
 
 impl HttpFetchSkill {
+    /// Create a new HTTP fetch skill with a secure default client.
     pub fn new() -> Self {
         // Build a custom redirect policy that validates each hop.
         let redirect_policy = reqwest::redirect::Policy::custom(|attempt| {

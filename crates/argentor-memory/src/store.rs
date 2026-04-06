@@ -9,18 +9,26 @@ use uuid::Uuid;
 /// A single entry stored in vector memory.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryEntry {
+    /// Unique identifier for this memory entry.
     pub id: Uuid,
+    /// The text content stored in memory.
     pub content: String,
+    /// The embedding vector representation of the content.
     pub embedding: Vec<f32>,
+    /// Arbitrary key-value metadata associated with this entry.
     pub metadata: HashMap<String, serde_json::Value>,
+    /// Optional session ID this entry belongs to.
     pub session_id: Option<Uuid>,
+    /// Timestamp when this entry was created.
     pub created_at: DateTime<Utc>,
 }
 
 /// Result of a semantic search query.
 #[derive(Debug, Clone)]
 pub struct SearchResult {
+    /// The matching memory entry.
     pub entry: MemoryEntry,
+    /// Cosine similarity score (0.0 -- 1.0).
     pub score: f32,
 }
 
@@ -55,6 +63,7 @@ pub struct InMemoryVectorStore {
 }
 
 impl InMemoryVectorStore {
+    /// Create a new empty in-memory vector store.
     pub fn new() -> Self {
         Self {
             entries: RwLock::new(Vec::new()),

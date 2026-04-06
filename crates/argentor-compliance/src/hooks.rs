@@ -11,37 +11,57 @@ use uuid::Uuid;
 pub enum ComplianceEvent {
     /// A tool/skill was called by an agent.
     ToolCall {
+        /// Identifier of the agent that invoked the tool.
         agent_id: String,
+        /// Name of the tool that was called.
         tool_name: String,
+        /// UTC timestamp of the call.
         timestamp: DateTime<Utc>,
+        /// Whether the call succeeded.
         success: bool,
     },
     /// An agent started working on a task.
     TaskStarted {
+        /// Unique task identifier.
         task_id: Uuid,
+        /// Agent role handling the task.
         role: String,
+        /// Human-readable task description.
         description: String,
+        /// UTC timestamp of when the task started.
         timestamp: DateTime<Utc>,
     },
     /// An agent completed a task.
     TaskCompleted {
+        /// Unique task identifier.
         task_id: Uuid,
+        /// Agent role that completed the task.
         role: String,
+        /// Execution time in milliseconds.
         duration_ms: u64,
+        /// Number of artifacts produced.
         artifacts_count: usize,
+        /// UTC timestamp of when the task completed.
         timestamp: DateTime<Utc>,
     },
     /// A human approval was requested.
     ApprovalRequested {
+        /// Task requiring approval.
         task_id: String,
+        /// Assessed risk level (e.g., "high", "medium").
         risk_level: String,
+        /// UTC timestamp of the approval request.
         timestamp: DateTime<Utc>,
     },
     /// A human approval decision was made.
     ApprovalDecided {
+        /// Task that was reviewed.
         task_id: String,
+        /// Whether the task was approved.
         approved: bool,
+        /// Identifier of the human reviewer.
         reviewer: String,
+        /// UTC timestamp of the decision.
         timestamp: DateTime<Utc>,
     },
 }
@@ -49,6 +69,7 @@ pub enum ComplianceEvent {
 /// Trait for receiving compliance-relevant events from the runtime.
 #[async_trait]
 pub trait ComplianceHook: Send + Sync {
+    /// Called whenever a compliance-relevant event occurs.
     async fn on_event(&self, event: &ComplianceEvent);
 }
 
@@ -58,6 +79,7 @@ pub struct ComplianceHookChain {
 }
 
 impl ComplianceHookChain {
+    /// Create a new, empty hook chain.
     pub fn new() -> Self {
         Self { hooks: Vec::new() }
     }
@@ -92,6 +114,7 @@ pub struct Iso27001Hook {
 }
 
 impl Iso27001Hook {
+    /// Create a hook wrapping the given ISO 27001 module.
     pub fn new(module: Arc<Iso27001Module>) -> Self {
         Self { module }
     }
@@ -141,6 +164,7 @@ pub struct Iso42001Hook {
 }
 
 impl Iso42001Hook {
+    /// Create a hook wrapping the given ISO 42001 module and AI system ID.
     pub fn new(module: Arc<Iso42001Module>, system_id: Uuid) -> Self {
         Self { module, system_id }
     }

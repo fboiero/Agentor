@@ -151,16 +151,22 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 /// Result of vetting a skill package.
 #[derive(Debug, Clone, Serialize)]
 pub struct VettingResult {
+    /// Name of the skill that was vetted.
     pub skill_name: String,
+    /// Whether the skill passed all checks.
     pub passed: bool,
+    /// Individual checks and their outcomes.
     pub checks: Vec<VettingCheck>,
 }
 
 /// Individual check in the vetting pipeline.
 #[derive(Debug, Clone, Serialize)]
 pub struct VettingCheck {
+    /// Check name (e.g., "checksum", "signature", "max_size").
     pub name: String,
+    /// Whether this check passed.
     pub passed: bool,
+    /// Human-readable result or failure reason.
     pub message: String,
 }
 
@@ -195,6 +201,7 @@ pub struct SkillVetter {
 }
 
 impl SkillVetter {
+    /// Create a new vetter with permissive defaults (10 MB limit, no signature requirement).
     pub fn new() -> Self {
         Self {
             trusted_keys: Vec::new(),
@@ -204,21 +211,25 @@ impl SkillVetter {
         }
     }
 
+    /// Add trusted public keys for signature verification (builder pattern).
     pub fn with_trusted_keys(mut self, keys: Vec<String>) -> Self {
         self.trusted_keys = keys;
         self
     }
 
+    /// Set the maximum allowed WASM binary size (builder pattern).
     pub fn with_max_wasm_size(mut self, size: usize) -> Self {
         self.max_wasm_size = size;
         self
     }
 
+    /// Require valid signatures from trusted keys (builder pattern).
     pub fn with_require_signatures(mut self, require: bool) -> Self {
         self.require_signatures = require;
         self
     }
 
+    /// Set capabilities that are blocked entirely (builder pattern).
     pub fn with_blocked_capabilities(mut self, caps: Vec<String>) -> Self {
         self.blocked_capabilities = caps.into_iter().collect();
         self
@@ -421,6 +432,7 @@ pub struct SkillIndex {
 /// An entry in the local skill index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillIndexEntry {
+    /// The skill's manifest (name, version, capabilities, etc.).
     pub manifest: SkillManifest,
     /// Path to the installed WASM binary (relative to skills directory).
     pub wasm_path: String,
@@ -431,6 +443,7 @@ pub struct SkillIndexEntry {
 }
 
 impl SkillIndex {
+    /// Create a new, empty skill index.
     pub fn new() -> Self {
         Self { skills: Vec::new() }
     }

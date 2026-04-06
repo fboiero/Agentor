@@ -29,6 +29,7 @@ pub struct LocalEmbedding {
 }
 
 impl LocalEmbedding {
+    /// Create a new local embedding generator with the given vector dimension.
     pub fn new(dimension: usize) -> Self {
         Self { dimension }
     }

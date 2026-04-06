@@ -11,6 +11,7 @@ pub struct TaskStatusSkill {
 }
 
 impl TaskStatusSkill {
+    /// Create a new task status skill backed by the given queue handle.
     pub fn new(queue: Arc<dyn TaskQueueHandle>) -> Self {
         Self {
             descriptor: SkillDescriptor {

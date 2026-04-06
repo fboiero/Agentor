@@ -30,6 +30,7 @@ async fn pricing_handler() -> impl IntoResponse {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use axum::body::Body;
@@ -76,8 +77,14 @@ mod tests {
     #[tokio::test]
     async fn test_pricing_contains_plan_names() {
         let (_, _, body) = get_pricing().await;
-        assert!(body.contains("Free"), "Pricing page should contain 'Free' plan");
-        assert!(body.contains("Pro"), "Pricing page should contain 'Pro' plan");
+        assert!(
+            body.contains("Free"),
+            "Pricing page should contain 'Free' plan"
+        );
+        assert!(
+            body.contains("Pro"),
+            "Pricing page should contain 'Pro' plan"
+        );
         assert!(
             body.contains("Enterprise"),
             "Pricing page should contain 'Enterprise' plan"
@@ -87,7 +94,10 @@ mod tests {
     #[tokio::test]
     async fn test_pricing_contains_pricing_amounts() {
         let (_, _, body) = get_pricing().await;
-        assert!(body.contains("$0"), "Pricing page should contain '$0' for Free plan");
+        assert!(
+            body.contains("$0"),
+            "Pricing page should contain '$0' for Free plan"
+        );
         assert!(
             body.contains("$49"),
             "Pricing page should contain '$49' for Pro plan"

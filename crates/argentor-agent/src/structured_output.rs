@@ -11,7 +11,6 @@
 //! - [`ExtractionPattern`] — Strategy for locating structured content.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // FieldType

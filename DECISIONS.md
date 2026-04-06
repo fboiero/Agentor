@@ -2,6 +2,40 @@
 
 ---
 
+## 2026-04-01 — Publishable Python & TypeScript SDK Clients
+
+### Decision: Hand-craft publishable SDKs under sdks/
+- **Timestamp**: 2026-04-01
+- **Asked**: Generate publishable Python and TypeScript SDK clients for the Argentor REST API, covering all endpoints from the gateway and the existing code-generator surface.
+- **Decision**: Created complete, hand-crafted SDKs at `sdks/python/` and `sdks/typescript/` rather than running the Rust `sdk_generator.rs` (which targets `generated-sdks/` with `httpx`-based stubs). The new SDKs are designed to be publishable to PyPI/npm: proper `pyproject.toml` with hatchling, `package.json` with ESM exports, typed errors module, `py.typed` marker, full Pydantic models, and both sync + async Python clients. Covered all endpoints: `/v1/run`, `/v1/run/stream` (SSE), `/v1/batch`, `/v1/evaluate`, `/api/v1/sessions`, `/api/v1/skills`, `/api/v1/agent/chat`, `/health`, `/api/v1/metrics`, `/api/v1/connections`, `/v1/personas`, `/v1/usage`, `/v1/webhooks/proxy`, `/v1/marketplace/search`, `/v1/marketplace/install`. TypeScript compiles clean with `tsc --noEmit`, Python parses with `ast.parse`.
+- **Alternatives**: (1) Run `cargo run --example generate_sdks` -- produces simpler stubs missing sessions, skills, marketplace, chat, connections; uses `setup.py` instead of `pyproject.toml`. (2) OpenAPI codegen -- no OpenAPI spec exists yet. Chose manual approach for completeness and publishability.
+- **Result**: 15 files total (8 Python, 7 TypeScript), ~2000 lines combined, zero compilation errors.
+
+---
+
+## 2026-04-02 — Phase 46: Demo + Marketplace + Multi-Provider Search
+
+### Decision: Marketplace Architecture
+- **Timestamp**: 2026-04-02
+- **Asked**: Build plugin marketplace, E2E demo, multi-provider search
+- **Decision**: Built marketplace as an in-process module (`marketplace.rs`) layered on top of existing `SkillManifest`, `SkillVetter`, and `SkillIndex`. Remote registry is a stub (`MarketplaceClient`) — local-first approach. Search provider selection is runtime-configurable via tool parameters, with DuckDuckGo as zero-config default.
+- **Alternatives**: (1) Full gRPC marketplace server — too heavy for now. (2) Git-based registry (like Cargo) — simpler but chose JSON catalog for flexibility. (3) Require API keys for all search — chose DuckDuckGo HTML as free fallback.
+- **Result**: 79 new tests (54 marketplace + 25 search), E2E demo with 16 real tool executions.
+
+---
+
+## 2026-04-02 — Phase 44: Universal Skill Toolkit
+
+### Decision: Skill Selection from Cross-Platform Survey
+- **Timestamp**: 2026-04-02
+- **Asked**: Research public skills from Vercel AI SDK, LangChain, CrewAI, AutoGPT, Semantic Kernel and adapt them to Argentor
+- **Decision**: Surveyed 6 platforms, identified 70+ tools, selected 18 highest-value skills that are self-contained (no API keys required for core functionality). Organized into 4 categories: Data & Text (6), Crypto & Encoding (3), Web & Search (4), Security & AI (5). Added `register_utility_skills()` function and integrated into all `register_builtins*()` variants. Created 2 new tool groups (`data`, `security`) and enriched existing groups.
+- **Alternatives**: (1) Only implement Vercel tools — too narrow. (2) Require API keys for search (Tavily, Serper) — chose DuckDuckGo HTML scraping for zero-config. (3) Add XML parser dep for RSS — chose regex-based parsing to avoid dep. (4) Add md-5 crate for MD5 — skipped, SHA-256 is the safe default.
+- **New deps**: sha2 0.10, hmac 0.12, base64 0.22, hex 0.4
+- **Result**: 18 new skills, ~578 new tests (2525 → 3103 total), 0 compilation errors.
+
+---
+
 ## 2026-03-06 — LLM Provider Expansion + Docker/K8s
 
 ### Decision 26: OpenAI-Compatible Backend Reuse Strategy

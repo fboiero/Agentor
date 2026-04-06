@@ -2,6 +2,13 @@
 name = "argentor-security"
 version.workspace = true
 edition.workspace = true
+description = "Capability-based permissions, RBAC, audit logging, and encryption for Argentor"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true

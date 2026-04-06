@@ -12,12 +12,17 @@ use tracing::{info, warn};
 /// YAML frontmatter parsed from a markdown skill file.
 #[derive(Debug, Clone, Deserialize)]
 pub struct MarkdownFrontmatter {
+    /// Skill name.
     pub name: String,
+    /// Short description of what the skill does.
     pub description: String,
+    /// Optional tool-group this skill belongs to.
     #[serde(default)]
     pub group: Option<String>,
+    /// Optional JSON Schema for the skill's parameters.
     #[serde(default)]
     pub parameters_schema: Option<serde_json::Value>,
+    /// Required capabilities as string identifiers.
     #[serde(default)]
     pub capabilities: Vec<String>,
     /// If true, this skill's content is injected into the system prompt
@@ -221,6 +226,7 @@ pub struct MarkdownSkillLoader {
 }
 
 impl MarkdownSkillLoader {
+    /// Create a new loader that reads `.md` skills from the given directory.
     pub fn new(skills_dir: PathBuf) -> Self {
         Self {
             skills_dir,

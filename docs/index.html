@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Argentor - Intelligent Multi-Agent AI Framework in Rust</title>
-  <meta name="description" content="Production-grade autonomous AI agent framework with ReAct reasoning, A2A protocol, cost-aware routing, WASM sandboxing, and enterprise compliance. 1367 tests, 75K+ LOC, built in Rust.">
+  <meta name="description" content="Production-grade autonomous AI agent framework with ReAct reasoning, A2A protocol, cost-aware routing, WASM sandboxing, and enterprise compliance. 3195 tests, 115K+ LOC, built in Rust.">
 
   <!-- Asciinema Player -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/asciinema-player@3.9.0/dist/bundle/asciinema-player.css">
@@ -650,7 +650,27 @@
 <!-- Demo -->
 <section id="demo" class="fade-in">
   <div class="container">
-    <h2>Live Demo</h2>
+    <h2>Live Demos</h2>
+
+    <h3 style="color:var(--green);margin-bottom:8px;">Skills Toolkit &amp; Guardrails</h3>
+    <p class="section-sub">
+      18 utility skills (calculator, JSON query, web search, prompt guard, secret scanner, diff&hellip;)
+      plus a guardrails pipeline that blocks PII and prompt injection in real time.
+    </p>
+    <div class="demo-player">
+      <div class="demo-bar">
+        <span class="demo-dot r"></span>
+        <span class="demo-dot y"></span>
+        <span class="demo-dot g"></span>
+        <span>cargo run --example demo_skills_toolkit</span>
+      </div>
+      <div id="player-skills"></div>
+    </div>
+    <p class="demo-info">
+      16 real tool executions + 4 guardrail tests &mdash; zero API keys, zero mocks.
+    </p>
+
+    <h3 style="color:var(--cyan);margin-top:40px;margin-bottom:8px;">DevOps Pipeline</h3>
     <p class="section-sub">
       An Argentor agent running an automated 8-step DevOps pipeline &mdash;
       real tool execution, no API keys, no mocks.
@@ -666,7 +686,6 @@
     </div>
     <p class="demo-info">
       Interactive player &mdash; click to pause, scroll to rewind.
-      All 8 tools (shell, file_read, file_write, memory_store, memory_search) executed real operations.
     </p>
   </div>
 </section>
@@ -692,7 +711,7 @@
       <div class="why-card">
         <div class="why-icon" style="color:var(--green)">&#x26a1;</div>
         <h3>Production-Grade</h3>
-        <p>1367 tests, 0 failures. Persistent state, control plane, web dashboard, OpenTelemetry, and A2A protocol for agent interop.</p>
+        <p>3195 tests, 0 failures. Persistent state, control plane, web dashboard, OpenTelemetry, and A2A protocol for agent interop.</p>
       </div>
     </div>
 
@@ -830,7 +849,7 @@
   <div class="container">
     <h2>Capabilities</h2>
     <p class="section-sub">
-      14 crates, 75K+ lines of code, every component tested and documented.
+      14 crates, 115K+ lines of code, every component tested and documented.
     </p>
     <div class="feature-grid">
       <div class="feature-card">
@@ -1261,7 +1280,7 @@ D &#x2500; C</div>
 <span class="comment"># Run the demo (no API keys needed)</span>
 <span class="cmd">cargo run --example demo_pipeline</span>
 
-<span class="comment"># Run all 1367 tests</span>
+<span class="comment"># Run all 3195 tests</span>
 <span class="cmd">cargo test --workspace</span>
 
 <span class="comment"># Start the gateway with dashboard</span>
@@ -1287,14 +1306,14 @@ D &#x2500; C</div>
     <p>
       <strong>Argentor</strong> &mdash; AGPL-3.0-only &mdash;
       <a href="https://github.com/fboiero/Agentor">GitHub</a> &mdash;
-      75K+ lines of Rust &mdash;
-      1367 tests, 0 failures &mdash;
+      115K+ lines of Rust &mdash;
+      3195 tests, 0 failures &mdash;
       Built by <a href="https://www.xcapit.com">Xcapit</a>
     </p>
     <div class="footer-badges">
       <img src="https://img.shields.io/badge/Built%20with-Rust-orange.svg?style=flat-square" alt="Built with Rust">
       <img src="https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg?style=flat-square" alt="AGPL-3.0-only">
-      <img src="https://img.shields.io/badge/Tests-1367%20passing-brightgreen.svg?style=flat-square" alt="1367 Tests">
+      <img src="https://img.shields.io/badge/Tests-3195%20passing-brightgreen.svg?style=flat-square" alt="3195 Tests">
       <img src="https://img.shields.io/badge/ISO-27001%20|%2042001-red.svg?style=flat-square" alt="ISO Compliance">
     </div>
   </div>
@@ -1303,13 +1322,25 @@ D &#x2500; C</div>
 <!-- Asciinema Player -->
 <script src="https://cdn.jsdelivr.net/npm/asciinema-player@3.9.0/dist/bundle/asciinema-player.min.js"></script>
 <script>
-  // Asciinema player
+  // Skills Toolkit demo (new, featured)
+  AsciinemaPlayer.create('demo_skills_toolkit.cast', document.getElementById('player-skills'), {
+    theme: 'monokai',
+    speed: 1.5,
+    idleTimeLimit: 1,
+    fit: 'width',
+    autoPlay: true,
+    loop: true,
+    poster: 'npt:3',
+    terminalFontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace"
+  });
+
+  // DevOps Pipeline demo
   AsciinemaPlayer.create('demo_pipeline.cast', document.getElementById('player-container'), {
     theme: 'monokai',
     speed: 2,
     idleTimeLimit: 1,
     fit: 'width',
-    autoPlay: true,
+    autoPlay: false,
     loop: true,
     poster: 'npt:2',
     terminalFontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace"

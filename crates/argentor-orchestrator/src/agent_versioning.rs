@@ -762,6 +762,8 @@ mod tests {
         test_version_config(model_id, change_log)
     }
 
+    // Test helper with many params — acceptable for test ergonomics.
+    #[allow(clippy::too_many_arguments)]
     fn make_config_with_details(
         model_id: &str,
         prompt: &str,

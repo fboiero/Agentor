@@ -927,8 +927,7 @@ mod tests {
         let remaining = router.remaining_budget().unwrap();
         assert!(
             (remaining - 7.2).abs() < 1e-10,
-            "Remaining budget should be 7.2, got {}",
-            remaining
+            "Remaining budget should be 7.2, got {remaining}"
         );
     }
 
@@ -970,8 +969,7 @@ mod tests {
         let weight_sum: f32 = complexity.factors.iter().map(|f| f.weight).sum();
         assert!(
             (weight_sum - 0.70).abs() < 0.01,
-            "Weights should sum to ~0.70, got {}",
-            weight_sum
+            "Weights should sum to ~0.70, got {weight_sum}"
         );
     }
 
@@ -1039,8 +1037,7 @@ mod tests {
         let remaining = router.remaining_budget().unwrap();
         assert!(
             remaining.abs() < f64::EPSILON,
-            "Remaining budget should be 0 when overspent, got {}",
-            remaining
+            "Remaining budget should be 0 when overspent, got {remaining}"
         );
     }
 

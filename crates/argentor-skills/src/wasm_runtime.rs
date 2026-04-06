@@ -21,6 +21,7 @@ pub struct WasmSkillRuntime {
 }
 
 impl WasmSkillRuntime {
+    /// Create a new WASM skill runtime with a default engine.
     pub fn new() -> ArgentorResult<Self> {
         let engine = Engine::default();
         Ok(Self { engine })

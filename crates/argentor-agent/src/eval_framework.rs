@@ -236,8 +236,7 @@ impl Evaluator for ExactMatchEvaluator {
             details.insert("exact_match".to_string(), if matched { 1.0 } else { 0.0 });
             if !matched {
                 errors.push(format!(
-                    "Expected exact output '{}', got '{}'",
-                    expected, actual_output
+                    "Expected exact output '{expected}', got '{actual_output}'"
                 ));
             }
             (matched, if matched { 1.0 } else { 0.0 })
@@ -354,7 +353,10 @@ impl Evaluator for JsonSchemaEvaluator {
             };
         }
 
-        let value = parsed.expect("already checked");
+        // Safety: `parsed` is guaranteed to be `Ok` because we checked `is_ok()` above
+        // and returned early if it was not.
+        #[allow(clippy::unwrap_used)]
+        let value = parsed.unwrap();
 
         // Step 2: schema matching (lightweight)
         if let Some(ref schema) = case.expected_json_schema {
@@ -920,7 +922,10 @@ fn validate_schema(value: &serde_json::Value, schema: &serde_json::Value) -> boo
                 .get("properties")
                 .and_then(serde_json::Value::as_object)
             {
-                let obj = value.as_object().expect("checked above");
+                // Safety: `value.is_object()` is checked on the line above and
+                // this branch is only reached when it is true.
+                #[allow(clippy::unwrap_used)]
+                let obj = value.as_object().unwrap();
                 for key in props.keys() {
                     if !obj.contains_key(key) {
                         return false;
@@ -945,7 +950,7 @@ fn token_similarity(a: &str, b: &str) -> f32 {
         s.to_lowercase()
             .split_whitespace()
             .filter(|w| w.len() > 2)
-            .map(|w| w.to_string())
+            .map(std::string::ToString::to_string)
             .collect()
     };
 
@@ -1745,7 +1750,7 @@ mod tests {
     #[test]
     fn test_validate_schema_number_type() {
         let schema = serde_json::json!({"type": "number"});
-        assert!(validate_schema(&serde_json::json!(3.14), &schema));
+        assert!(validate_schema(&serde_json::json!(2.719), &schema));
         assert!(!validate_schema(&serde_json::json!("nope"), &schema));
     }
 

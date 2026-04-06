@@ -7,9 +7,13 @@ use std::str::FromStr;
 /// A single scheduled job definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduledJob {
+    /// Job name for identification.
     pub name: String,
+    /// Cron expression defining the schedule.
     pub cron_expression: String,
+    /// Description of the task to execute.
     pub task_description: String,
+    /// Whether the job is currently active.
     #[serde(default = "default_enabled")]
     pub enabled: bool,
 }

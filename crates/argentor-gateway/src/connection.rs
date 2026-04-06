@@ -6,8 +6,11 @@ use uuid::Uuid;
 /// Represents a connected WebSocket client.
 #[derive(Debug)]
 pub struct Connection {
+    /// Unique connection identifier.
     pub id: Uuid,
+    /// Session this connection belongs to.
     pub session_id: Uuid,
+    /// Channel sender for outbound messages.
     pub tx: mpsc::UnboundedSender<String>,
 }
 
@@ -17,23 +20,27 @@ pub struct ConnectionManager {
 }
 
 impl ConnectionManager {
+    /// Create a new connection manager wrapped in an `Arc`.
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             connections: RwLock::new(HashMap::new()),
         })
     }
 
+    /// Register a new connection.
     pub async fn add(&self, conn: Connection) {
         let id = conn.id;
         self.connections.write().await.insert(id, conn);
         tracing::info!(connection_id = %id, "Connection added");
     }
 
+    /// Remove a connection by ID.
     pub async fn remove(&self, id: Uuid) {
         self.connections.write().await.remove(&id);
         tracing::info!(connection_id = %id, "Connection removed");
     }
 
+    /// Send a message to all connections belonging to the given session.
     pub async fn send_to_session(&self, session_id: Uuid, message: &str) {
         let conns = self.connections.read().await;
         for conn in conns.values() {
@@ -43,6 +50,7 @@ impl ConnectionManager {
         }
     }
 
+    /// Return the number of active connections.
     pub async fn connection_count(&self) -> usize {
         self.connections.read().await.len()
     }

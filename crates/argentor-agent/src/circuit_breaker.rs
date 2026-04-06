@@ -319,7 +319,7 @@ impl CircuitBreakerRegistry {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(provider)
-            .map(|b| b.status())
+            .map(CircuitBreaker::status)
     }
 
     /// Get all provider statuses.

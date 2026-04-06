@@ -252,9 +252,13 @@ fn render_template(content: &str, vars: &HashMap<String, String>) -> String {
 fn render_each_blocks(content: &str, vars: &HashMap<String, String>) -> String {
     let mut result = content.to_string();
     // Non-greedy match for each blocks.
+    // Safety: static regex pattern — compilation is infallible.
+    #[allow(clippy::unwrap_used)]
     let each_re = regex::Regex::new(r"\{\{#each\s+(\w+)\}\}([\s\S]*?)\{\{/each\}\}").unwrap();
 
     while let Some(caps) = each_re.captures(&result) {
+        // Safety: capture group 0 (the full match) always exists when captures() returns Some.
+        #[allow(clippy::unwrap_used)]
         let full_match = caps.get(0).unwrap();
         let var_name = &caps[1];
         let body = &caps[2];
@@ -283,9 +287,13 @@ fn render_each_blocks(content: &str, vars: &HashMap<String, String>) -> String {
 /// Render `{{#if variable}}...{{/if}}` blocks.
 fn render_if_blocks(content: &str, vars: &HashMap<String, String>) -> String {
     let mut result = content.to_string();
+    // Safety: static regex pattern — compilation is infallible.
+    #[allow(clippy::unwrap_used)]
     let if_re = regex::Regex::new(r"\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{/if\}\}").unwrap();
 
     while let Some(caps) = if_re.captures(&result) {
+        // Safety: capture group 0 (the full match) always exists when captures() returns Some.
+        #[allow(clippy::unwrap_used)]
         let full_match = caps.get(0).unwrap();
         let var_name = &caps[1];
         let body = &caps[2];
@@ -314,6 +322,8 @@ fn render_if_blocks(content: &str, vars: &HashMap<String, String>) -> String {
 
 /// Render `{{variable}}`, `{{variable|default:val}}`, `{{variable|upper}}`, `{{variable|lower}}`.
 fn render_variables(content: &str, vars: &HashMap<String, String>) -> String {
+    // Safety: static regex pattern — compilation is infallible.
+    #[allow(clippy::unwrap_used)]
     let var_re = regex::Regex::new(r"\{\{(\w+)(?:\|(\w+)(?::([^}]*))?)?\}\}").unwrap();
 
     var_re
@@ -379,6 +389,9 @@ impl PromptManager {
     /// exists, the old version is archived and the new version number is
     /// incremented automatically.
     pub fn register_template(&self, mut template: PromptTemplate) {
+        // Lock poisoning: panicking is the correct response if another thread
+        // panicked while holding this lock — data may be corrupted.
+        #[allow(clippy::unwrap_used)]
         let mut inner = self.inner.write().unwrap();
 
         if let Some(existing) = inner.templates.get(&template.id).cloned() {
@@ -402,6 +415,9 @@ impl PromptManager {
         template_id: &str,
         variables: &HashMap<String, String>,
     ) -> Result<String, PromptError> {
+        // Lock poisoning: panicking is the correct response if another thread
+        // panicked while holding this lock — data may be corrupted.
+        #[allow(clippy::unwrap_used)]
         let inner = self.inner.read().unwrap();
         let tmpl = inner
             .templates
@@ -443,6 +459,8 @@ impl PromptManager {
         version: u32,
         variables: &HashMap<String, String>,
     ) -> Result<String, PromptError> {
+        // Lock poisoning: panicking is the correct response.
+        #[allow(clippy::unwrap_used)]
         let inner = self.inner.read().unwrap();
 
         // Check if the current version matches.
@@ -479,6 +497,8 @@ impl PromptManager {
 
     /// List all registered templates.
     pub fn list_templates(&self) -> Vec<TemplateSummary> {
+        // Lock poisoning: panicking is the correct response.
+        #[allow(clippy::unwrap_used)]
         let inner = self.inner.read().unwrap();
         inner
             .templates
@@ -489,12 +509,16 @@ impl PromptManager {
 
     /// Get the current version of a template by id.
     pub fn get_template(&self, id: &str) -> Option<PromptTemplate> {
+        // Lock poisoning: panicking is the correct response.
+        #[allow(clippy::unwrap_used)]
         let inner = self.inner.read().unwrap();
         inner.templates.get(id).cloned()
     }
 
     /// Get the full version history of a template.
     pub fn get_history(&self, id: &str) -> Vec<PromptTemplate> {
+        // Lock poisoning: panicking is the correct response.
+        #[allow(clippy::unwrap_used)]
         let inner = self.inner.read().unwrap();
         inner.history.get(id).cloned().unwrap_or_default()
     }
@@ -506,6 +530,8 @@ impl PromptManager {
         template_id: &str,
         variant: Option<&str>,
     ) -> Result<(), PromptError> {
+        // Lock poisoning: panicking is the correct response.
+        #[allow(clippy::unwrap_used)]
         let mut inner = self.inner.write().unwrap();
         let tmpl = inner
             .templates
@@ -761,6 +787,7 @@ pub fn register_xcapit_templates(manager: &PromptManager) {
 // ===========================================================================
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

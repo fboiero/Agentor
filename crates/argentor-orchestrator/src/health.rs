@@ -59,11 +59,20 @@ pub enum HealthStatus {
     /// All checks passing.
     Healthy,
     /// Some checks failing but the agent is still operational.
-    Degraded { reason: String },
+    Degraded {
+        /// Description of what is degraded.
+        reason: String,
+    },
     /// Critical checks failing.
-    Unhealthy { reason: String },
+    Unhealthy {
+        /// Description of the critical failure.
+        reason: String,
+    },
     /// Exceeded max failures; requires manual intervention.
-    Dead { reason: String },
+    Dead {
+        /// Description of the fatal condition.
+        reason: String,
+    },
     /// No data yet.
     Unknown,
 }
@@ -95,12 +104,19 @@ pub enum ProbeType {
 /// A single health probe attached to an agent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthProbe {
+    /// Human-readable probe name (e.g., "liveness", "readiness").
     pub name: String,
+    /// Category of probe (liveness, readiness, heartbeat).
     pub probe_type: ProbeType,
+    /// UTC timestamp of the last probe execution.
     pub last_check: Option<DateTime<Utc>>,
+    /// UTC timestamp of the last successful probe.
     pub last_success: Option<DateTime<Utc>>,
+    /// Number of failures in a row (resets on success).
     pub consecutive_failures: u32,
+    /// Total number of probe executions.
     pub total_checks: u64,
+    /// Total number of failed probe executions.
     pub total_failures: u64,
 }
 
@@ -140,14 +156,23 @@ impl HealthProbe {
 /// Complete health state tracked for a single agent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentHealthState {
+    /// Unique identifier of the agent.
     pub agent_id: Uuid,
+    /// Human-readable agent name.
     pub agent_name: String,
+    /// Role this agent fulfills.
     pub role: AgentRole,
+    /// Current aggregated health status.
     pub status: HealthStatus,
+    /// Individual health probes (liveness, readiness, heartbeat).
     pub probes: Vec<HealthProbe>,
+    /// UTC timestamp of the last received heartbeat.
     pub last_heartbeat: Option<DateTime<Utc>>,
+    /// Number of times this agent has been restarted.
     pub restart_count: u32,
+    /// Seconds since the agent was last (re)started.
     pub uptime_secs: u64,
+    /// UTC timestamp of when the agent was last (re)started.
     pub started_at: DateTime<Utc>,
 }
 
@@ -190,38 +215,65 @@ impl AgentHealthState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "event", rename_all = "snake_case")]
 pub enum HealthEvent {
+    /// Agent transitioned to healthy status.
     AgentBecameHealthy {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Human-readable agent name.
         agent_name: String,
     },
+    /// Agent transitioned to degraded status.
     AgentBecameDegraded {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Human-readable agent name.
         agent_name: String,
+        /// Description of the degradation.
         reason: String,
     },
+    /// Agent transitioned to unhealthy status.
     AgentBecameUnhealthy {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Human-readable agent name.
         agent_name: String,
+        /// Description of the failure.
         reason: String,
     },
+    /// Agent exceeded max consecutive failures and is now dead.
     AgentDied {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Human-readable agent name.
         agent_name: String,
+        /// Description of the terminal failure.
         reason: String,
     },
+    /// Agent was automatically or manually restarted.
     AgentRestarted {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Human-readable agent name.
         agent_name: String,
+        /// Cumulative restart count.
         restart_count: u32,
     },
+    /// Agent did not send a heartbeat within the configured timeout.
     HeartbeatMissed {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Human-readable agent name.
         agent_name: String,
+        /// Seconds since the last heartbeat was received.
         last_seen_secs_ago: u64,
     },
+    /// A specific probe failed for an agent.
     ProbeFailure {
+        /// Unique agent identifier.
         agent_id: Uuid,
+        /// Name of the probe that failed.
         probe_name: String,
+        /// Error message from the probe.
         error: String,
     },
 }
@@ -233,14 +285,23 @@ pub enum HealthEvent {
 /// Aggregate health summary across all tracked agents.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthSummary {
+    /// Total number of agents being monitored.
     pub total_agents: usize,
+    /// Agents in healthy status.
     pub healthy: usize,
+    /// Agents in degraded status.
     pub degraded: usize,
+    /// Agents in unhealthy status.
     pub unhealthy: usize,
+    /// Agents in dead status.
     pub dead: usize,
+    /// Agents in unknown status.
     pub unknown: usize,
+    /// Sum of restarts across all agents.
     pub total_restarts: u32,
+    /// Events generated during this check cycle.
     pub events: Vec<HealthEvent>,
+    /// UTC timestamp of when this summary was produced.
     pub checked_at: DateTime<Utc>,
 }
 

@@ -10,6 +10,7 @@ pub struct AgentMonitor {
 }
 
 impl AgentMonitor {
+    /// Create a new agent monitor with default states for all roles.
     pub fn new() -> Self {
         let mut states = HashMap::new();
         for role in [

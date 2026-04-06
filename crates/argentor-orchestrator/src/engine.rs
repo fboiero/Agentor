@@ -826,12 +826,19 @@ impl Orchestrator {
 /// Result of a full orchestration pipeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrchestratorResult {
+    /// Human-readable summary of the orchestration run.
     pub summary: String,
+    /// Artifacts produced during the run.
     pub artifacts: Vec<Artifact>,
+    /// Paths of files written to disk.
     pub written_files: Vec<String>,
+    /// Total number of tasks scheduled.
     pub total_tasks: usize,
+    /// Number of tasks that completed successfully.
     pub completed_tasks: usize,
+    /// Number of tasks that failed.
     pub failed_tasks: usize,
+    /// Number of tasks pending human review.
     pub needs_review_tasks: usize,
 }
 

@@ -8,48 +8,74 @@ use uuid::Uuid;
 /// An access control event (login, permission change, etc.).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccessControlEvent {
+    /// Unique identifier for this event.
     pub id: Uuid,
+    /// Entity that performed the action (user id, service name, etc.).
     pub subject: String,
+    /// The action performed (e.g., "login", "read", "delete").
     pub action: String,
+    /// The resource being accessed.
     pub resource: String,
+    /// Whether access was granted or denied.
     pub outcome: AccessOutcome,
+    /// UTC timestamp of when the event occurred.
     pub timestamp: DateTime<Utc>,
 }
 
+/// Outcome of an access control check.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AccessOutcome {
+    /// Access was allowed.
     Granted,
+    /// Access was denied.
     Denied,
 }
 
 /// A security incident record.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityIncident {
+    /// Unique identifier for this incident.
     pub id: Uuid,
+    /// Short title describing the incident.
     pub title: String,
+    /// Detailed description of the incident.
     pub description: String,
+    /// Severity classification.
     pub severity: IncidentSeverity,
+    /// Current status in the incident lifecycle.
     pub status: IncidentStatus,
+    /// UTC timestamp of when the incident was reported.
     pub reported_at: DateTime<Utc>,
+    /// UTC timestamp of when the incident was resolved, if applicable.
     pub resolved_at: Option<DateTime<Utc>>,
 }
 
+/// Severity classification for a security incident.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum IncidentSeverity {
+    /// Immediate action required; potential data breach.
     Critical,
+    /// Serious impact; requires prompt attention.
     High,
+    /// Moderate impact; can be scheduled.
     Medium,
+    /// Low impact; informational.
     Low,
 }
 
+/// Lifecycle status of a security incident.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum IncidentStatus {
+    /// Newly reported, not yet triaged.
     Open,
+    /// Under active investigation.
     Investigating,
+    /// Root cause identified and mitigated.
     Resolved,
+    /// Incident fully closed after post-mortem.
     Closed,
 }
 
@@ -60,6 +86,7 @@ pub struct Iso27001Module {
 }
 
 impl Iso27001Module {
+    /// Create a new, empty ISO 27001 module.
     pub fn new() -> Self {
         Self {
             access_events: Arc::new(RwLock::new(Vec::new())),
@@ -67,6 +94,7 @@ impl Iso27001Module {
         }
     }
 
+    /// Record an access control event and return the created entry.
     pub async fn log_access(
         &self,
         subject: &str,
@@ -86,6 +114,7 @@ impl Iso27001Module {
         event
     }
 
+    /// Report a new security incident and return the created record.
     pub async fn report_incident(
         &self,
         title: &str,
@@ -105,6 +134,7 @@ impl Iso27001Module {
         incident
     }
 
+    /// Mark an incident as resolved. Returns `true` if the incident was found.
     pub async fn resolve_incident(&self, id: Uuid) -> bool {
         let mut incidents = self.incidents.write().await;
         if let Some(inc) = incidents.iter_mut().find(|i| i.id == id) {
@@ -116,6 +146,7 @@ impl Iso27001Module {
         }
     }
 
+    /// Return the number of incidents that are open or under investigation.
     pub async fn open_incidents_count(&self) -> usize {
         let incidents = self.incidents.read().await;
         incidents
@@ -129,6 +160,16 @@ impl Iso27001Module {
     /// Get the total number of recorded access control events.
     pub async fn access_event_count(&self) -> usize {
         self.access_events.read().await.len()
+    }
+
+    /// Return all access control events.
+    pub async fn all_access_events(&self) -> Vec<AccessControlEvent> {
+        self.access_events.read().await.clone()
+    }
+
+    /// Return all security incidents.
+    pub async fn all_incidents(&self) -> Vec<SecurityIncident> {
+        self.incidents.read().await.clone()
     }
 
     /// Generate an ISO 27001 compliance assessment.

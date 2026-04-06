@@ -13,6 +13,7 @@ pub struct FileReadSkill {
 }
 
 impl FileReadSkill {
+    /// Create a new file read skill.
     pub fn new() -> Self {
         Self {
             descriptor: SkillDescriptor {

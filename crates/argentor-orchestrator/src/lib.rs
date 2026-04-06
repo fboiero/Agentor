@@ -46,6 +46,8 @@ pub mod task_queue;
 pub mod types;
 /// Configurable workflow engine for automating business pipelines.
 pub mod workflow;
+/// TOML-based Workflow DSL for declarative pipeline definitions.
+pub mod workflow_dsl;
 
 pub use budget::{
     default_budget, AgentUsage, AgentUsageEntry, BudgetStatus, BudgetSummary, BudgetTracker,
@@ -82,4 +84,8 @@ pub use workflow::{
     lead_qualification_workflow, support_ticket_workflow, FailureAction, RunStatus, StepCondition,
     StepResult, StepStatus, StepType, WorkflowDefinition, WorkflowEngine, WorkflowRun,
     WorkflowStepDef, WorkflowTrigger,
+};
+pub use workflow_dsl::{
+    StepToml, TemplateContext, TriggerConfig, ValidationError, ValidationSeverity, WorkflowDsl,
+    WorkflowMeta, WorkflowToml,
 };

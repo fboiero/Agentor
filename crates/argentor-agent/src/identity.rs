@@ -250,6 +250,7 @@ pub struct ContextCompactor {
 }
 
 impl ContextCompactor {
+    /// Create a new compactor with the given relevance threshold and recent-message count.
     pub fn new(threshold: f32, keep_recent: usize) -> Self {
         Self {
             threshold,

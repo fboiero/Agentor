@@ -8,52 +8,81 @@ use uuid::Uuid;
 /// Record of an AI system in the inventory.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiSystemRecord {
+    /// Unique identifier for this system record.
     pub id: Uuid,
+    /// Human-readable system name.
     pub name: String,
+    /// Description of the system's purpose.
     pub purpose: String,
+    /// LLM provider (e.g., "anthropic", "openai").
     pub model_provider: String,
+    /// Model identifier (e.g., "claude-sonnet-4-20250514").
     pub model_id: String,
+    /// Assessed risk level of this AI system.
     pub risk_level: RiskLevel,
+    /// UTC timestamp of when the system was registered.
     pub registered_at: DateTime<Utc>,
 }
 
+/// Risk level classification for an AI system (ISO 42001).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RiskLevel {
+    /// Minimal risk; routine monitoring.
     Low,
+    /// Moderate risk; periodic review required.
     Medium,
+    /// High risk; continuous monitoring and safeguards required.
     High,
+    /// Critical risk; requires executive approval and audit trail.
     Critical,
 }
 
 /// Bias check result for an AI system.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BiasCheck {
+    /// Unique identifier for this check.
     pub id: Uuid,
+    /// AI system this check was performed on.
     pub system_id: Uuid,
+    /// Type of bias check performed (e.g., "demographic_parity").
     pub check_type: String,
+    /// Outcome of the bias check.
     pub result: BiasResult,
+    /// Human-readable details about the check findings.
     pub details: String,
+    /// UTC timestamp of when the check was performed.
     pub checked_at: DateTime<Utc>,
 }
 
+/// Outcome of a bias evaluation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BiasResult {
+    /// No significant bias detected.
     Pass,
+    /// Potential bias detected; warrants review.
     Warning,
+    /// Significant bias detected; remediation required.
     Fail,
 }
 
-/// Transparency log entry — records decisions made by AI systems.
+/// Transparency log entry -- records decisions made by AI systems.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransparencyLog {
+    /// Unique identifier for this log entry.
     pub id: Uuid,
+    /// AI system that made the decision.
     pub system_id: Uuid,
+    /// Action or decision taken by the system.
     pub action: String,
+    /// Summary of the input that prompted the action.
     pub input_summary: String,
+    /// Summary of the output produced.
     pub output_summary: String,
+    /// Optional chain-of-thought or reasoning explanation.
     pub reasoning: Option<String>,
+    /// UTC timestamp of when the action occurred.
     pub timestamp: DateTime<Utc>,
 }
 
@@ -65,6 +94,7 @@ pub struct Iso42001Module {
 }
 
 impl Iso42001Module {
+    /// Create a new, empty ISO 42001 module.
     pub fn new() -> Self {
         Self {
             systems: Arc::new(RwLock::new(Vec::new())),
@@ -73,6 +103,7 @@ impl Iso42001Module {
         }
     }
 
+    /// Register an AI system in the inventory and return the created record.
     pub async fn register_system(
         &self,
         name: &str,
@@ -94,6 +125,7 @@ impl Iso42001Module {
         record
     }
 
+    /// Record a bias evaluation for the given AI system.
     pub async fn record_bias_check(
         &self,
         system_id: Uuid,
@@ -113,6 +145,7 @@ impl Iso42001Module {
         check
     }
 
+    /// Record a transparency log entry for an AI decision.
     pub async fn log_transparency(
         &self,
         system_id: Uuid,
@@ -134,10 +167,12 @@ impl Iso42001Module {
         log
     }
 
+    /// Return the number of registered AI systems.
     pub async fn system_count(&self) -> usize {
         self.systems.read().await.len()
     }
 
+    /// Return all bias checks that resulted in a `Fail` outcome.
     pub async fn bias_check_failures(&self) -> Vec<BiasCheck> {
         let checks = self.bias_checks.read().await;
         checks
@@ -150,6 +185,21 @@ impl Iso42001Module {
     /// Get the total number of transparency log entries.
     pub async fn transparency_log_count(&self) -> usize {
         self.transparency_logs.read().await.len()
+    }
+
+    /// Return all registered AI systems.
+    pub async fn all_systems(&self) -> Vec<AiSystemRecord> {
+        self.systems.read().await.clone()
+    }
+
+    /// Return all bias checks.
+    pub async fn all_bias_checks(&self) -> Vec<BiasCheck> {
+        self.bias_checks.read().await.clone()
+    }
+
+    /// Return all transparency log entries.
+    pub async fn all_transparency_logs(&self) -> Vec<TransparencyLog> {
+        self.transparency_logs.read().await.clone()
     }
 
     /// Generate an ISO 42001 compliance assessment.

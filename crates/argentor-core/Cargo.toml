@@ -2,9 +2,24 @@
 name = "argentor-core"
 version.workspace = true
 edition.workspace = true
+description = "Core types, error handling, and event bus for the Argentor AI agent framework"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+telemetry = [
+    "dep:opentelemetry",
+    "dep:opentelemetry_sdk",
+    "dep:opentelemetry-otlp",
+    "dep:tracing-opentelemetry",
+]
 
 [dependencies]
 serde.workspace = true
@@ -13,9 +28,18 @@ thiserror.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 async-trait.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Optional OpenTelemetry deps — enabled via the `telemetry` feature
+opentelemetry = { version = "0.29", optional = true }
+opentelemetry_sdk = { version = "0.29", features = ["rt-tokio"], optional = true }
+opentelemetry-otlp = { version = "0.29", features = ["grpc-tonic", "trace"], optional = true }
+tracing-opentelemetry = { version = "0.30", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
 
 [[bench]]
 name = "core_benchmarks"

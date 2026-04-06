@@ -17,6 +17,7 @@ pub struct ClaudeBackend {
 }
 
 impl ClaudeBackend {
+    /// Create a new Claude API backend with the given configuration.
     pub fn new(config: ModelConfig) -> Self {
         Self {
             config,
@@ -338,6 +339,7 @@ struct ClaudeTool {
     input_schema: serde_json::Value,
 }
 
+/// Parse a Claude API JSON response into an `LlmResponse`.
 pub fn parse_claude_response(body: &serde_json::Value) -> ArgentorResult<LlmResponse> {
     let content = body["content"]
         .as_array()

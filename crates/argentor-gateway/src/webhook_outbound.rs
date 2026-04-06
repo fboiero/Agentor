@@ -559,6 +559,7 @@ impl WebhookDispatcher {
 
 /// Shared state for outbound webhook endpoints.
 pub struct WebhookOutboundState {
+    /// The webhook dispatcher for outbound events.
     pub dispatcher: WebhookDispatcher,
 }
 
@@ -589,14 +590,21 @@ pub fn webhook_outbound_router(state: Arc<WebhookOutboundState>) -> Router {
 /// Request body for creating a subscription.
 #[derive(Debug, Deserialize)]
 pub struct CreateSubscriptionRequest {
+    /// Tenant owning the subscription.
     pub tenant_id: String,
+    /// Destination URL for webhook deliveries.
     pub url: String,
+    /// Event types this subscription listens for.
     pub events: Vec<WebhookEventType>,
+    /// Shared secret for HMAC signature verification.
     pub secret: String,
+    /// Whether the subscription is active.
     #[serde(default = "default_true")]
     pub enabled: bool,
+    /// Custom headers to include in deliveries.
     #[serde(default)]
     pub headers: HashMap<String, String>,
+    /// Optional retry policy override.
     #[serde(default)]
     pub retry_policy: Option<RetryPolicy>,
 }
@@ -608,6 +616,7 @@ fn default_true() -> bool {
 /// Query parameters for the delivery log endpoint.
 #[derive(Debug, Deserialize)]
 pub struct DeliveryLogQuery {
+    /// Maximum number of deliveries to return.
     #[serde(default = "default_limit")]
     pub limit: usize,
 }
@@ -1142,7 +1151,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .method("DELETE")
-                    .uri(&format!("/api/v1/webhooks/subscriptions/{id}"))
+                    .uri(format!("/api/v1/webhooks/subscriptions/{id}"))
                     .body(Body::empty())
                     .unwrap(),
             )

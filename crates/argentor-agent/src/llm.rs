@@ -13,11 +13,16 @@ use tokio::sync::mpsc;
 /// Response from the LLM — either text content or a tool call request.
 #[derive(Debug)]
 pub enum LlmResponse {
+    /// Pure text response.
     Text(String),
+    /// Response requesting tool invocations.
     ToolUse {
+        /// Optional text content accompanying the tool calls.
         content: Option<String>,
+        /// Tool calls the model wants to execute.
         tool_calls: Vec<ToolCall>,
     },
+    /// Final response indicating the conversation turn is complete.
     Done(String),
 }
 
@@ -30,6 +35,7 @@ pub struct LlmClient {
 }
 
 impl LlmClient {
+    /// Create a new LLM client from the given model configuration.
     pub fn new(config: ModelConfig) -> Self {
         let fallback_models = config.fallback_models.clone();
         let retry_policy = config.retry_policy.clone();

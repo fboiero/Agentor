@@ -4,12 +4,18 @@ use async_trait::async_trait;
 use std::path::PathBuf;
 use uuid::Uuid;
 
+/// Persistence backend for agent sessions.
 #[async_trait]
 pub trait SessionStore: Send + Sync {
+    /// Persist a new session.
     async fn create(&self, session: &Session) -> ArgentorResult<()>;
+    /// Retrieve a session by ID.
     async fn get(&self, id: Uuid) -> ArgentorResult<Option<Session>>;
+    /// Update an existing session.
     async fn update(&self, session: &Session) -> ArgentorResult<()>;
+    /// Delete a session by ID.
     async fn delete(&self, id: Uuid) -> ArgentorResult<()>;
+    /// List all stored session IDs.
     async fn list(&self) -> ArgentorResult<Vec<Uuid>>;
 }
 
@@ -19,6 +25,7 @@ pub struct FileSessionStore {
 }
 
 impl FileSessionStore {
+    /// Create a new file-based session store under the given directory.
     pub async fn new(dir: PathBuf) -> ArgentorResult<Self> {
         tokio::fs::create_dir_all(&dir).await?;
         Ok(Self { dir })

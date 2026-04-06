@@ -21,10 +21,22 @@ pub mod artifact_store;
 pub mod browser;
 /// WebDriver-based browser automation skill.
 pub mod browser_automation;
+/// Pure-math calculator skill for precise computations.
+pub mod calculator;
 /// Language-aware code analysis skill.
 pub mod code_analysis;
+/// Data format validation skill.
+pub mod data_validator;
+/// Date/time operations skill.
+pub mod datetime_tool;
+/// Text diff generation and patching skill.
+pub mod diff_tool;
+/// DNS lookup, reverse resolution, and connectivity checks.
+pub mod dns_lookup;
 /// Docker-sandboxed shell execution.
 pub mod docker_sandbox;
+/// Encoding/decoding skill (Base64, hex, URL, HTML, JWT).
+pub mod encode_decode;
 /// File-system-based artifact backend for persistent storage.
 pub mod file_artifact_backend;
 /// File read skill.
@@ -33,22 +45,46 @@ pub mod file_read;
 pub mod file_write;
 /// Git operations skill (libgit2-based, no shell commands).
 pub mod git;
+/// Cryptographic hashing skill (SHA-256, SHA-512, HMAC-SHA256).
+pub mod hash_tool;
 /// HTTP fetch skill.
 pub mod http_fetch;
 /// Human-in-the-loop approval skill and channels.
 pub mod human_approval;
+/// JSON query and manipulation skill.
+pub mod json_query;
+/// Knowledge graph skill for entity-relationship operations.
+pub mod knowledge_graph_skill;
 /// Semantic memory store and search skills.
 pub mod memory;
+/// Prompt injection detection and PII scanning skill.
+pub mod prompt_guard;
+/// Regex operations skill.
+pub mod regex_tool;
+/// RSS/Atom feed reader and search.
+pub mod rss_reader;
 /// SDK client code generator for Python and TypeScript.
 pub mod sdk_generator;
+/// Secret scanning skill for detecting leaked credentials.
+pub mod secret_scanner;
 /// Shell command execution skill.
 pub mod shell;
 /// Stdin-based interactive approval channel.
 pub mod stdin_approval;
+/// Extractive text summarization skill.
+pub mod summarizer;
 /// Task status reporting skill.
 pub mod task_status;
 /// Test runner skill for multi-language test execution and result parsing.
 pub mod test_runner;
+/// Text transformation skill for string manipulation operations.
+pub mod text_transform;
+/// UUID generation and parsing skill.
+pub mod uuid_generator;
+/// Web scraping skill for extracting text, links, metadata from web pages.
+pub mod web_scraper;
+/// Web search skill using DuckDuckGo HTML endpoint.
+pub mod web_search;
 /// XcapitSFF backend integration skills.
 pub mod xcapitsff_skills;
 
@@ -56,22 +92,40 @@ pub use agent_delegate::{AgentDelegateSkill, TaskInfo, TaskQueueHandle, TaskSumm
 pub use artifact_store::{ArtifactBackend, ArtifactStoreSkill, InMemoryArtifactBackend};
 pub use browser::BrowserSkill;
 pub use browser_automation::{BrowserAction, BrowserAutomationSkill, BrowserConfig, BrowserResult};
+pub use calculator::CalculatorSkill;
 pub use code_analysis::CodeAnalysisSkill;
+pub use data_validator::DataValidatorSkill;
+pub use datetime_tool::DateTimeSkill;
+pub use diff_tool::DiffSkill;
+pub use dns_lookup::DnsLookupSkill;
+pub use encode_decode::EncodeDecodeSkill;
 pub use file_artifact_backend::FileArtifactBackend;
 pub use file_read::FileReadSkill;
 pub use file_write::FileWriteSkill;
 pub use git::GitSkill;
+pub use hash_tool::HashSkill;
 pub use http_fetch::HttpFetchSkill;
 pub use human_approval::{
     ApprovalChannel, ApprovalDecision, ApprovalRequest, AutoApproveChannel,
     CallbackApprovalChannel, HumanApprovalSkill, RiskLevel,
 };
+pub use json_query::JsonQuerySkill;
+pub use knowledge_graph_skill::KnowledgeGraphSkill;
 pub use memory::{MemorySearchSkill, MemoryStoreSkill};
+pub use prompt_guard::PromptGuardSkill;
+pub use regex_tool::RegexSkill;
+pub use rss_reader::RssReaderSkill;
 pub use sdk_generator::SdkGenerator;
+pub use secret_scanner::SecretScannerSkill;
 pub use shell::{CommandPolicy, ShellSkill};
 pub use stdin_approval::StdinApprovalChannel;
+pub use summarizer::SummarizerSkill;
 pub use task_status::TaskStatusSkill;
 pub use test_runner::TestRunnerSkill;
+pub use text_transform::TextTransformSkill;
+pub use uuid_generator::UuidGeneratorSkill;
+pub use web_scraper::WebScraperSkill;
+pub use web_search::{SearchProvider, WebSearchSkill};
 pub use xcapitsff_skills::{
     register_xcapitsff_skills, XcapitCustomer360Skill, XcapitKbSearchSkill, XcapitLeadInfoSkill,
     XcapitSearchSkill, XcapitTicketInfoSkill,
@@ -88,6 +142,37 @@ pub use browser_automation::BrowserAutomation;
 use argentor_memory::{EmbeddingProvider, VectorStore};
 use argentor_skills::SkillRegistry;
 use std::sync::Arc;
+
+/// Register the 18 utility skills inspired by Vercel AI SDK, LangChain, CrewAI,
+/// AutoGPT, and Semantic Kernel. These are self-contained (no external API keys).
+///
+/// **Data & Text:** calculator, text_transform, json_query, regex_tool, data_validator, datetime_tool
+/// **Crypto & Encoding:** hash_tool, encode_decode, uuid_generator
+/// **Web & Search:** web_search, web_scraper, rss_reader, dns_lookup
+/// **Security & AI:** prompt_guard, secret_scanner, diff_tool, summarizer
+pub fn register_utility_skills(registry: &mut SkillRegistry) {
+    // Data & Text
+    registry.register(Arc::new(CalculatorSkill::default()));
+    registry.register(Arc::new(TextTransformSkill::default()));
+    registry.register(Arc::new(JsonQuerySkill::default()));
+    registry.register(Arc::new(RegexSkill::default()));
+    registry.register(Arc::new(DataValidatorSkill::default()));
+    registry.register(Arc::new(DateTimeSkill::default()));
+    // Crypto & Encoding
+    registry.register(Arc::new(HashSkill::default()));
+    registry.register(Arc::new(EncodeDecodeSkill::default()));
+    registry.register(Arc::new(UuidGeneratorSkill::default()));
+    // Web & Search
+    registry.register(Arc::new(WebSearchSkill::default()));
+    registry.register(Arc::new(WebScraperSkill::default()));
+    registry.register(Arc::new(RssReaderSkill::default()));
+    registry.register(Arc::new(DnsLookupSkill::default()));
+    // Security & AI
+    registry.register(Arc::new(PromptGuardSkill::default()));
+    registry.register(Arc::new(SecretScannerSkill::default()));
+    registry.register(Arc::new(DiffSkill::default()));
+    registry.register(Arc::new(SummarizerSkill::default()));
+}
 
 /// Register all built-in skills into the given registry.
 /// Uses the provided vector store and embedding provider for memory skills.
@@ -110,6 +195,7 @@ pub fn register_builtins_with_memory(
     )));
     registry.register(Arc::new(MemorySearchSkill::new(store, embedder)));
     registry.register(Arc::new(HumanApprovalSkill::auto_approve()));
+    register_utility_skills(registry);
 }
 
 /// Register built-in skills without memory (backwards compatible).
@@ -123,6 +209,7 @@ pub fn register_builtins(registry: &mut SkillRegistry) {
     registry.register(Arc::new(CodeAnalysisSkill::new()));
     registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(HumanApprovalSkill::auto_approve()));
+    register_utility_skills(registry);
 }
 
 /// Register built-in skills with a custom approval channel for HITL.
@@ -139,6 +226,7 @@ pub fn register_builtins_with_approval(
     registry.register(Arc::new(CodeAnalysisSkill::new()));
     registry.register(Arc::new(TestRunnerSkill::new()));
     registry.register(Arc::new(HumanApprovalSkill::new(approval_channel)));
+    register_utility_skills(registry);
 }
 
 /// Register all built-in skills including memory and a custom approval channel.
@@ -162,6 +250,7 @@ pub fn register_all(
     )));
     registry.register(Arc::new(MemorySearchSkill::new(store, embedder)));
     registry.register(Arc::new(HumanApprovalSkill::new(approval_channel)));
+    register_utility_skills(registry);
 }
 
 /// Register orchestration-specific skills (artifact_store, agent_delegate, task_status).

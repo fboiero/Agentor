@@ -25,6 +25,8 @@ pub mod protocol;
 pub mod proxy;
 /// Multi-proxy coordination with routing, circuit breaker, and failover.
 pub mod proxy_orchestrator;
+/// In-process MCP server — define tools without spawning a subprocess.
+pub mod in_process;
 /// MCP server — exposes Argentor skills as MCP tools.
 pub mod server;
 /// MCP tool-to-skill adapter.
@@ -38,6 +40,7 @@ pub use discovery::ToolDiscovery;
 pub use manager::{McpServerConfig, McpServerManager, McpServerStatus};
 pub use proxy::McpProxy;
 pub use proxy_orchestrator::ProxyOrchestrator;
+pub use in_process::InProcessMcpServer;
 pub use server::McpServer;
 pub use skill::McpSkill;
 pub use token_pool::{PoolHealth, PoolStats, SelectionStrategy, TokenPool, TokenTier};

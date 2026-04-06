@@ -6,36 +6,57 @@ use uuid::Uuid;
 /// Metadata describing a plugin's identity and purpose.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginManifest {
+    /// Unique plugin name.
     pub name: String,
+    /// Semantic version string.
     pub version: String,
+    /// Short description of the plugin.
     pub description: String,
+    /// Author name or organization.
     pub author: String,
 }
 
 /// Events emitted during the agent lifecycle that plugins can react to.
 #[derive(Debug, Clone)]
 pub enum PluginEvent {
+    /// A new session was created.
     SessionCreated {
+        /// Unique identifier of the created session.
         session_id: Uuid,
     },
+    /// A session was ended.
     SessionEnded {
+        /// Unique identifier of the ended session.
         session_id: Uuid,
     },
+    /// A tool invocation is about to start.
     ToolCallBefore {
+        /// Name of the tool being invoked.
         tool_name: String,
+        /// Unique call identifier.
         call_id: String,
     },
+    /// A tool invocation finished.
     ToolCallAfter {
+        /// Name of the tool that was invoked.
         tool_name: String,
+        /// Unique call identifier.
         call_id: String,
+        /// Whether the tool call succeeded.
         success: bool,
     },
+    /// A message was received in a session.
     MessageReceived {
+        /// Session the message belongs to.
         session_id: Uuid,
+        /// Role of the message author (e.g., "user", "assistant").
         role: String,
     },
+    /// A custom event emitted by user code.
     Custom {
+        /// Event name.
         name: String,
+        /// Arbitrary JSON payload.
         data: serde_json::Value,
     },
 }

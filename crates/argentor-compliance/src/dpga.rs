@@ -43,9 +43,13 @@ impl std::fmt::Display for DpgaIndicator {
 /// Assessment result for each DPGA indicator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DpgaAssessment {
+    /// Which DPGA indicator is being assessed.
     pub indicator: DpgaIndicator,
+    /// Whether the indicator is satisfied.
     pub compliant: bool,
+    /// Evidence supporting the assessment.
     pub evidence: String,
+    /// Recommended action if not compliant (empty if compliant).
     pub recommendation: String,
 }
 
@@ -71,14 +75,23 @@ pub fn assess_dpga(assessments: &[DpgaAssessment]) -> ComplianceReport {
 /// Input for a DPGA compliance assessment.
 #[derive(Debug, Clone, Default)]
 pub struct DpgaInput {
+    /// Uses an OSI-approved open source license.
     pub has_open_license: bool,
+    /// Has documentation of SDG relevance.
     pub has_sdg_docs: bool,
+    /// Uses or contributes to open data.
     pub has_open_data: bool,
+    /// Implements privacy and data protection measures.
     pub has_privacy: bool,
+    /// Has technical documentation.
     pub has_docs: bool,
+    /// Uses open standards and interoperable formats.
     pub has_open_standards: bool,
+    /// Has clear ownership and governance structure.
     pub has_governance: bool,
+    /// Has a "Do No Harm" assessment.
     pub has_do_no_harm: bool,
+    /// Supports platform independence and interoperability.
     pub has_interop: bool,
 }
 

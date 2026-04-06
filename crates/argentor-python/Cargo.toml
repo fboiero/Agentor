@@ -1,0 +1,30 @@
+# NOTE: This crate is intentionally NOT added to the workspace `members` list.
+# PyO3 cdylib crates can interfere with `cargo test --workspace` and require
+# special build tooling (maturin).  Build with:
+#   cd crates/argentor-python && maturin develop
+# or:
+#   cd crates/argentor-python && cargo check
+
+[package]
+name = "argentor-python"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+repository = "https://github.com/fboiero/Argentor"
+description = "Python bindings for the Argentor AI agent framework (PyO3/maturin)"
+
+[lib]
+name = "argentor"
+crate-type = ["cdylib"]
+
+[dependencies]
+# pyo3 0.25+ required for Python 3.14 support (0.22-0.24 max out at 3.13)
+pyo3 = { version = "0.25", features = ["extension-module"] }
+argentor-core = { path = "../argentor-core" }
+argentor-security = { path = "../argentor-security" }
+argentor-skills = { path = "../argentor-skills" }
+argentor-builtins = { path = "../argentor-builtins" }
+argentor-agent = { path = "../argentor-agent" }
+argentor-session = { path = "../argentor-session" }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }

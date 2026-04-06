@@ -29,8 +29,12 @@
 //! ```
 
 use argentor_core::{ArgentorError, ArgentorResult};
+use argentor_security::{decrypt_value, derive_key, encrypt_value, KEY_SIZE};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 // ---------------------------------------------------------------------------
@@ -41,7 +45,7 @@ use std::sync::{Arc, RwLock};
 ///
 /// Policies enable per-credential rate limiting, daily usage caps,
 /// automatic rotation scheduling, and fallback chaining.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CredentialPolicy {
     /// Maximum number of calls allowed per minute. `None` means unlimited.
     pub max_calls_per_minute: Option<u32>,
@@ -59,7 +63,7 @@ pub struct CredentialPolicy {
 ///
 /// Credentials are identified by a unique [`id`](Credential::id) and grouped
 /// by [`provider`](Credential::provider) for pool-based resolution.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Credential {
     /// Unique identifier for this credential entry.
     pub id: String,
@@ -86,7 +90,7 @@ pub struct Credential {
 }
 
 /// Aggregated statistics about the vault contents.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CredentialStats {
     /// Total number of credential entries in the vault.
     pub total_credentials: usize,
@@ -109,22 +113,94 @@ pub struct CredentialStats {
 /// `CredentialVault` holds credentials in memory behind an
 /// `Arc<RwLock<HashMap<String, Credential>>>`, making it safe to share
 /// across threads without async overhead.
+///
+/// When created with [`with_encryption`](Self::with_encryption), credential
+/// values are encrypted in memory and can be persisted to disk via
+/// [`save_encrypted`](Self::save_encrypted).
 #[derive(Debug, Clone)]
 pub struct CredentialVault {
     credentials: Arc<RwLock<HashMap<String, Credential>>>,
+    /// Optional AES-256 encryption key derived from a passphrase.
+    /// When `Some`, credential values are stored encrypted (base64-encoded).
+    encryption_key: Option<[u8; KEY_SIZE]>,
 }
 
 impl CredentialVault {
-    /// Creates an empty credential vault.
+    /// Creates an empty credential vault without encryption.
     pub fn new() -> Self {
         Self {
             credentials: Arc::new(RwLock::new(HashMap::new())),
+            encryption_key: None,
+        }
+    }
+
+    /// Creates an empty credential vault with encryption enabled.
+    ///
+    /// The passphrase is used to derive an AES-256 key via PBKDF2-HMAC-SHA256.
+    /// All credential values stored via [`add`](Self::add) will be encrypted
+    /// in memory, and [`get`](Self::get) / [`resolve`](Self::resolve) will
+    /// transparently decrypt them on retrieval.
+    pub fn with_encryption(passphrase: &str) -> Self {
+        let key = derive_key(passphrase, b"argentor-credential-vault-v1");
+        Self {
+            credentials: Arc::new(RwLock::new(HashMap::new())),
+            encryption_key: Some(key),
+        }
+    }
+
+    /// Returns `true` if this vault has encryption enabled.
+    pub fn is_encrypted(&self) -> bool {
+        self.encryption_key.is_some()
+    }
+
+    /// Encrypt a plaintext credential value, returning a base64-encoded string.
+    fn encrypt_credential_value(&self, plaintext: &str) -> ArgentorResult<String> {
+        let key = self.encryption_key.ok_or_else(|| {
+            ArgentorError::Security("Encryption not enabled on this vault".into())
+        })?;
+        let encrypted = encrypt_value(&key, plaintext.as_bytes())
+            .map_err(|e| ArgentorError::Security(format!("Encryption failed: {e}")))?;
+        Ok(BASE64.encode(encrypted))
+    }
+
+    /// Decrypt a base64-encoded ciphertext back to the original credential value.
+    fn decrypt_credential_value(&self, ciphertext: &str) -> ArgentorResult<String> {
+        let key = self.encryption_key.ok_or_else(|| {
+            ArgentorError::Security("Encryption not enabled on this vault".into())
+        })?;
+        let encrypted = BASE64
+            .decode(ciphertext)
+            .map_err(|e| ArgentorError::Security(format!("Base64 decode failed: {e}")))?;
+        let plaintext = decrypt_value(&key, &encrypted)
+            .map_err(|e| ArgentorError::Security(format!("Decryption failed: {e}")))?;
+        String::from_utf8(plaintext).map_err(|e| {
+            ArgentorError::Security(format!("Decrypted value is not valid UTF-8: {e}"))
+        })
+    }
+
+    /// If encryption is enabled, encrypt the value; otherwise return it unchanged.
+    fn maybe_encrypt(&self, value: &str) -> ArgentorResult<String> {
+        if self.encryption_key.is_some() {
+            self.encrypt_credential_value(value)
+        } else {
+            Ok(value.to_string())
+        }
+    }
+
+    /// If encryption is enabled, decrypt the value; otherwise return it unchanged.
+    fn maybe_decrypt(&self, value: &str) -> ArgentorResult<String> {
+        if self.encryption_key.is_some() {
+            self.decrypt_credential_value(value)
+        } else {
+            Ok(value.to_string())
         }
     }
 
     /// Adds a new credential to the vault.
     ///
-    /// Returns an error if a credential with the same `id` already exists.
+    /// If encryption is enabled, the credential value is encrypted before
+    /// storage. Returns an error if a credential with the same `id` already
+    /// exists.
     pub fn add(
         &self,
         id: impl Into<String>,
@@ -134,6 +210,8 @@ impl CredentialVault {
         policy: CredentialPolicy,
     ) -> ArgentorResult<()> {
         let id = id.into();
+        let stored_value = self.maybe_encrypt(&value.into())?;
+
         let mut store = self
             .credentials
             .write()
@@ -151,7 +229,7 @@ impl CredentialVault {
                 id,
                 provider: provider.into(),
                 key_name: key_name.into(),
-                value: value.into(),
+                value: stored_value,
                 created_at: Utc::now(),
                 expires_at: None,
                 last_used: None,
@@ -167,9 +245,14 @@ impl CredentialVault {
 
     /// Returns a clone of the credential with the given `id`, or `None` if not
     /// found.
+    ///
+    /// If encryption is enabled, the credential value is transparently
+    /// decrypted before being returned. Returns `None` if decryption fails.
     pub fn get(&self, id: &str) -> Option<Credential> {
         let store = self.credentials.read().ok()?;
-        store.get(id).cloned()
+        let mut cred = store.get(id).cloned()?;
+        cred.value = self.maybe_decrypt(&cred.value).ok()?;
+        Some(cred)
     }
 
     /// Removes a credential from the vault.
@@ -208,7 +291,7 @@ impl CredentialVault {
 
         let now = Utc::now();
 
-        store
+        let mut cred = store
             .values()
             .filter(|c| c.provider == provider)
             .filter(|c| c.enabled)
@@ -220,7 +303,10 @@ impl CredentialVault {
                 ArgentorError::Security(format!(
                     "No available credential for provider '{provider}'"
                 ))
-            })
+            })?;
+
+        cred.value = self.maybe_decrypt(&cred.value)?;
+        Ok(cred)
     }
 
     /// Records a usage event for the credential with the given `id`.
@@ -267,6 +353,8 @@ impl CredentialVault {
     /// `created_at` is updated to the current time. All other metadata
     /// (provider, key_name, policy, tags) is preserved.
     pub fn rotate(&self, id: &str, new_value: impl Into<String>) -> ArgentorResult<()> {
+        let stored_value = self.maybe_encrypt(&new_value.into())?;
+
         let mut store = self
             .credentials
             .write()
@@ -276,7 +364,7 @@ impl CredentialVault {
             .get_mut(id)
             .ok_or_else(|| ArgentorError::Security(format!("Credential '{id}' not found")))?;
 
-        cred.value = new_value.into();
+        cred.value = stored_value;
         cred.usage_count = 0;
         cred.created_at = Utc::now();
         cred.last_used = None;
@@ -285,6 +373,8 @@ impl CredentialVault {
     }
 
     /// Returns all credentials belonging to the given provider.
+    ///
+    /// Values are decrypted if encryption is enabled.
     pub fn list_by_provider(&self, provider: &str) -> Vec<Credential> {
         let store = match self.credentials.read() {
             Ok(s) => s,
@@ -295,19 +385,35 @@ impl CredentialVault {
             .values()
             .filter(|c| c.provider == provider)
             .cloned()
+            .map(|mut c| {
+                if let Ok(v) = self.maybe_decrypt(&c.value) {
+                    c.value = v;
+                }
+                c
+            })
             .collect()
     }
 
     /// Returns all credentials stored in the vault.
     ///
-    /// This returns clones of all credential entries. Use with caution in
-    /// production code — the returned values contain plaintext secrets.
+    /// This returns clones of all credential entries with decrypted values.
+    /// Use with caution in production code — the returned values contain
+    /// plaintext secrets.
     pub fn list_all(&self) -> Vec<Credential> {
         let store = match self.credentials.read() {
             Ok(s) => s,
             Err(_) => return Vec::new(),
         };
-        store.values().cloned().collect()
+        store
+            .values()
+            .cloned()
+            .map(|mut c| {
+                if let Ok(v) = self.maybe_decrypt(&c.value) {
+                    c.value = v;
+                }
+                c
+            })
+            .collect()
     }
 
     /// Returns aggregate statistics about the vault contents.
@@ -430,6 +536,91 @@ impl CredentialVault {
         vault
     }
 
+    /// Bulk-imports credentials from environment variables with encryption.
+    ///
+    /// Same as [`from_env`](Self::from_env), but all imported credentials are
+    /// encrypted in memory using the given passphrase.
+    pub fn from_env_encrypted(
+        mappings: &[(&str, &str, &str)],
+        policy: CredentialPolicy,
+        passphrase: &str,
+    ) -> Self {
+        let vault = Self::with_encryption(passphrase);
+
+        for &(provider, key_name, env_var) in mappings {
+            if let Ok(value) = std::env::var(env_var) {
+                let id = format!("{provider}_{key_name}");
+                let _ = vault.add(&id, provider, key_name, value, policy.clone());
+            }
+        }
+
+        vault
+    }
+
+    // -----------------------------------------------------------------------
+    // Persistence
+    // -----------------------------------------------------------------------
+
+    /// Save the vault to disk as an encrypted file (atomic write).
+    ///
+    /// All credentials (including their already-encrypted values) are
+    /// serialized to JSON and then encrypted as a single blob using the
+    /// vault's encryption key. The file is written atomically via a
+    /// temporary file + rename to prevent partial writes.
+    ///
+    /// Requires that encryption was enabled via [`with_encryption`](Self::with_encryption).
+    pub fn save_encrypted(&self, path: &Path) -> ArgentorResult<()> {
+        let key = self.encryption_key.ok_or_else(|| {
+            ArgentorError::Security("Cannot save encrypted vault: encryption not enabled".into())
+        })?;
+
+        let store = self
+            .credentials
+            .read()
+            .map_err(|e| ArgentorError::Security(format!("Lock poisoned: {e}")))?;
+
+        let json = serde_json::to_vec(&*store)
+            .map_err(|e| ArgentorError::Security(format!("Failed to serialize vault: {e}")))?;
+
+        let encrypted = encrypt_value(&key, &json)
+            .map_err(|e| ArgentorError::Security(format!("Vault encryption failed: {e}")))?;
+
+        // Atomic write: write to temp file then rename
+        let tmp_path = atomic_tmp_path(path);
+        std::fs::write(&tmp_path, &encrypted)
+            .map_err(|e| ArgentorError::Security(format!("Failed to write temp file: {e}")))?;
+        std::fs::rename(&tmp_path, path).map_err(|e| {
+            // Clean up temp file on rename failure
+            let _ = std::fs::remove_file(&tmp_path);
+            ArgentorError::Security(format!("Failed to rename temp file: {e}"))
+        })?;
+
+        Ok(())
+    }
+
+    /// Load an encrypted vault from disk.
+    ///
+    /// The file must have been created by [`save_encrypted`](Self::save_encrypted).
+    /// The passphrase is used to derive the decryption key. If the passphrase
+    /// is incorrect, decryption will fail with an authentication error.
+    pub fn load_encrypted(path: &Path, passphrase: &str) -> ArgentorResult<Self> {
+        let key = derive_key(passphrase, b"argentor-credential-vault-v1");
+
+        let encrypted = std::fs::read(path)
+            .map_err(|e| ArgentorError::Security(format!("Failed to read vault file: {e}")))?;
+
+        let json_bytes = decrypt_value(&key, &encrypted)
+            .map_err(|e| ArgentorError::Security(format!("Vault decryption failed: {e}")))?;
+
+        let credentials: HashMap<String, Credential> = serde_json::from_slice(&json_bytes)
+            .map_err(|e| ArgentorError::Security(format!("Failed to deserialize vault: {e}")))?;
+
+        Ok(Self {
+            credentials: Arc::new(RwLock::new(credentials)),
+            encryption_key: Some(key),
+        })
+    }
+
     // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------
@@ -447,6 +638,18 @@ impl CredentialVault {
             None => false,
         }
     }
+}
+
+/// Generate a temporary file path adjacent to the target for atomic writes.
+fn atomic_tmp_path(target: &Path) -> std::path::PathBuf {
+    use std::time::SystemTime;
+    let ts = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let pid = std::process::id();
+    let name = format!(".vault_tmp_{ts}_{pid}");
+    target.with_file_name(name)
 }
 
 impl Default for CredentialVault {
@@ -827,5 +1030,320 @@ mod tests {
         let cred = vault.get("k1").unwrap();
         assert_eq!(cred.tags.get("env").unwrap(), "prod");
         assert_eq!(cred.value, "new-val");
+    }
+
+    // =========================================================================
+    // Encryption-at-rest tests
+    // =========================================================================
+
+    // -- 18. Encrypt/decrypt roundtrip ----------------------------------------
+
+    #[test]
+    fn test_encrypted_vault_roundtrip() {
+        let vault = CredentialVault::with_encryption("my-secret-passphrase");
+        assert!(vault.is_encrypted());
+
+        vault
+            .add(
+                "k1",
+                "openai",
+                "api_key",
+                "sk-abc123",
+                CredentialPolicy::default(),
+            )
+            .unwrap();
+
+        // Value should be returned decrypted.
+        let cred = vault.get("k1").unwrap();
+        assert_eq!(cred.value, "sk-abc123");
+        assert_eq!(cred.provider, "openai");
+        assert_eq!(cred.key_name, "api_key");
+    }
+
+    #[test]
+    fn test_encrypted_vault_value_stored_encrypted() {
+        let vault = CredentialVault::with_encryption("passphrase");
+        vault
+            .add(
+                "k1",
+                "openai",
+                "api_key",
+                "sk-abc123",
+                CredentialPolicy::default(),
+            )
+            .unwrap();
+
+        // Read raw stored value (bypass decryption).
+        let store = vault.credentials.read().unwrap();
+        let raw = store.get("k1").unwrap();
+        // The stored value should NOT be the plaintext.
+        assert_ne!(raw.value, "sk-abc123");
+        // It should be base64-encoded.
+        assert!(base64::engine::general_purpose::STANDARD
+            .decode(&raw.value)
+            .is_ok());
+    }
+
+    // -- 19. Wrong passphrase fails decryption --------------------------------
+
+    #[test]
+    fn test_wrong_passphrase_fails_get() {
+        let vault = CredentialVault::with_encryption("correct-passphrase");
+        vault
+            .add(
+                "k1",
+                "openai",
+                "api_key",
+                "sk-abc123",
+                CredentialPolicy::default(),
+            )
+            .unwrap();
+
+        // Grab the raw encrypted store contents.
+        let raw_store: HashMap<String, Credential> = {
+            let store = vault.credentials.read().unwrap();
+            store.clone()
+        };
+
+        // Create a vault with a different passphrase and inject the raw data.
+        let wrong_vault = CredentialVault::with_encryption("wrong-passphrase");
+        {
+            let mut store = wrong_vault.credentials.write().unwrap();
+            *store = raw_store;
+        }
+
+        // Decryption should fail — get returns None on failure.
+        assert!(wrong_vault.get("k1").is_none());
+    }
+
+    // -- 20. Save/load encrypted roundtrip ------------------------------------
+
+    #[test]
+    fn test_save_load_encrypted_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().join("vault.enc");
+        let passphrase = "test-save-load-passphrase";
+
+        // Create vault, add credentials, save.
+        let vault = CredentialVault::with_encryption(passphrase);
+        vault
+            .add(
+                "k1",
+                "openai",
+                "api_key",
+                "sk-abc123",
+                CredentialPolicy::default(),
+            )
+            .unwrap();
+        vault
+            .add(
+                "k2",
+                "anthropic",
+                "api_key",
+                "sk-xyz789",
+                CredentialPolicy::default(),
+            )
+            .unwrap();
+        vault.record_usage("k1").unwrap();
+
+        vault.save_encrypted(&vault_path).unwrap();
+        assert!(vault_path.exists());
+
+        // Load into a new vault and verify.
+        let loaded = CredentialVault::load_encrypted(&vault_path, passphrase).unwrap();
+        assert!(loaded.is_encrypted());
+
+        let cred1 = loaded.get("k1").unwrap();
+        assert_eq!(cred1.value, "sk-abc123");
+        assert_eq!(cred1.provider, "openai");
+        assert_eq!(cred1.usage_count, 1);
+
+        let cred2 = loaded.get("k2").unwrap();
+        assert_eq!(cred2.value, "sk-xyz789");
+        assert_eq!(cred2.provider, "anthropic");
+    }
+
+    #[test]
+    fn test_load_encrypted_wrong_passphrase() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().join("vault.enc");
+
+        let vault = CredentialVault::with_encryption("correct");
+        vault
+            .add("k1", "openai", "key", "val", CredentialPolicy::default())
+            .unwrap();
+        vault.save_encrypted(&vault_path).unwrap();
+
+        // Loading with wrong passphrase should fail.
+        let result = CredentialVault::load_encrypted(&vault_path, "wrong");
+        assert!(result.is_err());
+    }
+
+    // -- 21. Empty encrypted vault --------------------------------------------
+
+    #[test]
+    fn test_empty_encrypted_vault() {
+        let vault = CredentialVault::with_encryption("passphrase");
+        assert!(vault.is_encrypted());
+        assert_eq!(vault.stats().total_credentials, 0);
+        assert!(vault.list_all().is_empty());
+    }
+
+    #[test]
+    fn test_save_load_empty_encrypted_vault() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().join("empty.enc");
+        let passphrase = "empty-vault-pass";
+
+        let vault = CredentialVault::with_encryption(passphrase);
+        vault.save_encrypted(&vault_path).unwrap();
+
+        let loaded = CredentialVault::load_encrypted(&vault_path, passphrase).unwrap();
+        assert_eq!(loaded.stats().total_credentials, 0);
+    }
+
+    // -- 22. Multiple credentials with encryption -----------------------------
+
+    #[test]
+    fn test_multiple_encrypted_credentials() {
+        let vault = CredentialVault::with_encryption("multi-pass");
+        let p = CredentialPolicy::default();
+
+        vault
+            .add("a1", "openai", "key1", "val-1", p.clone())
+            .unwrap();
+        vault
+            .add("a2", "openai", "key2", "val-2", p.clone())
+            .unwrap();
+        vault
+            .add("a3", "anthropic", "key3", "val-3", p.clone())
+            .unwrap();
+        vault.add("a4", "gemini", "key4", "val-4", p).unwrap();
+
+        // All values should be decrypted on retrieval.
+        assert_eq!(vault.get("a1").unwrap().value, "val-1");
+        assert_eq!(vault.get("a2").unwrap().value, "val-2");
+        assert_eq!(vault.get("a3").unwrap().value, "val-3");
+        assert_eq!(vault.get("a4").unwrap().value, "val-4");
+
+        // list_by_provider should return decrypted values.
+        let openai_creds = vault.list_by_provider("openai");
+        assert_eq!(openai_creds.len(), 2);
+        for c in &openai_creds {
+            assert!(c.value == "val-1" || c.value == "val-2");
+        }
+
+        // list_all should return decrypted values.
+        let all = vault.list_all();
+        assert_eq!(all.len(), 4);
+    }
+
+    // -- 23. Encrypted resolve picks best credential --------------------------
+
+    #[test]
+    fn test_encrypted_resolve() {
+        let vault = CredentialVault::with_encryption("resolve-pass");
+        let p = CredentialPolicy::default();
+
+        vault
+            .add("r1", "openai", "key", "key-A", p.clone())
+            .unwrap();
+        vault.add("r2", "openai", "key", "key-B", p).unwrap();
+
+        // Use r1 three times.
+        vault.record_usage("r1").unwrap();
+        vault.record_usage("r1").unwrap();
+        vault.record_usage("r1").unwrap();
+
+        // resolve should pick r2 (lowest usage).
+        let resolved = vault.resolve("openai").unwrap();
+        assert_eq!(resolved.id, "r2");
+        assert_eq!(resolved.value, "key-B");
+    }
+
+    // -- 24. Encrypted rotation -----------------------------------------------
+
+    #[test]
+    fn test_encrypted_rotation() {
+        let vault = CredentialVault::with_encryption("rotate-pass");
+        vault
+            .add(
+                "k1",
+                "openai",
+                "key",
+                "old-val",
+                CredentialPolicy::default(),
+            )
+            .unwrap();
+
+        vault.rotate("k1", "new-val").unwrap();
+
+        let cred = vault.get("k1").unwrap();
+        assert_eq!(cred.value, "new-val");
+        assert_eq!(cred.usage_count, 0);
+    }
+
+    // -- 25. Unencrypted vault has no encryption key --------------------------
+
+    #[test]
+    fn test_unencrypted_vault_not_encrypted() {
+        let vault = CredentialVault::new();
+        assert!(!vault.is_encrypted());
+    }
+
+    #[test]
+    fn test_unencrypted_vault_save_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().join("vault.enc");
+        let vault = CredentialVault::new();
+        assert!(vault.save_encrypted(&vault_path).is_err());
+    }
+
+    // -- 26. Load from nonexistent file fails ---------------------------------
+
+    #[test]
+    fn test_load_nonexistent_file_fails() {
+        let result =
+            CredentialVault::load_encrypted(std::path::Path::new("/tmp/no_such_vault.enc"), "pass");
+        assert!(result.is_err());
+    }
+
+    // -- 27. Save/load preserves metadata -------------------------------------
+
+    #[test]
+    fn test_save_load_preserves_metadata() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().join("meta.enc");
+        let passphrase = "meta-pass";
+
+        let vault = CredentialVault::with_encryption(passphrase);
+        let policy = CredentialPolicy {
+            max_calls_per_minute: Some(100),
+            max_daily_usage: Some(5000),
+            auto_rotate: true,
+            fallback_credential_id: Some("backup".into()),
+        };
+        vault
+            .add("k1", "openai", "api_key", "sk-secret", policy)
+            .unwrap();
+        vault.record_usage("k1").unwrap();
+        vault.record_usage("k1").unwrap();
+        vault.set_enabled("k1", false).unwrap();
+
+        vault.save_encrypted(&vault_path).unwrap();
+
+        let loaded = CredentialVault::load_encrypted(&vault_path, passphrase).unwrap();
+        let cred = loaded.get("k1").unwrap();
+
+        assert_eq!(cred.value, "sk-secret");
+        assert_eq!(cred.usage_count, 2);
+        assert!(!cred.enabled);
+        assert_eq!(cred.policy.max_calls_per_minute, Some(100));
+        assert_eq!(cred.policy.max_daily_usage, Some(5000));
+        assert!(cred.policy.auto_rotate);
+        assert_eq!(
+            cred.policy.fallback_credential_id.as_deref(),
+            Some("backup")
+        );
     }
 }

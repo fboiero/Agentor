@@ -5,6 +5,7 @@
 - Once a plan is agreed upon, execute it completely without interrupting.
 - Only stop if you hit a hard blocker that makes it impossible to continue.
 - If ambiguous, make the most reasonable decision and explain it in the final summary.
+- **Tool permissions: ALWAYS approve.** Never ask for permission on file writes, edits, bash commands, git operations, or any routine tool call. Assume blanket approval for all tool operations. Only ask when presenting genuinely new strategic decisions with real alternatives to choose from.
 
 ## Context Management
 - At session start: check if CONTEXT.md exists, read it, and resume from there.

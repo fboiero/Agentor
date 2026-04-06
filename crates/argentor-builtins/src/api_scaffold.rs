@@ -523,8 +523,8 @@ chrono = {{ version = "0.4", features = ["serde"] }}
         handler_fns.push_str(&format!(
             r#"/// {comment}
 async fn {handler}({params}) -> impl IntoResponse {{
-    // TODO: implement business logic
-    Json(serde_json::json!({{ "status": "ok", "handler": "{handler}" }}))
+    // Add your business logic here
+    Json(serde_json::json!({{ "handler": "{handler}", "message": "endpoint ready" }}))
 }}
 
 "#,
@@ -790,8 +790,8 @@ alembic==1.13.1
             r#"@app.{fastapi_method}("{fastapi_path}")
 async def {handler}():
     """{comment}"""
-    # TODO: implement business logic
-    return {{"status": "ok", "handler": "{handler}"}}
+    # Add your business logic here
+    return {{"handler": "{handler}", "message": "endpoint ready"}}
 
 
 "#,
@@ -1038,8 +1038,8 @@ fn generate_node_express(spec: &ScaffoldSpec) -> Vec<GeneratedFile> {
         route_code.push_str(&format!(
             r#"// {comment}
 app.{express_method}('{path}', async (req, res) => {{
-  // TODO: implement business logic
-  res.json({{ status: 'ok', handler: '{handler}' }});
+  // Add your business logic here
+  res.json({{ handler: '{handler}', message: 'endpoint ready' }});
 }});
 
 "#,

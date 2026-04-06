@@ -21,9 +21,8 @@ use std::sync::Arc;
 fn register_builtins_registers_expected_count() {
     let mut registry = SkillRegistry::new();
     register_builtins(&mut registry);
-    // register_builtins adds: shell, file_read, file_write, http_fetch, browser, git,
-    // code_analysis, test_runner, human_approval = 9
-    assert_eq!(registry.skill_count(), 9);
+    // register_builtins adds: 9 core + 17 utility skills = 26
+    assert_eq!(registry.skill_count(), 26);
 }
 
 #[test]
@@ -31,7 +30,7 @@ fn register_builtins_contains_expected_skill_names() {
     let mut registry = SkillRegistry::new();
     register_builtins(&mut registry);
 
-    let expected = [
+    let core_skills = [
         "shell",
         "file_read",
         "file_write",
@@ -42,7 +41,26 @@ fn register_builtins_contains_expected_skill_names() {
         "test_runner",
         "human_approval",
     ];
-    for name in &expected {
+    let utility_skills = [
+        "calculator",
+        "text_transform",
+        "json_query",
+        "regex",
+        "data_validator",
+        "datetime",
+        "hash",
+        "encode_decode",
+        "uuid_generator",
+        "web_search",
+        "web_scraper",
+        "rss_reader",
+        "dns_lookup",
+        "prompt_guard",
+        "secret_scanner",
+        "diff",
+        "summarizer",
+    ];
+    for name in core_skills.iter().chain(utility_skills.iter()) {
         assert!(
             registry.get(name).is_some(),
             "Expected skill '{name}' to be registered"
@@ -51,13 +69,13 @@ fn register_builtins_contains_expected_skill_names() {
 }
 
 #[test]
-fn register_builtins_with_memory_registers_eight_skills() {
+fn register_builtins_with_memory_registers_all_skills() {
     let mut registry = SkillRegistry::new();
     let store: Arc<dyn VectorStore> = Arc::new(InMemoryVectorStore::new());
     let embedder: Arc<dyn EmbeddingProvider> = Arc::new(LocalEmbedding::default());
     register_builtins_with_memory(&mut registry, store, embedder);
-    // Adds the 9 base + memory_store + memory_search = 11
-    assert_eq!(registry.skill_count(), 11);
+    // 9 core + 17 utility + memory_store + memory_search = 28
+    assert_eq!(registry.skill_count(), 28);
     assert!(registry.get("memory_store").is_some());
     assert!(registry.get("memory_search").is_some());
 }

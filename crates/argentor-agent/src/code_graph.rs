@@ -355,11 +355,12 @@ impl CodeGraph {
             // Extract the function name from "file::func" format
             let func_name = caller.rsplit("::").next().unwrap_or(caller);
             for call in &self.calls {
-                if call.callee == func_name && !directly_affected.contains(&call.caller) {
-                    if transitive_seen.insert(call.caller.clone()) {
-                        transitively_affected.push(call.caller.clone());
-                        affected_files_set.insert(call.file.clone());
-                    }
+                if call.callee == func_name
+                    && !directly_affected.contains(&call.caller)
+                    && transitive_seen.insert(call.caller.clone())
+                {
+                    transitively_affected.push(call.caller.clone());
+                    affected_files_set.insert(call.file.clone());
                 }
             }
         }
@@ -1272,7 +1273,7 @@ impl CodeGraph {
                 let name = caps.get(2).map_or("", |m| m.as_str());
                 let params = caps.get(3).map_or("", |m| m.as_str());
 
-                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().is_some_and(char::is_uppercase);
 
                 let kind = if receiver.is_some() {
                     SymbolKind::Method
@@ -1306,7 +1307,7 @@ impl CodeGraph {
             // Structs
             if let Some(caps) = re_struct.captures(trimmed) {
                 let name = caps.get(1).map_or("", |m| m.as_str());
-                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().is_some_and(char::is_uppercase);
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
                     kind: SymbolKind::Struct,
@@ -1327,7 +1328,7 @@ impl CodeGraph {
             // Interfaces
             if let Some(caps) = re_interface.captures(trimmed) {
                 let name = caps.get(1).map_or("", |m| m.as_str());
-                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().is_some_and(char::is_uppercase);
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
                     kind: SymbolKind::Interface,
@@ -1348,7 +1349,7 @@ impl CodeGraph {
             // Constants / variables
             if let Some(caps) = re_const.captures(trimmed) {
                 let name = caps.get(1).map_or("", |m| m.as_str());
-                let is_exported = name.chars().next().map_or(false, |c| c.is_uppercase());
+                let is_exported = name.chars().next().is_some_and(char::is_uppercase);
                 self.symbols.push(CodeSymbol {
                     name: name.to_string(),
                     kind: SymbolKind::Constant,

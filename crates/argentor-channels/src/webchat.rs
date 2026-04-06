@@ -10,11 +10,13 @@ pub struct WebChatChannel {
 }
 
 impl WebChatChannel {
+    /// Create a new web chat channel with the given broadcast capacity.
     pub fn new(capacity: usize) -> Self {
         let (tx, _) = broadcast::channel(capacity);
         Self { tx }
     }
 
+    /// Subscribe to incoming messages on this channel.
     pub fn subscribe(&self) -> broadcast::Receiver<ChannelMessage> {
         self.tx.subscribe()
     }

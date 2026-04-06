@@ -11,7 +11,6 @@
 //! - [`ApiResponse`] — Response definition for an endpoint.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // HttpMethod
@@ -234,7 +233,8 @@ impl OpenApiGenerator {
             title: title.into(),
             version: version.into(),
             description: String::new(),
-            server_url: "http://localhost:3000".to_string(),
+            server_url: std::env::var("ARGENTOR_SERVER_URL")
+                .unwrap_or_else(|_| "http://localhost:8080".to_string()),
             endpoints: Vec::new(),
         }
     }
@@ -392,7 +392,10 @@ impl OpenApiGenerator {
     pub fn argentor_default() -> Self {
         let mut gen = Self::new("Argentor API", "1.0.0")
             .with_description("Argentor — Secure AI Agent Framework API")
-            .with_server("http://localhost:3000");
+            .with_server(
+                std::env::var("ARGENTOR_SERVER_URL")
+                    .unwrap_or_else(|_| "http://localhost:8080".to_string()),
+            );
 
         // Core endpoints
         gen.add_endpoint(ApiEndpoint::new(HttpMethod::Get, "/health", "Health check"));

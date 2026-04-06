@@ -13,6 +13,7 @@ pub struct FileWriteSkill {
 }
 
 impl FileWriteSkill {
+    /// Create a new file write skill.
     pub fn new() -> Self {
         Self {
             descriptor: SkillDescriptor {

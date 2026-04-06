@@ -522,7 +522,7 @@ mod tests {
         let p = processor();
         let result = p.process_batch(|_| Ok(("ok".to_string(), 10)));
         assert_eq!(result.succeeded, 0);
-        assert_eq!(result.results.is_empty(), true);
+        assert!(result.results.is_empty());
     }
 
     // 10. Batch result success rate

@@ -15,46 +15,64 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CollaborationPattern {
-    /// Sequential processing chain — each stage's output feeds the next stage's input,
+    /// Sequential processing chain -- each stage's output feeds the next stage's input,
     /// like Unix pipes: Agent A output -> Agent B input -> Agent C input.
-    Pipeline { stages: Vec<PipelineStage> },
+    Pipeline {
+        /// Ordered list of processing stages.
+        stages: Vec<PipelineStage>,
+    },
 
     /// Split work across N mapper agents, then reduce (aggregate) the partial results
     /// with a dedicated reducer agent.
     MapReduce {
+        /// Agent role for the mapping (parallelizable) phase.
         mapper_role: AgentRole,
+        /// Agent role for the reducing (aggregation) phase.
         reducer_role: AgentRole,
+        /// Number of chunks the input is split into.
         chunk_count: usize,
     },
 
     /// Two agents argue opposing positions while a judge evaluates and decides,
     /// improving decision quality through adversarial deliberation.
     Debate {
+        /// Agent role arguing in favor.
         proponent: AgentRole,
+        /// Agent role arguing against.
         opponent: AgentRole,
+        /// Agent role making the final decision.
         judge: AgentRole,
+        /// Maximum debate rounds before forcing a decision.
         max_rounds: u32,
     },
 
     /// Multiple agents tackle the same task independently and results are aggregated
     /// via a configurable strategy (voting, best-of-N, concatenation, LLM synthesis).
     Ensemble {
+        /// Agent roles participating in the ensemble.
         agents: Vec<AgentRole>,
+        /// How the individual results are combined.
         aggregation: AggregationStrategy,
     },
 
     /// A supervisor agent reviews worker outputs and can accept or reject them
     /// according to a configurable review policy.
     Supervisor {
+        /// Agent role responsible for review.
         supervisor: AgentRole,
+        /// Agent roles producing work to be reviewed.
         workers: Vec<AgentRole>,
+        /// When and how outputs are reviewed.
         review_policy: ReviewPolicy,
     },
 
     /// Agents iterate collaboratively until consensus or a convergence threshold is met.
     Swarm {
+        /// Agent roles participating in the swarm.
         roles: Vec<AgentRole>,
+        /// Maximum number of iterations before stopping.
         max_iterations: u32,
+        /// Convergence threshold (0.0 -- 1.0); iteration stops when reached.
         convergence_threshold: f64,
     },
 }
@@ -81,7 +99,10 @@ pub enum AggregationStrategy {
     /// Pick the result that appears most often among agents.
     MajorityVote,
     /// Pick the single best result according to a named metric.
-    BestOfN { metric: String },
+    BestOfN {
+        /// Metric name used to rank results.
+        metric: String,
+    },
     /// Concatenate all results in order.
     Concatenate,
     /// Use an LLM to synthesize a unified answer from all results.
@@ -105,6 +126,7 @@ pub enum ReviewPolicy {
 /// Top-level configuration wrapping a [`CollaborationPattern`] with execution settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PatternConfig {
+    /// The collaboration pattern to execute.
     pub pattern: CollaborationPattern,
     /// Maximum wall-clock seconds the entire pattern execution may take.
     pub timeout_secs: u64,
@@ -401,7 +423,10 @@ pub fn describe_pattern(pattern: &CollaborationPattern) -> String {
             agents,
             aggregation,
         } => {
-            let names: Vec<String> = agents.iter().map(|a| a.to_string()).collect();
+            let names: Vec<String> = agents
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect();
             let strat = match aggregation {
                 AggregationStrategy::MajorityVote => "majority vote",
                 AggregationStrategy::BestOfN { metric } => {
@@ -425,7 +450,10 @@ pub fn describe_pattern(pattern: &CollaborationPattern) -> String {
             workers,
             review_policy,
         } => {
-            let worker_names: Vec<String> = workers.iter().map(|w| w.to_string()).collect();
+            let worker_names: Vec<String> = workers
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect();
             let policy = match review_policy {
                 ReviewPolicy::AlwaysReview => "always review",
                 ReviewPolicy::SamplePercent(p) => {
@@ -448,7 +476,7 @@ pub fn describe_pattern(pattern: &CollaborationPattern) -> String {
             max_iterations,
             convergence_threshold,
         } => {
-            let names: Vec<String> = roles.iter().map(|r| r.to_string()).collect();
+            let names: Vec<String> = roles.iter().map(std::string::ToString::to_string).collect();
             format!(
                 "Swarm of {} agents [{}], max {max_iterations} iterations, convergence >= {convergence_threshold}",
                 roles.len(),

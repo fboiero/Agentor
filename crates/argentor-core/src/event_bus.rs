@@ -287,7 +287,7 @@ impl EventBus {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
 
-        let active_subscriptions: usize = inner.subscribers.values().map(|s| s.len()).sum();
+        let active_subscriptions: usize = inner.subscribers.values().map(Vec::len).sum();
 
         EventBusStats {
             total_published: inner.total_published,
@@ -305,7 +305,7 @@ impl EventBus {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .subscribers
             .get(topic)
-            .map(|s| s.len())
+            .map(Vec::len)
             .unwrap_or(0)
     }
 

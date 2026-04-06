@@ -10,6 +10,8 @@
 
 /// Configuration file hot-reload watcher.
 mod config_watcher;
+/// Headless mode: NDJSON over stdin/stdout for SDK wrapping.
+pub mod headless;
 /// Interactive REPL for agent debugging.
 pub mod repl;
 
@@ -34,8 +36,12 @@ struct Cli {
     #[arg(short, long, default_value = "argentor.toml")]
     config: PathBuf,
 
+    /// Run in headless mode (NDJSON over stdin/stdout for SDK wrapping)
+    #[arg(long)]
+    headless: bool,
+
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
@@ -398,12 +404,13 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    // For orchestrate and a2a commands, suppress JSON logs to stderr unless RUST_LOG is explicitly set.
-    // This keeps the output clean for piping.
-    let suppress_logs = matches!(
-        cli.command,
-        Commands::Orchestrate { .. } | Commands::A2a { .. }
-    );
+    // Headless mode — NDJSON protocol over stdin/stdout, no subcommand needed.
+    // Suppress all tracing in headless mode to keep stdout clean.
+    let suppress_logs = cli.headless
+        || matches!(
+            cli.command,
+            Some(Commands::Orchestrate { .. }) | Some(Commands::A2a { .. })
+        );
     let default_level = if suppress_logs && std::env::var("RUST_LOG").is_err() {
         "warn"
     } else {
@@ -418,8 +425,25 @@ async fn main() -> anyhow::Result<()> {
         .with_writer(std::io::stderr)
         .init();
 
+    // Handle headless mode early — no config file required
+    if cli.headless {
+        return headless::run_headless()
+            .await
+            .map_err(|e| anyhow::anyhow!("{e}"));
+    }
+
+    // Require a subcommand when not in headless mode
+    let command = match cli.command {
+        Some(cmd) => cmd,
+        None => {
+            eprintln!("Error: a subcommand is required (or use --headless).");
+            eprintln!("Run `argentor --help` for usage information.");
+            std::process::exit(1);
+        }
+    };
+
     // Handle A2A subcommand early — it doesn't require a config file
-    if let Commands::A2a { url, action } = cli.command {
+    if let Commands::A2a { url, action } = command {
         return handle_a2a(&url, action).await;
     }
 
@@ -441,7 +465,7 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| std::path::Path::new("."))
         .to_path_buf();
 
-    match cli.command {
+    match command {
         Commands::Serve { host, port } => {
             let host = host.unwrap_or_else(|| config.server.host.clone());
             let port = port.unwrap_or(config.server.port);

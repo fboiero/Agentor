@@ -834,7 +834,11 @@ impl CodePlanner {
             }
             md.push('\n');
             if !step.depends_on.is_empty() {
-                let deps: Vec<String> = step.depends_on.iter().map(|d| d.to_string()).collect();
+                let deps: Vec<String> = step
+                    .depends_on
+                    .iter()
+                    .map(std::string::ToString::to_string)
+                    .collect();
                 md.push_str(&format!("**Depends on:** {}\n", deps.join(", ")));
             }
             md.push('\n');

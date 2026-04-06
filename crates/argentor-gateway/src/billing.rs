@@ -18,7 +18,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    routing::{delete, get, post, put},
+    routing::{get, post, put},
     Json, Router,
 };
 use chrono::{DateTime, Datelike, Utc};
@@ -306,13 +306,7 @@ impl BillingManager {
     }
 
     /// Record usage for a tenant in a given period.
-    pub async fn record_usage(
-        &self,
-        tenant_id: &str,
-        period: &str,
-        tokens: u64,
-        requests: u64,
-    ) {
+    pub async fn record_usage(&self, tenant_id: &str, period: &str, tokens: u64, requests: u64) {
         let mut inner = self.inner.write().await;
         let key = (tenant_id.to_string(), period.to_string());
         let entry = inner.usage.entry(key).or_insert((0, 0));
@@ -341,10 +335,9 @@ impl BillingManager {
 
         let overage_tokens = tokens_used.saturating_sub(plan.included_tokens());
         let overage_amount_usd = if overage_tokens > 0 {
-            let cost =
-                (overage_tokens as f64 / 1000.0) * plan.overage_price_per_1k_tokens();
+            let cost = (overage_tokens as f64 / 1000.0) * plan.overage_price_per_1k_tokens();
             line_items.push(InvoiceLineItem {
-                description: format!("Token overage ({} tokens)", overage_tokens),
+                description: format!("Token overage ({overage_tokens} tokens)"),
                 quantity: overage_tokens,
                 unit_price_usd: plan.overage_price_per_1k_tokens() / 1000.0,
                 amount_usd: cost,
@@ -358,7 +351,7 @@ impl BillingManager {
         let request_overage_usd = if overage_requests > 0 && plan != BillingPlan::Free {
             let cost = overage_requests as f64 * 0.001; // $0.001 per extra request
             line_items.push(InvoiceLineItem {
-                description: format!("Request overage ({} requests)", overage_requests),
+                description: format!("Request overage ({overage_requests} requests)"),
                 quantity: overage_requests,
                 unit_price_usd: 0.001,
                 amount_usd: cost,
@@ -395,11 +388,7 @@ impl BillingManager {
     /// List all invoices for a tenant.
     pub async fn list_invoices(&self, tenant_id: &str) -> Vec<Invoice> {
         let inner = self.inner.read().await;
-        inner
-            .invoices
-            .get(tenant_id)
-            .cloned()
-            .unwrap_or_default()
+        inner.invoices.get(tenant_id).cloned().unwrap_or_default()
     }
 
     /// Get a specific invoice by ID.
@@ -429,13 +418,13 @@ impl BillingManager {
                 let payment_method = payload
                     .get("payment_method")
                     .and_then(|v| v.as_str())
-                    .map(|s| s.to_string());
+                    .map(std::string::ToString::to_string);
                 self.create_subscription(tenant_id, plan, payment_method)
                     .await;
                 WebhookProcessResult {
                     success: true,
                     event_type: event_type.to_string(),
-                    message: format!("Subscription created for tenant {}", tenant_id),
+                    message: format!("Subscription created for tenant {tenant_id}"),
                 }
             }
             "customer.subscription.updated" => {
@@ -449,9 +438,9 @@ impl BillingManager {
                     success: upgraded.is_some(),
                     event_type: event_type.to_string(),
                     message: if upgraded.is_some() {
-                        format!("Subscription updated for tenant {}", tenant_id)
+                        format!("Subscription updated for tenant {tenant_id}")
                     } else {
-                        format!("No subscription found for tenant {}", tenant_id)
+                        format!("No subscription found for tenant {tenant_id}")
                     },
                 }
             }
@@ -465,9 +454,9 @@ impl BillingManager {
                     success: canceled,
                     event_type: event_type.to_string(),
                     message: if canceled {
-                        format!("Subscription canceled for tenant {}", tenant_id)
+                        format!("Subscription canceled for tenant {tenant_id}")
                     } else {
-                        format!("No subscription found for tenant {}", tenant_id)
+                        format!("No subscription found for tenant {tenant_id}")
                     },
                 }
             }
@@ -485,9 +474,9 @@ impl BillingManager {
                     success: marked,
                     event_type: event_type.to_string(),
                     message: if marked {
-                        format!("Invoice {} marked as paid", invoice_id)
+                        format!("Invoice {invoice_id} marked as paid")
                     } else {
-                        format!("Invoice {} not found for tenant {}", invoice_id, tenant_id)
+                        format!("Invoice {invoice_id} not found for tenant {tenant_id}")
                     },
                 }
             }
@@ -500,13 +489,13 @@ impl BillingManager {
                 WebhookProcessResult {
                     success: true,
                     event_type: event_type.to_string(),
-                    message: format!("Subscription marked past due for tenant {}", tenant_id),
+                    message: format!("Subscription marked past due for tenant {tenant_id}"),
                 }
             }
             _ => WebhookProcessResult {
                 success: false,
                 event_type: event_type.to_string(),
-                message: format!("Unhandled event type: {}", event_type),
+                message: format!("Unhandled event type: {event_type}"),
             },
         }
     }
@@ -564,7 +553,7 @@ fn parse_plan_from_payload(payload: &serde_json::Value) -> BillingPlan {
         Some(name) => {
             let price = payload
                 .get("monthly_price_usd")
-                .and_then(|v| v.as_f64())
+                .and_then(serde_json::Value::as_f64)
                 .unwrap_or(0.0);
             BillingPlan::Custom {
                 monthly_price_usd: price,
@@ -623,6 +612,7 @@ fn constant_time_eq(a: &str, b: &str) -> bool {
 }
 
 /// Return the current billing period label (e.g. "2026-04").
+#[allow(dead_code)]
 fn current_period_label() -> String {
     let now = Utc::now();
     format!("{:04}-{:02}", now.year(), now.month())
@@ -726,7 +716,7 @@ async fn get_subscription_handler(
         None => (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {
-                error: format!("No subscription found for tenant {}", tenant_id),
+                error: format!("No subscription found for tenant {tenant_id}"),
             }),
         )
             .into_response(),
@@ -744,7 +734,7 @@ async fn upgrade_plan_handler(
         None => (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {
-                error: format!("No subscription found for tenant {}", tenant_id),
+                error: format!("No subscription found for tenant {tenant_id}"),
             }),
         )
             .into_response(),
@@ -767,7 +757,7 @@ async fn cancel_subscription_handler(
         (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {
-                error: format!("No subscription found for tenant {}", tenant_id),
+                error: format!("No subscription found for tenant {tenant_id}"),
             }),
         )
             .into_response()
@@ -793,7 +783,7 @@ async fn get_invoice_handler(
         None => (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {
-                error: format!("Invoice {} not found for tenant {}", invoice_id, tenant_id),
+                error: format!("Invoice {invoice_id} not found for tenant {tenant_id}"),
             }),
         )
             .into_response(),
@@ -831,7 +821,7 @@ async fn stripe_webhook_handler(
             return (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
-                    error: format!("Invalid webhook body: {}", e),
+                    error: format!("Invalid webhook body: {e}"),
                 }),
             )
                 .into_response();
@@ -855,6 +845,7 @@ async fn stripe_webhook_handler(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use axum::body::Body;
@@ -940,9 +931,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_subscription_no_payment() {
         let mgr = BillingManager::new(String::new());
-        let sub = mgr
-            .create_subscription("t1", BillingPlan::Free, None)
-            .await;
+        let sub = mgr.create_subscription("t1", BillingPlan::Free, None).await;
         assert!(sub.payment_method.is_none());
         assert_eq!(sub.plan, BillingPlan::Free);
     }
@@ -970,7 +959,10 @@ mod tests {
     #[tokio::test]
     async fn test_upgrade_plan() {
         let mgr = BillingManager::new(String::new());
-        assert!(mgr.upgrade_plan("t1", BillingPlan::Enterprise).await.is_none());
+        assert!(mgr
+            .upgrade_plan("t1", BillingPlan::Enterprise)
+            .await
+            .is_none());
         mgr.create_subscription("t1", BillingPlan::Free, None).await;
         let updated = mgr.upgrade_plan("t1", BillingPlan::Enterprise).await;
         assert!(updated.is_some());
@@ -984,7 +976,10 @@ mod tests {
         mgr.cancel_subscription("t1").await;
         let sub = mgr.get_subscription("t1").await.unwrap();
         assert_eq!(sub.status, SubscriptionStatus::Canceled);
-        let updated = mgr.upgrade_plan("t1", BillingPlan::Enterprise).await.unwrap();
+        let updated = mgr
+            .upgrade_plan("t1", BillingPlan::Enterprise)
+            .await
+            .unwrap();
         assert_eq!(updated.status, SubscriptionStatus::Active);
     }
 
@@ -1394,7 +1389,7 @@ mod tests {
         let app = billing_router(state);
         let req = Request::builder()
             .method("GET")
-            .uri(&format!("/api/v1/billing/invoices/t1/{}", inv.id))
+            .uri(format!("/api/v1/billing/invoices/t1/{}", inv.id))
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
@@ -1531,8 +1526,7 @@ mod tests {
     #[tokio::test]
     async fn test_free_plan_invoice_no_overage() {
         let mgr = BillingManager::new(String::new());
-        mgr.create_subscription("t1", BillingPlan::Free, None)
-            .await;
+        mgr.create_subscription("t1", BillingPlan::Free, None).await;
         mgr.record_usage("t1", "2026-04", 100_000, 200).await;
         let inv = mgr.generate_invoice("t1", "2026-04").await.unwrap();
         assert_eq!(inv.base_amount_usd, 0.0);

@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
 
 use argentor_core::Message;
 use argentor_session::{FileSessionStore, Session, SessionStore};

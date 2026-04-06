@@ -37,9 +37,13 @@ pub enum RuleSeverity {
 /// Content-policy variants.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ContentPolicy {
+    /// Block financial advice (investment recommendations, etc.).
     NoFinancialAdvice,
+    /// Block medical advice (diagnosis, prescriptions, etc.).
     NoMedicalAdvice,
+    /// Block legal advice (litigation guidance, etc.).
     NoLegalAdvice,
+    /// Require that the given disclaimer text be present in the output.
     RequireDisclaimer(String),
 }
 
@@ -51,44 +55,70 @@ pub enum RuleType {
     /// Detect profanity, hate speech, threats via keyword lists.
     ToxicityFilter,
     /// Block messages that mention specific topics.
-    TopicBlocklist { blocked_topics: Vec<String> },
+    TopicBlocklist {
+        /// Topics that trigger a block.
+        blocked_topics: Vec<String>,
+    },
     /// Enforce a maximum character length.
-    MaxLength { max_chars: usize },
+    MaxLength {
+        /// Maximum allowed characters.
+        max_chars: usize,
+    },
     /// Match (or anti-match) an arbitrary regex.
     RegexMatch {
+        /// The regex pattern to test.
         pattern: String,
+        /// If true, block when the pattern matches; if false, block when it does not.
         block_on_match: bool,
     },
     /// Detect prompt-injection attempts.
     PromptInjection,
     /// Enforce a content policy.
-    ContentPolicy { policy: ContentPolicy },
+    ContentPolicy {
+        /// The policy to enforce.
+        policy: ContentPolicy,
+    },
     /// Only allow specific languages (ISO 639-1 codes checked via heuristics).
-    LanguageDetection { allowed_languages: Vec<String> },
+    LanguageDetection {
+        /// ISO 639-1 language codes that are permitted.
+        allowed_languages: Vec<String>,
+    },
     /// Flag hedging / low-confidence language in outputs.
     HallucinationCheck,
     /// Placeholder for user-supplied validators executed externally.
-    CustomValidator { name: String },
+    CustomValidator {
+        /// Validator name for identification.
+        name: String,
+    },
 }
 
 /// A single guardrail rule.
 #[derive(Debug, Clone)]
 pub struct GuardrailRule {
+    /// Unique rule name (e.g., "pii_detection", "max_length").
     pub name: String,
+    /// Human-readable description of what this rule checks.
     pub description: String,
+    /// Type and configuration of the validation check.
     pub rule_type: RuleType,
+    /// What happens when a violation is detected (block, warn, log).
     pub severity: RuleSeverity,
+    /// Whether this rule is active. Disabled rules are skipped.
     pub enabled: bool,
 }
 
-/// A detected violation.
+/// A detected violation from a guardrail rule.
 #[derive(Debug, Clone)]
 pub struct Violation {
+    /// Name of the rule that was violated.
     pub rule_name: String,
+    /// Severity of the violation.
     pub severity: RuleSeverity,
+    /// Human-readable description of the violation.
     pub message: String,
     /// Byte-offset span inside the inspected text.
     pub span: Option<(usize, usize)>,
+    /// Suggested remediation action.
     pub suggestion: Option<String>,
 }
 
@@ -97,6 +127,7 @@ pub struct Violation {
 pub struct GuardrailResult {
     /// `true` when no `Block`-severity violations were found.
     pub passed: bool,
+    /// All violations detected during the pipeline run.
     pub violations: Vec<Violation>,
     /// If auto-sanitization was applied, the cleaned text.
     pub sanitized_text: Option<String>,
@@ -107,8 +138,11 @@ pub struct GuardrailResult {
 /// A single PII match found during redaction.
 #[derive(Debug, Clone)]
 pub struct PiiMatch {
+    /// Category of PII detected (e.g., "email", "phone", "ssn", "credit_card").
     pub kind: &'static str,
+    /// Byte-offset span within the original text.
     pub span: (usize, usize),
+    /// The original text that matched.
     pub original: String,
 }
 
@@ -117,6 +151,22 @@ pub struct PiiMatch {
 // ---------------------------------------------------------------------------
 
 /// Thread-safe guardrail engine that runs a pipeline of rules.
+///
+/// # Examples
+///
+/// ```no_run
+/// use argentor_agent::guardrails::GuardrailEngine;
+///
+/// let engine = GuardrailEngine::new(); // loads default rules (PII, injection, toxicity, length)
+///
+/// // Validate user input before sending to the LLM
+/// let input_result = engine.check_input("What is the weather today?");
+/// assert!(input_result.passed);
+///
+/// // Validate LLM output before returning to the user
+/// let output_result = engine.check_output("The weather is sunny.", None);
+/// assert!(output_result.passed);
+/// ```
 #[derive(Debug, Clone)]
 pub struct GuardrailEngine {
     rules: Arc<RwLock<Vec<GuardrailRule>>>,
@@ -140,6 +190,7 @@ impl GuardrailEngine {
 
     /// Add a custom rule to the pipeline.
     pub fn add_rule(&self, rule: GuardrailRule) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut rules = self.rules.write().expect("lock poisoned");
         rules.push(rule);
     }
@@ -188,6 +239,7 @@ impl GuardrailEngine {
                 enabled: true,
             },
         ];
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut rules = self.rules.write().expect("lock poisoned");
         for r in defaults {
             rules.push(r);
@@ -196,6 +248,7 @@ impl GuardrailEngine {
 
     fn run_pipeline(&self, text: &str, is_output: bool) -> GuardrailResult {
         let start = Instant::now();
+        #[allow(clippy::expect_used)] // lock poisoning
         let rules = self.rules.read().expect("lock poisoned");
         let mut violations = Vec::new();
 
@@ -271,6 +324,8 @@ struct PiiPatterns {
 }
 
 fn pii_patterns() -> PiiPatterns {
+    // Safety: all patterns below are static string literals — compilation is infallible.
+    #[allow(clippy::unwrap_used)]
     PiiPatterns {
         email: Regex::new(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").unwrap(),
         phone: Regex::new(r"\b(\+?1[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b").unwrap(),
@@ -294,7 +349,7 @@ fn check_pii(rule: &GuardrailRule, text: &str) -> Vec<Violation> {
     }
     for m in p.phone.find_iter(text) {
         // Only flag numbers that are at least 10 digits (with separators).
-        let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+        let digits: String = m.as_str().chars().filter(char::is_ascii_digit).collect();
         if digits.len() >= 10 {
             vs.push(Violation {
                 rule_name: rule.name.clone(),
@@ -315,7 +370,7 @@ fn check_pii(rule: &GuardrailRule, text: &str) -> Vec<Violation> {
         });
     }
     for m in p.credit_card.find_iter(text) {
-        let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+        let digits: String = m.as_str().chars().filter(char::is_ascii_digit).collect();
         if digits.len() >= 13 && digits.len() <= 19 && luhn_check(&digits) {
             vs.push(Violation {
                 rule_name: rule.name.clone(),
@@ -380,7 +435,7 @@ fn check_toxicity(rule: &GuardrailRule, text: &str) -> Vec<Violation> {
             vs.push(Violation {
                 rule_name: rule.name.clone(),
                 severity: rule.severity.clone(),
-                message: format!("Toxic content detected: matched keyword pattern"),
+                message: "Toxic content detected: matched keyword pattern".to_string(),
                 span: Some((pos, pos + kw.len())),
                 suggestion: Some("Remove or rephrase the toxic content".into()),
             });
@@ -498,7 +553,7 @@ fn check_prompt_injection(rule: &GuardrailRule, text: &str) -> Vec<Violation> {
             vs.push(Violation {
                 rule_name: rule.name.clone(),
                 severity: rule.severity.clone(),
-                message: format!("Possible prompt-injection attempt detected"),
+                message: "Possible prompt-injection attempt detected".to_string(),
                 span: Some((pos, pos + pattern.len())),
                 suggestion: Some("Remove the prompt-injection payload".into()),
             });
@@ -726,7 +781,7 @@ pub fn redact_pii(text: &str) -> (String, Vec<PiiMatch>) {
         });
     }
     for m in p.credit_card.find_iter(text) {
-        let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+        let digits: String = m.as_str().chars().filter(char::is_ascii_digit).collect();
         if digits.len() >= 13 && digits.len() <= 19 && luhn_check(&digits) {
             matches.push(PiiMatch {
                 kind: "CREDIT_CARD",
@@ -736,7 +791,7 @@ pub fn redact_pii(text: &str) -> (String, Vec<PiiMatch>) {
         }
     }
     for m in p.phone.find_iter(text) {
-        let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+        let digits: String = m.as_str().chars().filter(char::is_ascii_digit).collect();
         if digits.len() >= 10 {
             matches.push(PiiMatch {
                 kind: "PHONE",
@@ -752,8 +807,8 @@ pub fn redact_pii(text: &str) -> (String, Vec<PiiMatch>) {
     // Deduplicate overlapping spans (keep the one that starts first / is longer).
     matches.dedup_by(|a, b| {
         // a comes after b in sorted order (descending), but dedup_by compares consecutive.
-        let overlaps = a.span.0 < b.span.1 && b.span.0 < a.span.1;
-        overlaps
+
+        a.span.0 < b.span.1 && b.span.0 < a.span.1
     });
 
     let mut result = text.to_string();
@@ -772,6 +827,7 @@ pub fn redact_pii(text: &str) -> (String, Vec<PiiMatch>) {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

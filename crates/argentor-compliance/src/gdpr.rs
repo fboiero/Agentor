@@ -9,50 +9,73 @@ use uuid::Uuid;
 /// A consent record for GDPR compliance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConsentRecord {
+    /// Unique identifier for this consent record.
     pub id: Uuid,
+    /// Identifier of the data subject (e.g., user id or email hash).
     pub subject_id: String,
+    /// Processing purpose for which consent was sought.
     pub purpose: String,
+    /// Whether consent was granted (`true`) or withdrawn (`false`).
     pub granted: bool,
+    /// UTC timestamp of when consent was recorded.
     pub timestamp: DateTime<Utc>,
+    /// Optional expiry after which the consent is no longer valid.
     pub expiry: Option<DateTime<Utc>>,
 }
 
 /// A data subject request (erasure, portability, access).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataSubjectRequest {
+    /// Unique identifier for this request.
     pub id: Uuid,
+    /// Identifier of the data subject who made the request.
     pub subject_id: String,
+    /// Type of data subject right being exercised.
     pub request_type: DataSubjectRequestType,
+    /// Current processing status of the request.
     pub status: RequestStatus,
+    /// UTC timestamp of when the request was submitted.
     pub created_at: DateTime<Utc>,
+    /// UTC timestamp of when the request was fulfilled, if applicable.
     pub completed_at: Option<DateTime<Utc>>,
 }
 
+/// Type of GDPR data subject right being exercised.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DataSubjectRequestType {
+    /// Right to access personal data (Art. 15).
     Access,
+    /// Right to erasure / "right to be forgotten" (Art. 17).
     Erasure,
+    /// Right to data portability (Art. 20).
     Portability,
+    /// Right to rectification of inaccurate data (Art. 16).
     Rectification,
 }
 
+/// Processing status of a data subject request.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RequestStatus {
+    /// Request received, not yet started.
     Pending,
+    /// Request is being processed.
     InProgress,
+    /// Request has been fulfilled.
     Completed,
+    /// Request was denied (with documented reason).
     Denied,
 }
 
-/// In-memory consent store.
+/// In-memory consent and data subject request store for GDPR compliance.
 pub struct ConsentStore {
     records: Arc<RwLock<Vec<ConsentRecord>>>,
     requests: Arc<RwLock<Vec<DataSubjectRequest>>>,
 }
 
 impl ConsentStore {
+    /// Create a new, empty consent store.
     pub fn new() -> Self {
         Self {
             records: Arc::new(RwLock::new(Vec::new())),
@@ -60,6 +83,7 @@ impl ConsentStore {
         }
     }
 
+    /// Record a consent grant or withdrawal for a data subject.
     pub async fn record_consent(
         &self,
         subject_id: &str,
@@ -78,6 +102,7 @@ impl ConsentStore {
         record
     }
 
+    /// Check whether the subject has active consent for the given purpose.
     pub async fn check_consent(&self, subject_id: &str, purpose: &str) -> bool {
         let records = self.records.read().await;
         records
@@ -88,10 +113,12 @@ impl ConsentStore {
             .unwrap_or(false)
     }
 
+    /// Revoke consent for a subject and purpose by recording a withdrawal.
     pub async fn revoke_consent(&self, subject_id: &str, purpose: &str) {
         self.record_consent(subject_id, purpose, false).await;
     }
 
+    /// Create a new data subject request (access, erasure, portability, rectification).
     pub async fn create_request(
         &self,
         subject_id: &str,
@@ -109,6 +136,7 @@ impl ConsentStore {
         request
     }
 
+    /// Mark a data subject request as completed. Returns `true` if found.
     pub async fn complete_request(&self, request_id: Uuid) -> bool {
         let mut requests = self.requests.write().await;
         if let Some(req) = requests.iter_mut().find(|r| r.id == request_id) {
@@ -120,6 +148,17 @@ impl ConsentStore {
         }
     }
 
+    /// Return all consent records.
+    pub async fn all_records(&self) -> Vec<ConsentRecord> {
+        self.records.read().await.clone()
+    }
+
+    /// Return all data subject requests.
+    pub async fn all_requests(&self) -> Vec<DataSubjectRequest> {
+        self.requests.read().await.clone()
+    }
+
+    /// Export all stored data for a subject (for data portability requests).
     pub async fn get_subject_data(&self, subject_id: &str) -> HashMap<String, serde_json::Value> {
         let records = self.records.read().await;
         let subject_records: Vec<&ConsentRecord> = records
@@ -144,10 +183,12 @@ impl Default for ConsentStore {
 
 /// GDPR compliance module.
 pub struct GdprModule {
+    /// Consent storage backend.
     pub consent_store: ConsentStore,
 }
 
 impl GdprModule {
+    /// Create a new GDPR compliance module with a fresh consent store.
     pub fn new() -> Self {
         Self {
             consent_store: ConsentStore::new(),

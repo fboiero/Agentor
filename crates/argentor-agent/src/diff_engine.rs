@@ -490,7 +490,7 @@ impl DiffEngine {
         for diff in &plan.diffs {
             let current = content_map
                 .get(&diff.path)
-                .map(|s| s.as_str())
+                .map(std::string::String::as_str)
                 .unwrap_or("");
             let result = self.apply_diff(current, diff);
             if result.success {
@@ -653,7 +653,7 @@ impl DiffEngine {
         }
 
         // Roughly 1 token per 4 characters.
-        (chars + 3) / 4
+        chars.div_ceil(4)
     }
 
     // ── Private helpers ──────────────────────────────────────────────────
@@ -845,13 +845,7 @@ fn parse_hunk_header(line: &str) -> Result<(usize, usize, usize, usize), String>
     // Strip leading "@@ " and trailing " @@" (and any section heading after).
     let inner = line
         .strip_prefix("@@ ")
-        .and_then(|s| {
-            if let Some(pos) = s.find(" @@") {
-                Some(&s[..pos])
-            } else {
-                None
-            }
-        })
+        .and_then(|s| s.find(" @@").map(|pos| &s[..pos]))
         .ok_or_else(|| format!("Invalid hunk header: {line}"))?;
 
     let parts: Vec<&str> = inner.split_whitespace().collect();

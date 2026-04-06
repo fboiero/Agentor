@@ -216,7 +216,7 @@ impl TraceStore {
             .traces
             .iter()
             .filter(|t| matches_filter(t, filter))
-            .map(|t| to_summary(t))
+            .map(to_summary)
             .skip(filter.effective_offset())
             .take(filter.effective_limit())
             .collect()
@@ -526,7 +526,7 @@ async fn delete_trace_handler(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use argentor_agent::debug_recorder::{DebugRecorder, StepType, TokenUsage};
+    use argentor_agent::debug_recorder::{DebugRecorder, StepType};
     use axum::body::Body;
     use axum::http::Request;
     use tower::ServiceExt;

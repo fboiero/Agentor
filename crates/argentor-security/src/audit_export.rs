@@ -26,11 +26,17 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportFormat {
+    /// Splunk HTTP Event Collector JSON.
     Splunk,
+    /// Elasticsearch Bulk API NDJSON.
     Elasticsearch,
+    /// Common Event Format (ArcSight / QRadar).
     Cef,
+    /// JSON-LD with schema.org Action vocabulary.
     JsonLd,
+    /// Comma-separated values with headers.
     Csv,
+    /// RFC 5424 structured syslog.
     Syslog,
 }
 
@@ -106,13 +112,16 @@ pub struct SplunkHecEvent {
 /// Elasticsearch bulk-API action line.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElasticsearchBulkAction {
+    /// The index operation metadata.
     pub index: ElasticsearchBulkIndex,
 }
 
 /// Inner `"index"` metadata for the bulk action.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElasticsearchBulkIndex {
+    /// Target Elasticsearch index name.
     pub _index: String,
+    /// Document identifier.
     pub _id: String,
 }
 
@@ -120,16 +129,24 @@ pub struct ElasticsearchBulkIndex {
 // CefEvent (helper)
 // ---------------------------------------------------------------------------
 
-/// Parsed representation of a CEF line — useful for tests.
+/// Parsed representation of a CEF line -- useful for tests and validation.
 #[derive(Debug, Clone)]
 pub struct CefEvent {
+    /// CEF version (always 0).
     pub version: u8,
+    /// Vendor name in the CEF header.
     pub device_vendor: String,
+    /// Product name in the CEF header.
     pub device_product: String,
+    /// Product version string.
     pub device_version: String,
+    /// Unique event type identifier.
     pub signature_id: String,
+    /// Human-readable event name.
     pub name: String,
+    /// Numeric severity (0-10).
     pub severity: u8,
+    /// CEF extension key=value pairs.
     pub extension: String,
 }
 
@@ -155,9 +172,9 @@ pub fn outcome_severity(outcome: &AuditOutcome) -> u8 {
 fn syslog_pri(outcome: &AuditOutcome) -> u8 {
     let facility: u8 = 16; // local0
     let severity = match outcome {
-        AuditOutcome::Success => 6,  // informational
-        AuditOutcome::Error => 4,    // warning
-        AuditOutcome::Denied => 2,   // critical
+        AuditOutcome::Success => 6, // informational
+        AuditOutcome::Error => 4,   // warning
+        AuditOutcome::Denied => 2,  // critical
     };
     facility * 8 + severity
 }
@@ -209,10 +226,7 @@ impl AuditExporter {
     ///
     /// Returns pairs of lines: action-metadata followed by the document body.
     /// The index name is `{index_prefix}-{YYYY.MM}`.
-    pub fn export_elasticsearch(
-        entries: &[AuditEntry],
-        config: &ExportConfig,
-    ) -> Vec<String> {
+    pub fn export_elasticsearch(entries: &[AuditEntry], config: &ExportConfig) -> Vec<String> {
         let mut lines = Vec::with_capacity(entries.len() * 2);
         for entry in entries {
             let index_name = format!(
@@ -224,7 +238,11 @@ impl AuditExporter {
             let action = ElasticsearchBulkAction {
                 index: ElasticsearchBulkIndex {
                     _index: index_name,
-                    _id: format!("{}-{}", entry.session_id, entry.timestamp.timestamp_nanos_opt().unwrap_or(0)),
+                    _id: format!(
+                        "{}-{}",
+                        entry.session_id,
+                        entry.timestamp.timestamp_nanos_opt().unwrap_or(0)
+                    ),
                 },
             };
             lines.push(serde_json::to_string(&action).unwrap_or_default());
@@ -243,7 +261,11 @@ impl AuditExporter {
             .iter()
             .map(|e| {
                 let severity = outcome_severity(&e.outcome);
-                let details = e.details.to_string().replace('|', "\\|").replace('\\', "\\\\");
+                let details = e
+                    .details
+                    .to_string()
+                    .replace('|', "\\|")
+                    .replace('\\', "\\\\");
                 let skill = e.skill_name.as_deref().unwrap_or("-");
                 format!(
                     "CEF:0|Argentor|AgentRuntime|1.0|{action}|{action}|{severity}|\
@@ -420,6 +442,7 @@ pub struct ExportResponse {
 /// Response body for the config endpoint.
 #[derive(Debug, Clone, Serialize)]
 pub struct ExportConfigResponse {
+    /// The current export configuration.
     pub config: ExportConfig,
 }
 
@@ -815,20 +838,50 @@ mod tests {
 
     #[test]
     fn parse_format_known_values() {
-        assert_eq!(parse_format(Some("splunk"), ExportFormat::Csv), ExportFormat::Splunk);
-        assert_eq!(parse_format(Some("elk"), ExportFormat::Csv), ExportFormat::Elasticsearch);
-        assert_eq!(parse_format(Some("elastic"), ExportFormat::Csv), ExportFormat::Elasticsearch);
-        assert_eq!(parse_format(Some("cef"), ExportFormat::Csv), ExportFormat::Cef);
-        assert_eq!(parse_format(Some("jsonld"), ExportFormat::Csv), ExportFormat::JsonLd);
-        assert_eq!(parse_format(Some("json-ld"), ExportFormat::Csv), ExportFormat::JsonLd);
-        assert_eq!(parse_format(Some("csv"), ExportFormat::Splunk), ExportFormat::Csv);
-        assert_eq!(parse_format(Some("syslog"), ExportFormat::Csv), ExportFormat::Syslog);
+        assert_eq!(
+            parse_format(Some("splunk"), ExportFormat::Csv),
+            ExportFormat::Splunk
+        );
+        assert_eq!(
+            parse_format(Some("elk"), ExportFormat::Csv),
+            ExportFormat::Elasticsearch
+        );
+        assert_eq!(
+            parse_format(Some("elastic"), ExportFormat::Csv),
+            ExportFormat::Elasticsearch
+        );
+        assert_eq!(
+            parse_format(Some("cef"), ExportFormat::Csv),
+            ExportFormat::Cef
+        );
+        assert_eq!(
+            parse_format(Some("jsonld"), ExportFormat::Csv),
+            ExportFormat::JsonLd
+        );
+        assert_eq!(
+            parse_format(Some("json-ld"), ExportFormat::Csv),
+            ExportFormat::JsonLd
+        );
+        assert_eq!(
+            parse_format(Some("csv"), ExportFormat::Splunk),
+            ExportFormat::Csv
+        );
+        assert_eq!(
+            parse_format(Some("syslog"), ExportFormat::Csv),
+            ExportFormat::Syslog
+        );
     }
 
     #[test]
     fn parse_format_unknown_returns_default() {
-        assert_eq!(parse_format(Some("unknown"), ExportFormat::Cef), ExportFormat::Cef);
-        assert_eq!(parse_format(None, ExportFormat::Syslog), ExportFormat::Syslog);
+        assert_eq!(
+            parse_format(Some("unknown"), ExportFormat::Cef),
+            ExportFormat::Cef
+        );
+        assert_eq!(
+            parse_format(None, ExportFormat::Syslog),
+            ExportFormat::Syslog
+        );
     }
 
     // -- Filter integration ------------------------------------------------

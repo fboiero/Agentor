@@ -28,20 +28,30 @@ pub trait TaskQueueHandle: Send + Sync {
 /// Summary info about a task.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct TaskInfo {
+    /// Unique task identifier.
     pub id: String,
+    /// Human-readable task description.
     pub description: String,
+    /// Agent role assigned to this task.
     pub role: String,
+    /// Current status (e.g., "pending", "running", "completed").
     pub status: String,
 }
 
 /// Aggregate task counts.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct TaskSummary {
+    /// Total number of tasks.
     pub total: usize,
+    /// Tasks waiting to be assigned.
     pub pending: usize,
+    /// Tasks currently being executed.
     pub running: usize,
+    /// Tasks that finished successfully.
     pub completed: usize,
+    /// Tasks that terminated with an error.
     pub failed: usize,
+    /// Tasks awaiting human review.
     pub needs_review: usize,
 }
 
@@ -52,6 +62,7 @@ pub struct AgentDelegateSkill {
 }
 
 impl AgentDelegateSkill {
+    /// Create a new `AgentDelegateSkill` backed by the given task queue.
     pub fn new(queue: Arc<dyn TaskQueueHandle>) -> Self {
         Self {
             descriptor: SkillDescriptor {

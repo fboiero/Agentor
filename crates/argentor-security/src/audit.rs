@@ -5,21 +5,32 @@ use tokio::sync::mpsc;
 use tracing::info;
 use uuid::Uuid;
 
+/// A single entry in the audit log, recording one agent action.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEntry {
+    /// UTC timestamp of when the action occurred.
     pub timestamp: DateTime<Utc>,
+    /// Session in which the action was performed.
     pub session_id: Uuid,
+    /// Human-readable description of the action (e.g., "tool_call", "login").
     pub action: String,
+    /// Name of the skill involved, if any.
     pub skill_name: Option<String>,
+    /// Structured details about the action (free-form JSON).
     pub details: serde_json::Value,
+    /// Whether the action succeeded, was denied, or errored.
     pub outcome: AuditOutcome,
 }
 
+/// Outcome of an audited action.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AuditOutcome {
+    /// The action completed successfully.
     Success,
+    /// The action was denied by a security check.
     Denied,
+    /// The action failed with an error.
     Error,
 }
 
@@ -59,6 +70,7 @@ impl AuditLog {
         Self { tx }
     }
 
+    /// Send an audit entry to the background writer. Logs the action via `tracing`.
     pub fn log(&self, entry: AuditEntry) {
         info!(
             session_id = %entry.session_id,
@@ -69,6 +81,7 @@ impl AuditLog {
         let _ = self.tx.send(entry);
     }
 
+    /// Convenience method to construct and log an [`AuditEntry`] in one call.
     pub fn log_action(
         &self,
         session_id: Uuid,

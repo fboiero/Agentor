@@ -1,0 +1,68 @@
+{
+  "name": "@argentor/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK client for the Argentor AI agent framework REST API",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors.js",
+      "types": "./dist/errors.d.ts"
+    },
+    "./streaming": {
+      "import": "./dist/streaming.js",
+      "types": "./dist/streaming.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "argentor",
+    "ai",
+    "agent",
+    "sdk",
+    "client",
+    "llm",
+    "typescript"
+  ],
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fboiero/Agentor.git",
+    "directory": "sdks/typescript"
+  },
+  "homepage": "https://github.com/fboiero/Agentor/tree/master/sdks/typescript",
+  "bugs": {
+    "url": "https://github.com/fboiero/Agentor/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

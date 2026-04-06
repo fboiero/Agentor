@@ -780,9 +780,9 @@ impl TestOracle {
                         let line_num: usize = caps[2].parse().unwrap_or(0);
                         let msg = caps[3].to_string();
                         // Look ahead for the test name
-                        for j in (i + 1)..lines.len() {
+                        for look_line in &lines[(i + 1)..] {
                             if let Some(rre) = &result_re {
-                                if let Some(rcaps) = rre.captures(lines[j]) {
+                                if let Some(rcaps) = rre.captures(look_line) {
                                     if &rcaps[1] == "FAIL" {
                                         pre_details.insert(
                                             rcaps[2].to_string(),
@@ -1097,8 +1097,7 @@ impl TestOracle {
                 if target_failed {
                     // Good: test is failing. Move to Green phase.
                     let action = format!(
-                        "Test '{}' is failing as expected. Write minimal implementation to make it pass.",
-                        target
+                        "Test '{target}' is failing as expected. Write minimal implementation to make it pass."
                     );
                     cycle.history.push(TddIteration {
                         phase: TddPhase::Red,
@@ -1110,10 +1109,8 @@ impl TestOracle {
                     action
                 } else if target_status == Some(&TestStatus::Passed) {
                     // Test already passes — skip to refactor
-                    let action = format!(
-                        "Test '{}' already passes. Skipping to refactor phase.",
-                        target
-                    );
+                    let action =
+                        format!("Test '{target}' already passes. Skipping to refactor phase.");
                     cycle.history.push(TddIteration {
                         phase: TddPhase::Red,
                         action: action.clone(),
@@ -1125,8 +1122,7 @@ impl TestOracle {
                 } else {
                     // Test not found or errored — need to write the test first
                     let action = format!(
-                        "Write a failing test for '{}'. The test must fail before writing implementation.",
-                        target
+                        "Write a failing test for '{target}'. The test must fail before writing implementation."
                     );
                     cycle.history.push(TddIteration {
                         phase: TddPhase::Red,
@@ -1211,9 +1207,9 @@ impl TestOracle {
         prompt.push_str(&format!("**Error message:** {}\n", analysis.error_message));
 
         if let Some(ref file) = analysis.source_file {
-            prompt.push_str(&format!("**File:** `{}`", file));
+            prompt.push_str(&format!("**File:** `{file}`"));
             if let Some(line) = analysis.source_line {
-                prompt.push_str(&format!(" (line {})", line));
+                prompt.push_str(&format!(" (line {line})"));
             }
             prompt.push('\n');
         }
@@ -1790,7 +1786,7 @@ FAIL	example.com/calculator	0.023s
             FixStrategy::AddImport { module } => {
                 assert!(module.contains("HashMap"));
             }
-            other => panic!("expected AddImport, got {:?}", other),
+            other => panic!("expected AddImport, got {other:?}"),
         }
     }
 
@@ -1802,7 +1798,7 @@ FAIL	example.com/calculator	0.023s
                 assert_eq!(expected, "u32");
                 assert_eq!(actual, "i64");
             }
-            other => panic!("expected FixType, got {:?}", other),
+            other => panic!("expected FixType, got {other:?}"),
         }
     }
 

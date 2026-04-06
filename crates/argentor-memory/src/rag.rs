@@ -146,7 +146,7 @@ pub struct RagResult {
 /// Estimate token count from a string (≈ 1 token per 4 characters).
 fn estimate_tokens(text: &str) -> usize {
     // Simple heuristic: ~4 chars per token for English text.
-    (text.len() + 3) / 4
+    text.len().div_ceil(4)
 }
 
 /// Split a document into chunks according to the given strategy.

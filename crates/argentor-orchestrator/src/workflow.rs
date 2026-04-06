@@ -28,13 +28,22 @@ pub enum WorkflowTrigger {
     /// Started manually by a user or API call.
     Manual,
     /// Started by an incoming webhook event.
-    Webhook { event: String },
+    Webhook {
+        /// Event name or pattern that triggers the workflow.
+        event: String,
+    },
     /// Started on a cron schedule.
-    Schedule { cron: String },
+    Schedule {
+        /// Cron expression (e.g., `"0 9 * * MON"`).
+        cron: String,
+    },
     /// Started when a metric crosses a threshold.
     Threshold {
+        /// Name of the metric to monitor.
         metric: String,
+        /// Comparison operator (e.g., `">"`, `">="`, `"<"`).
         condition: String,
+        /// Threshold value.
         value: f64,
     },
 }
@@ -49,30 +58,48 @@ pub enum WorkflowTrigger {
 pub enum StepType {
     /// Dispatch a task to an AI agent.
     AgentTask {
+        /// Role of the agent to dispatch to (e.g., "coder", "reviewer").
         agent_role: String,
+        /// Template string for the agent's prompt.
         prompt_template: String,
     },
     /// Make an HTTP call.
     HttpCall {
+        /// HTTP method (e.g., "GET", "POST").
         method: String,
+        /// Target URL.
         url: String,
+        /// Optional body template (supports variable interpolation).
         body_template: Option<String>,
     },
     /// Branch to one of two steps by id based on an expression.
     Condition {
+        /// Boolean expression to evaluate.
         expression: String,
+        /// Step id to jump to when the expression is true.
         if_true: String,
+        /// Step id to jump to when the expression is false.
         if_false: String,
     },
     /// Wait for a fixed duration.
-    Delay { seconds: u64 },
+    Delay {
+        /// Number of seconds to wait.
+        seconds: u64,
+    },
     /// Send a notification.
     Notification {
+        /// Target channel (e.g., "slack", "email").
         channel: String,
+        /// Message template (supports variable interpolation).
         message_template: String,
     },
     /// Escalate to a human operator.
-    AssignToHuman { team: String, message: String },
+    AssignToHuman {
+        /// Team or group to assign to.
+        team: String,
+        /// Escalation message.
+        message: String,
+    },
 }
 
 /// Conditions that gate whether a step should execute.
@@ -84,9 +111,19 @@ pub enum StepCondition {
     /// Execute only if the previous step succeeded.
     IfPreviousSucceeded,
     /// Execute if a field in the run context equals a value.
-    IfFieldEquals { field: String, value: String },
+    IfFieldEquals {
+        /// Field name to check.
+        field: String,
+        /// Expected value.
+        value: String,
+    },
     /// Execute if a numeric field exceeds a threshold.
-    IfScoreAbove { field: String, threshold: f64 },
+    IfScoreAbove {
+        /// Field name to check.
+        field: String,
+        /// Minimum value (exclusive).
+        threshold: f64,
+    },
     /// Evaluate a simple boolean expression string.
     Expression(String),
 }
@@ -100,9 +137,15 @@ pub enum FailureAction {
     /// Skip the failed step and continue.
     Skip,
     /// Retry the step up to `max` times.
-    Retry { max: u32 },
+    Retry {
+        /// Maximum number of retry attempts.
+        max: u32,
+    },
     /// Jump to a specific step by id.
-    GoTo { step_id: String },
+    GoTo {
+        /// Target step identifier.
+        step_id: String,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -112,22 +155,34 @@ pub enum FailureAction {
 /// A single step inside a workflow definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowStepDef {
+    /// Unique identifier for this step within its workflow.
     pub id: String,
+    /// Human-readable step name.
     pub name: String,
+    /// What this step does (agent task, HTTP call, condition, etc.).
     pub step_type: StepType,
+    /// Optional guard that gates whether this step should execute.
     pub condition: Option<StepCondition>,
+    /// Strategy when this step fails (abort, skip, retry, goto).
     pub on_failure: FailureAction,
+    /// Maximum seconds this step may run before being timed out.
     pub timeout_seconds: Option<u64>,
 }
 
-/// Complete workflow definition — the "blueprint" for a pipeline.
+/// Complete workflow definition -- the "blueprint" for a pipeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowDefinition {
+    /// Unique identifier for this workflow definition.
     pub id: String,
+    /// Human-readable name.
     pub name: String,
+    /// Free-text description of the workflow's purpose.
     pub description: String,
+    /// What starts this workflow (manual, webhook, schedule, threshold).
     pub trigger: WorkflowTrigger,
+    /// Ordered list of steps that make up the pipeline.
     pub steps: Vec<WorkflowStepDef>,
+    /// Maximum seconds the entire workflow may run before timing out.
     pub timeout_seconds: Option<u64>,
 }
 
@@ -139,11 +194,17 @@ pub struct WorkflowDefinition {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RunStatus {
+    /// Run has been created but not yet started.
     Pending,
+    /// Run is actively executing steps.
     Running,
+    /// All steps finished successfully.
     Completed,
+    /// A step failed and the failure action was abort.
     Failed,
+    /// Run was manually paused.
     Paused,
+    /// Run exceeded the workflow-level timeout.
     TimedOut,
 }
 
@@ -151,32 +212,49 @@ pub enum RunStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StepStatus {
+    /// Step finished successfully.
     Completed,
+    /// Step failed during execution.
     Failed,
+    /// Step was skipped because its condition was not met.
     Skipped,
+    /// Step exceeded its timeout.
     TimedOut,
 }
 
 /// Result of executing a single step.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StepResult {
+    /// Identifier of the step that was executed.
     pub step_id: String,
+    /// Outcome status of the step.
     pub status: StepStatus,
+    /// Structured output produced by the step.
     pub output: serde_json::Value,
+    /// Wall-clock execution time in milliseconds.
     pub duration_ms: u64,
+    /// Error message if the step failed.
     pub error: Option<String>,
 }
 
 /// A running (or completed) instance of a workflow.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowRun {
+    /// Unique run identifier.
     pub run_id: String,
+    /// Identifier of the workflow definition being executed.
     pub workflow_id: String,
+    /// Current lifecycle status of the run.
     pub status: RunStatus,
+    /// Index of the next step to execute.
     pub current_step_index: usize,
+    /// Data that triggered this run (e.g., webhook payload).
     pub trigger_data: serde_json::Value,
+    /// Results of steps already executed, in order.
     pub step_results: Vec<StepResult>,
+    /// UTC timestamp of when the run was created.
     pub created_at: DateTime<Utc>,
+    /// UTC timestamp of the last state change.
     pub updated_at: DateTime<Utc>,
 }
 
@@ -480,13 +558,13 @@ fn evaluate_condition(condition: &Option<StepCondition>, run: &WorkflowRun) -> b
             .unwrap_or(true),
         Some(StepCondition::IfFieldEquals { field, value }) => {
             extract_field(&run.trigger_data, field)
-                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .and_then(|v| v.as_str().map(std::string::ToString::to_string))
                 .map(|v| v == *value)
                 .unwrap_or(false)
         }
         Some(StepCondition::IfScoreAbove { field, threshold }) => {
             extract_field(&run.trigger_data, field)
-                .and_then(|v| v.as_f64())
+                .and_then(serde_json::Value::as_f64)
                 .map(|v| v > *threshold)
                 .unwrap_or(false)
         }
@@ -867,6 +945,7 @@ pub fn support_ticket_workflow() -> WorkflowDefinition {
 // ===========================================================================
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -1576,7 +1655,8 @@ mod tests {
             ids.push(h.await.unwrap());
         }
         // All run ids should be unique.
-        let unique: std::collections::HashSet<&str> = ids.iter().map(|s| s.as_str()).collect();
+        let unique: std::collections::HashSet<&str> =
+            ids.iter().map(std::string::String::as_str).collect();
         assert_eq!(unique.len(), 10);
     }
 }

@@ -419,7 +419,7 @@ fn main() {
 
     let team = DevTeam::full_stack();
     let workflow = DevWorkflow::ImplementFeature;
-    let roles = team.required_roles(workflow.clone());
+    let roles = team.required_roles(workflow);
 
     agent_says(
         "Orchestrator",
@@ -474,7 +474,7 @@ fn main() {
     agent_says("Architect", CYAN, "🏗️ ", "Analyzing feature request...");
     println!();
     println!("  {BOLD}{WHT}Feature Request:{RST}");
-    println!("  {DIM}\"{}\"", task_desc);
+    println!("  {DIM}\"{task_desc}\"");
     println!("  {RST}");
     delay(1000);
 
@@ -486,7 +486,7 @@ fn main() {
 
     let planner = CodePlanner::new();
     let plan = planner.plan_feature(task_title, task_desc, &[]);
-    let plan_md = planner.format_as_markdown(&plan);
+    let _plan_md = planner.format_as_markdown(&plan);
 
     result_line("📐", "Plan", &plan.title);
     result_line("📊", "Risk", &format!("{}", plan.risk.level));

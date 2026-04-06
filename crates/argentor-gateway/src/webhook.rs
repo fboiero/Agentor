@@ -37,6 +37,7 @@ pub enum SessionStrategy {
 
 /// Shared state for the webhook handler.
 pub struct WebhookState {
+    /// Configured webhook endpoints.
     pub webhooks: Vec<WebhookConfig>,
 }
 

@@ -119,7 +119,7 @@ impl Skill for XcapitSearchSkill {
         _permissions: &PermissionSet,
     ) -> ArgentorResult<()> {
         let query = call.arguments.get("query").and_then(|v| v.as_str());
-        if query.is_none() || query.is_some_and(|q| q.is_empty()) {
+        if query.is_none() || query.is_some_and(str::is_empty) {
             return Err(argentor_core::ArgentorError::Skill(
                 "Missing or empty 'query' parameter".to_string(),
             ));
@@ -423,12 +423,12 @@ impl Skill for XcapitKbSearchSkill {
         let subject = call.arguments.get("subject").and_then(|v| v.as_str());
         let description = call.arguments.get("description").and_then(|v| v.as_str());
 
-        if subject.is_none() || subject.is_some_and(|s| s.is_empty()) {
+        if subject.is_none() || subject.is_some_and(str::is_empty) {
             return Err(argentor_core::ArgentorError::Skill(
                 "Missing or empty 'subject' parameter".to_string(),
             ));
         }
-        if description.is_none() || description.is_some_and(|d| d.is_empty()) {
+        if description.is_none() || description.is_some_and(str::is_empty) {
             return Err(argentor_core::ArgentorError::Skill(
                 "Missing or empty 'description' parameter".to_string(),
             ));

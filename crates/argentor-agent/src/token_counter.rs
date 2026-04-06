@@ -12,9 +12,13 @@ use std::sync::{Arc, Mutex};
 /// Estimated token counts and optional cost for a single request or accumulated usage.
 #[derive(Debug, Clone, Default)]
 pub struct TokenEstimate {
+    /// Estimated number of input tokens.
     pub input_tokens: u64,
+    /// Estimated number of output tokens.
     pub output_tokens: u64,
+    /// Total estimated tokens (input + output).
     pub total_tokens: u64,
+    /// Estimated cost in USD, if pricing data is available.
     pub estimated_cost_usd: Option<f64>,
 }
 
@@ -236,6 +240,7 @@ impl UsageTracker {
 
     /// Record a [`TokenEstimate`] associated with a specific provider name.
     pub fn record_for_provider(&self, estimate: &TokenEstimate, provider_name: &str) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut inner = self.inner.lock().expect("UsageTracker lock poisoned");
 
         inner.total.input_tokens += estimate.input_tokens;
@@ -266,6 +271,7 @@ impl UsageTracker {
 
     /// Return the cumulative totals.
     pub fn total(&self) -> TokenEstimate {
+        #[allow(clippy::expect_used)] // lock poisoning
         self.inner
             .lock()
             .expect("UsageTracker lock poisoned")
@@ -275,6 +281,7 @@ impl UsageTracker {
 
     /// Return a snapshot of per-provider totals.
     pub fn by_provider(&self) -> HashMap<String, TokenEstimate> {
+        #[allow(clippy::expect_used)] // lock poisoning
         self.inner
             .lock()
             .expect("UsageTracker lock poisoned")
@@ -284,6 +291,7 @@ impl UsageTracker {
 
     /// Reset all accumulated usage data.
     pub fn reset(&self) {
+        #[allow(clippy::expect_used)] // lock poisoning
         let mut inner = self.inner.lock().expect("UsageTracker lock poisoned");
         inner.total = TokenEstimate::default();
         inner.by_provider.clear();
@@ -323,7 +331,7 @@ mod tests {
     fn test_claude_uses_4_5_ratio() {
         let tc = make_counter();
         // 45 chars / 4.5 = 10 tokens exactly
-        let text = "a]".repeat(22); // 44 chars => ceil(44/4.5) = 10
+        let _text = "a]".repeat(22); // 44 chars => ceil(44/4.5) = 10
         let tokens = tc.estimate_tokens(&"a".repeat(45), &LlmProvider::Claude);
         assert_eq!(tokens, 10);
 

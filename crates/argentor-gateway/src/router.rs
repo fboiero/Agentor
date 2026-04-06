@@ -9,16 +9,23 @@ use tokio::sync::mpsc;
 use tracing::{info, warn};
 use uuid::Uuid;
 
+/// An incoming message from a client.
 #[derive(Debug, Deserialize)]
 pub struct InboundMessage {
+    /// Optional existing session to attach to.
     pub session_id: Option<Uuid>,
+    /// Message text.
     pub content: String,
 }
 
+/// A message sent back to the client.
 #[derive(Debug, Serialize)]
 pub struct OutboundMessage {
+    /// Session this message belongs to.
     pub session_id: Uuid,
+    /// Response text.
     pub content: String,
+    /// Message type discriminator.
     #[serde(rename = "type")]
     pub msg_type: String,
 }
@@ -32,6 +39,7 @@ pub struct MessageRouter {
 }
 
 impl MessageRouter {
+    /// Create a new message router.
     pub fn new(
         agent: Arc<AgentRunner>,
         sessions: Arc<dyn SessionStore>,
@@ -45,6 +53,12 @@ impl MessageRouter {
         }
     }
 
+    /// Get a reference to the underlying agent runner.
+    pub fn agent(&self) -> &AgentRunner {
+        &self.agent
+    }
+
+    /// Route an inbound message to the appropriate session and agent.
     pub async fn handle_message(
         &self,
         msg: InboundMessage,

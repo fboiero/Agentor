@@ -1,0 +1,113 @@
+# Data Pipeline
+#
+# Workflow: fetch data -> transform -> validate -> store -> notify
+#
+# Usage:
+#   let def = WorkflowDsl::load_file("examples/workflows/data-pipeline.toml")?;
+#   engine.register_workflow(def).await;
+
+[workflow]
+name = "data-pipeline"
+description = "ETL pipeline: fetch, transform, validate, and store data with notifications"
+version = "1.0"
+author = "Argentor Team"
+tags = ["data", "etl", "pipeline"]
+timeout_seconds = 3600
+
+[variables]
+source_name = "user_events"
+target_format = "parquet"
+max_rows = "100000"
+
+[[steps]]
+id = "fetch"
+name = "Fetch Source Data"
+type = "http"
+url = "{{env.DATA_SOURCE_URL}}"
+method = "GET"
+timeout_seconds = 120
+
+[[steps]]
+id = "transform"
+name = "Transform Data"
+type = "agent"
+role = "data_engineer"
+prompt = """
+Transform the fetched data into the target format.
+
+Source: {{var.source_name}}
+Raw data summary: {{steps.fetch.output}}
+Target format: {{var.target_format}}
+
+Apply transformations:
+- Normalize timestamps to UTC
+- Deduplicate records
+- Apply schema validation
+- Handle null values with defaults
+"""
+tools = ["data_transform", "schema_validator"]
+depends_on = ["fetch"]
+timeout_seconds = 300
+on_failure = "retry"
+retry = 2
+
+[[steps]]
+id = "validate"
+name = "Validate Output"
+type = "agent"
+role = "data_qa"
+prompt = """
+Validate the transformed data for correctness and completeness.
+
+Transformation result: {{steps.transform.output}}
+
+Checks:
+- Row count within expected range (max {{var.max_rows}})
+- No schema violations
+- Referential integrity preserved
+- Statistical distribution sanity check
+"""
+tools = ["data_validator", "stats_checker"]
+depends_on = ["transform"]
+timeout_seconds = 60
+
+[[steps]]
+id = "check_valid"
+name = "Validation Gate"
+type = "condition"
+condition = "validation_passed == true"
+on_true = "store"
+on_false = "alert_failure"
+depends_on = ["validate"]
+
+[[steps]]
+id = "store"
+name = "Store Results"
+type = "http"
+url = "{{env.DATA_SINK_URL}}"
+method = "POST"
+body = '{"source": "{{var.source_name}}", "format": "{{var.target_format}}", "data": "{{steps.transform.output}}"}'
+depends_on = ["check_valid"]
+timeout_seconds = 120
+on_failure = "retry"
+retry = 3
+
+[[steps]]
+id = "notify_success"
+name = "Notify Success"
+type = "notification"
+channel = "slack"
+message = "Data pipeline '{{var.source_name}}' completed successfully. Output stored in {{var.target_format}} format."
+depends_on = ["store"]
+on_failure = "skip"
+
+[[steps]]
+id = "alert_failure"
+name = "Alert Validation Failure"
+type = "notification"
+channel = "pagerduty"
+message = "Data pipeline '{{var.source_name}}' FAILED validation. Manual review required."
+depends_on = ["check_valid"]
+
+[triggers]
+cron = "0 2 * * *"

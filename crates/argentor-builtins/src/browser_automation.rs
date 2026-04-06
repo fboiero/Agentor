@@ -76,15 +76,29 @@ impl Default for BrowserConfig {
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum BrowserAction {
     /// Navigate the browser to a URL.
-    Navigate { url: String },
+    Navigate {
+        /// Target URL to navigate to.
+        url: String,
+    },
     /// Take a screenshot of the current page.
     Screenshot,
     /// Extract text content from an element matching the CSS selector.
-    ExtractText { selector: String },
+    ExtractText {
+        /// CSS selector for the target element.
+        selector: String,
+    },
     /// Fill a form field matching the CSS selector with the given value.
-    FillForm { selector: String, value: String },
+    FillForm {
+        /// CSS selector for the form field.
+        selector: String,
+        /// Value to fill into the field.
+        value: String,
+    },
     /// Click an element matching the CSS selector.
-    Click { selector: String },
+    Click {
+        /// CSS selector for the element to click.
+        selector: String,
+    },
     /// Get the full page source HTML.
     GetPageSource,
 }

@@ -790,6 +790,7 @@ struct AgentExecution {
     total_tokens: u64,
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn execute_agent(
     role: AgentRole,
     backend: DemoBackend,

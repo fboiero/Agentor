@@ -9,6 +9,7 @@ pub struct JsonReportStore {
 }
 
 impl JsonReportStore {
+    /// Create a new store that writes JSON reports under the given directory.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

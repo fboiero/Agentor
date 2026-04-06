@@ -17,6 +17,7 @@ pub struct ClaudeCodeBackend {
 }
 
 impl ClaudeCodeBackend {
+    /// Create a new Claude Code backend with the given configuration.
     pub fn new(config: ModelConfig) -> Self {
         Self { config }
     }

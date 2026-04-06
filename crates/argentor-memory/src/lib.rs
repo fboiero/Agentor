@@ -24,6 +24,8 @@ pub mod embedding;
 pub mod embeddings_providers;
 /// Hybrid search combining embeddings and BM25.
 pub mod hybrid;
+/// Knowledge graph for entity-relationship-based memory.
+pub mod knowledge_graph;
 /// Query expansion for improved recall.
 pub mod query_expansion;
 /// Retrieval-Augmented Generation pipeline.
@@ -37,10 +39,15 @@ pub use conversation::{
 };
 pub use embedding::{EmbeddingProvider, LocalEmbedding};
 pub use embeddings_providers::{
-    BatchEmbeddingProvider, CacheStats, CachedEmbeddingProvider, CohereEmbeddingProvider,
-    EmbeddingConfig, EmbeddingProviderFactory, OpenAiEmbeddingProvider, VoyageEmbeddingProvider,
+    parse_cohere_embedding_response, parse_openai_embedding_response,
+    parse_voyage_embedding_response, BatchEmbeddingProvider, CacheStats, CachedEmbeddingProvider,
+    CohereEmbeddingProvider, EmbeddingConfig, EmbeddingProviderFactory, OpenAiEmbeddingProvider,
+    VoyageEmbeddingProvider,
 };
 pub use hybrid::HybridSearcher;
+pub use knowledge_graph::{
+    Entity, EntityType, GraphSummary, KnowledgeGraph, RelationType, Relationship,
+};
 pub use query_expansion::{QueryExpander, RuleBasedExpander};
 pub use rag::{
     ChunkingStrategy, Document, DocumentChunk, RagConfig, RagPipeline, RagResult, ScoredChunk,

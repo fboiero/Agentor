@@ -5,9 +5,9 @@
 [![CI](https://github.com/fboiero/Argentor/actions/workflows/ci.yml/badge.svg)](https://github.com/fboiero/Argentor/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-2525%20passing-brightgreen.svg)]()
-[![LOC](https://img.shields.io/badge/LOC-125K%2B-informational.svg)]()
-[![Crates](https://img.shields.io/badge/Crates-14-informational.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-3953%20passing-brightgreen.svg)]()
+[![LOC](https://img.shields.io/badge/LOC-140K%2B-informational.svg)]()
+[![Crates](https://img.shields.io/badge/Crates-15-informational.svg)]()
 [![PyPI](https://img.shields.io/badge/PyPI-argentor--client-blue.svg)](https://pypi.org/project/argentor-client/)
 [![npm](https://img.shields.io/badge/npm-%40argentor%2Fclient-red.svg)](https://www.npmjs.com/package/@argentor/client)
 
@@ -40,7 +40,7 @@ Argentor is an autonomous AI agent framework designed for **security**, **compli
 
 Unlike frameworks that bolt on security as an afterthought, Argentor makes it foundational: every skill runs in a WASM sandbox with capability-based permissions, every tool call is audit-logged, and every agent operates within a strict permission boundary. The result is a framework you can trust with production workloads where security and regulatory compliance matter.
 
-Argentor also provides a complete platform for building multi-agent systems — from code generation pipelines to DevOps automation — with built-in observability, token budget tracking, and support for 12+ LLM providers. Whether you are deploying a single agent or orchestrating a team of specialized workers, Argentor handles the complexity while keeping everything auditable and secure.
+Argentor also provides a complete platform for building multi-agent systems — from code generation pipelines to DevOps automation — with built-in observability, token budget tracking, and support for 14 LLM providers. Whether you are deploying a single agent or orchestrating a team of specialized workers, Argentor handles the complexity while keeping everything auditable and secure.
 
 ---
 
@@ -68,6 +68,7 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **TLS/mTLS support**
 - **JWT authentication** (HMAC-SHA256) with API key hashing
 - **OAuth2 provider configuration** (GitHub, Google, custom)
+- **SSO/SAML authentication** for enterprise identity providers
 - **Encrypted credential store** (AES-256-GCM with PBKDF2 key derivation)
 - **RBAC policy engine** — Admin, Operator, Viewer, Custom roles with per-role permissions
 - **Audit logging** — append-only JSONL with structured querying and statistics
@@ -91,6 +92,17 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **Test Runner skill** — multi-language test execution with result parsing
 - **Git operations skill** — libgit2-based, no shell commands
 
+### Universal Skill Toolkit
+- **40+ built-in skills** — calculator, unit converter, JSON/YAML/CSV tools, regex tester, UUID/hash generators, crypto (encrypt/decrypt/sign/verify), web search, security scanning (port scan, header audit, SSL check, vulnerability scan), and more
+- **Multi-provider web search** — DuckDuckGo, Tavily, Brave, SearXNG with unified interface
+- **Plugin marketplace** — skill publishing, discovery, dependency resolution, and version management
+
+### Guardrails Pipeline
+- **PII detection** — credit card (Luhn), SSN, email, phone number detection with redaction
+- **Prompt injection blocking** — 23+ pattern signatures
+- **Toxicity filter** — content policy enforcement on input and output
+- **Guardrails integrated into agent pipeline** — pre/post execution filtering
+
 ### Gateway and API
 - **HTTP/WebSocket gateway** (axum-based)
 - **REST API** — 40+ endpoints (10 core + 17 control plane + 13 proxy management)
@@ -98,6 +110,8 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **Web Dashboard** — dark-themed SPA at `/dashboard` with deployment management, agent catalog, health monitoring
 - **OpenAPI 3.0 spec** — auto-generated at `/openapi.json`
 - **Prometheus-compatible `/metrics` endpoint** for observability
+- **OpenTelemetry observability** — OTLP export, distributed tracing with `#[tracing::instrument]`
+- **Per-API-key rate limiting** with tenant-aware enforcement (Free/Pro/Enterprise tiers)
 - **Rate limit headers** — X-RateLimit-*, IETF draft RateLimit, Retry-After
 - **Webhook support** — inbound/outbound with HMAC-SHA256 validation
 - **Channel bridge** — Slack, Discord, Telegram, and Webchat adapters
@@ -122,6 +136,8 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **ISO 27001** — access control logging, incident response, risk assessment
 - **ISO 42001** — AI system inventory, bias monitoring, transparency logging, HITL
 - **DPGA** — all 9 indicators assessed
+- **Compliance report generation** — Markdown, JSON, and HTML output formats
+- **Multi-region data routing** — configurable data residency with region-aware request routing
 
 ### MCP Integration
 - **MCP Client** (JSON-RPC 2.0 over stdio)
@@ -150,6 +166,34 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **CodePlanner** — Implementation planning with DAG ordering and risk assessment
 - **ReviewEngine** — 25+ rules across 7 dimensions (security, performance, style, correctness)
 - **DevTeam** — Pre-configured teams with 8 workflow templates and quality gates
+
+### SDKs and Language Bridges
+- **Python SDK** (`argentor-client` on PyPI) — httpx + pydantic, async support
+- **TypeScript SDK** (`@argentor/client` on npm) — fetch-based, full type definitions
+- **PyO3 Python bridge** (`argentor-python` crate) — native Rust-to-Python bindings for direct embedding
+
+### Agent Evaluation & Benchmarks
+- **Agent Eval & Benchmark suite** — 5 benchmark suites, 45 test cases for measuring agent quality
+- **Workflow DSL** — TOML-based workflow definitions, no Rust code needed
+- **Knowledge Graph memory** — entity-relationship graph for structured agent memory
+
+### Streaming & Cost Management
+- **SSE Streaming chat** — `POST /api/v1/chat/stream` for real-time token-by-token responses
+- **Cost Optimization Engine** — 5 strategies for minimizing LLM spend while maintaining quality
+- **Conversation Trees** — Git-like branching for conversation history (branch, merge, diff)
+
+### Developer Tooling
+- **Tool Builder** — 3-line tool definitions for rapid skill creation
+- **Hook System** — Pre/Post execution hooks with deny/modify capabilities
+- **Permission Modes** — 6 modes including PlanOnly for safe agent execution
+- **In-Process MCP Server** — run MCP server in-process without stdio overhead
+
+### Protocol & Integration
+- **Universal `query()` API** — single API covering all 14 LLM providers
+- **NDJSON Protocol** — newline-delimited JSON for structured agent communication
+- **Headless mode** — run agents without interactive terminal (CI/CD, automation)
+- **Context Assembly** — auto-assembles git context + ARGENTOR.md project files
+- **Agent SDK wrappers** — Python and TypeScript SDK wrappers for agent orchestration
 
 ### Additional Capabilities
 - **Docker sandbox** for untrusted code execution
@@ -229,6 +273,7 @@ Argentor also provides a complete platform for building multi-agent systems — 
 | `argentor-orchestrator` | Multi-agent engine, TaskQueue with DAG, AgentMonitor, DeploymentManager, HealthChecker |
 | `argentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA compliance modules |
 | `argentor-a2a` | Google A2A protocol: AgentCard, A2AServer, A2AClient, JSON-RPC 2.0 interop |
+| `argentor-python` | PyO3 Python bridge — native Rust bindings for embedding Argentor in Python applications |
 | `argentor-cli` | CLI binary (`serve`, `deploy`, `agents`, `health`, `skill list`) with config hot-reload |
 
 ---
@@ -315,7 +360,7 @@ console.log(result.response);
 ### Test
 
 ```bash
-cargo test --workspace           # Run all 2525 tests
+cargo test --workspace           # Run all 3953 tests
 cargo clippy --workspace         # 0 warnings (strict lints)
 cargo fmt --all -- --check       # Check formatting
 ```
@@ -600,10 +645,10 @@ docker run -p 3000:3000 argentor serve
 ### Docker Compose
 
 ```bash
-docker-compose up -d
+docker-compose -f docker-compose.production.yml up -d
 ```
 
-The included `docker-compose.yml` provides security hardening:
+The included `docker-compose.production.yml` provides security hardening:
 - Resource limits (memory and CPU)
 - Read-only filesystem
 - Dropped capabilities (`cap_drop: ALL`)

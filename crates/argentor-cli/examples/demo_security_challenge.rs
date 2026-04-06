@@ -397,13 +397,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "file_read" => {
                 let path = attack.tool_call.arguments["path"].as_str().unwrap_or("?");
-                format!("file_read(\"{}\")", path)
+                format!("file_read(\"{path}\")")
             }
             "http_fetch" => {
                 let url = attack.tool_call.arguments["url"].as_str().unwrap_or("?");
                 format!("http_fetch(\"{}\")", truncate(url, 50))
             }
-            _ => format!("{}(...)", tool_name),
+            _ => format!("{tool_name}(...)"),
         };
         println!("  {DIM}  > {args_preview}{RST}");
 
@@ -435,7 +435,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if was_blocked {
             // Extract a short reason from the error content
             let reason = extract_block_reason(&result.content);
-            println!("  {BOLD}{BG_RED}{WHT} BLOCKED {RST}  {RED}{}{RST}", reason);
+            println!("  {BOLD}{BG_RED}{WHT} BLOCKED {RST}  {RED}{reason}{RST}");
             println!("  {DIM}  Defense: {}{RST}", attack.defense);
         } else {
             println!(
@@ -534,8 +534,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         // Pad for alignment (accounting for ANSI escape codes)
         println!(
-            "{BOLD}{CYAN}  |{RST}  {:<27} {BOLD}{CYAN}|{RST} {status:<16} {BOLD}{CYAN}|{RST} {:<22} {BOLD}{CYAN}|{RST}",
-            name, defense
+            "{BOLD}{CYAN}  |{RST}  {name:<27} {BOLD}{CYAN}|{RST} {status:<16} {BOLD}{CYAN}|{RST} {defense:<22} {BOLD}{CYAN}|{RST}"
         );
     }
 

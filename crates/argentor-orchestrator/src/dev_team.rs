@@ -534,11 +534,16 @@ impl DevTeam {
 
     /// Get team summary.
     pub fn summary(&self) -> String {
-        let roles: Vec<String> = self.config.roles.iter().map(|r| r.to_string()).collect();
+        let roles: Vec<String> = self
+            .config
+            .roles
+            .iter()
+            .map(std::string::ToString::to_string)
+            .collect();
         let runnable: Vec<String> = ALL_WORKFLOWS
             .iter()
             .filter(|w| self.can_run_workflow(**w))
-            .map(|w| w.to_string())
+            .map(std::string::ToString::to_string)
             .collect();
 
         format!(

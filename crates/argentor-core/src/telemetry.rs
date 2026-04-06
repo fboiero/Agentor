@@ -55,7 +55,8 @@ impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
             enabled: false,
-            otlp_endpoint: "http://localhost:4317".to_string(),
+            otlp_endpoint: std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
             service_name: "argentor".to_string(),
             sample_rate: 1.0,
         }
@@ -89,6 +90,15 @@ impl TelemetryConfig {
 // Telemetry initialization — feature-gated implementation
 // ---------------------------------------------------------------------------
 
+/// Global storage for the `SdkTracerProvider` so we can shut it down later.
+///
+/// In opentelemetry 0.29+ the `shutdown_tracer_provider()` global helper was
+/// removed. Instead, we keep a reference to the provider and call its
+/// `shutdown()` method explicitly.
+#[cfg(feature = "telemetry")]
+static TRACER_PROVIDER: std::sync::OnceLock<opentelemetry_sdk::trace::SdkTracerProvider> =
+    std::sync::OnceLock::new();
+
 /// Initialize the tracing/telemetry pipeline based on the provided configuration.
 ///
 /// - When [`TelemetryConfig::enabled`] is `false` (or the `telemetry` feature is
@@ -105,6 +115,7 @@ impl TelemetryConfig {
 pub fn init_telemetry(config: &TelemetryConfig) -> Result<(), Box<dyn std::error::Error>> {
     use opentelemetry::trace::TracerProvider as _;
     use opentelemetry::KeyValue;
+    use opentelemetry_otlp::WithExportConfig;
     use opentelemetry_sdk::trace::{Sampler, SdkTracerProvider};
     use opentelemetry_sdk::Resource;
     use tracing_subscriber::layer::SubscriberExt;
@@ -160,9 +171,8 @@ pub fn init_telemetry(config: &TelemetryConfig) -> Result<(), Box<dyn std::error
         .try_init()
         .ok(); // Ignore if a global subscriber is already set.
 
-    // Store the provider globally so it can be shut down later.
-    // We use opentelemetry::global for this purpose.
-    opentelemetry::global::set_tracer_provider(provider);
+    // Store the provider so it can be shut down later via `shutdown_telemetry()`.
+    let _ = TRACER_PROVIDER.set(provider);
 
     tracing::info!(
         endpoint = %config.otlp_endpoint,
@@ -209,7 +219,11 @@ pub fn init_telemetry(config: &TelemetryConfig) -> Result<(), Box<dyn std::error
 #[cfg(feature = "telemetry")]
 pub fn shutdown_telemetry() {
     tracing::info!("Telemetry: shutting down OpenTelemetry pipeline");
-    opentelemetry::global::shutdown_tracer_provider();
+    if let Some(provider) = TRACER_PROVIDER.get() {
+        if let Err(e) = provider.shutdown() {
+            tracing::warn!("Telemetry: shutdown error: {e:?}");
+        }
+    }
 }
 
 /// Gracefully shut down the telemetry pipeline (no-op without the `telemetry` feature).
@@ -316,5 +330,30 @@ mod tests {
         assert!(debug.contains("http://otel:4317"));
         assert!(debug.contains("0.75"));
         assert!(debug.contains("enabled: true"));
+    }
+
+    /// Verify that `init_telemetry` + `shutdown_telemetry` round-trips without
+    /// panicking when the `telemetry` feature is compiled in.
+    ///
+    /// The OTLP exporter points at a non-existent endpoint but the batch
+    /// exporter is lazy so initialization succeeds.  Shutdown flushes (and
+    /// silently discards any unsent spans).
+    ///
+    /// A tokio runtime is required because `SdkTracerProvider` spawns a
+    /// background batch-export task.
+    #[cfg(feature = "telemetry")]
+    #[tokio::test]
+    async fn test_telemetry_feature_init_and_shutdown() {
+        // Use a unique service name to avoid clashing with other tests.
+        let config = TelemetryConfig::enabled("http://127.0.0.1:4317", "telemetry-test-feature")
+            .with_sample_rate(1.0);
+
+        // init_telemetry may return Ok or tolerate a global subscriber already
+        // being set from other tests — both are fine.
+        let result = init_telemetry(&config);
+        assert!(result.is_ok(), "init_telemetry failed: {result:?}");
+
+        // Shutdown should not panic even though the collector is unreachable.
+        shutdown_telemetry();
     }
 }

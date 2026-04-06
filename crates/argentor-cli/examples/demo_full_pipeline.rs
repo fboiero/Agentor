@@ -17,14 +17,10 @@
 
 use argentor_agent::backends::LlmBackend;
 use argentor_agent::guardrails::GuardrailEngine;
-use argentor_agent::prompt_manager::PromptManager;
 use argentor_agent::stream::StreamEvent;
-use argentor_agent::{AgentRunner, ModelConfig};
+use argentor_agent::AgentRunner;
 use argentor_core::{ArgentorError, ArgentorResult, Message};
-use argentor_gateway::xcapitsff::{
-    default_xcapit_profiles, PersonaConfig, TenantUsageTracker, UsagePeriod, XcapitConfig,
-    XcapitState,
-};
+use argentor_gateway::xcapitsff::{PersonaConfig, TenantUsageTracker, UsagePeriod};
 use argentor_memory::conversation::{ConversationMemory, ConversationSummarizer};
 use argentor_security::tenant_limits::{TenantLimitManager, TenantPlan};
 use argentor_security::{AuditLog, PermissionSet};
@@ -32,7 +28,6 @@ use argentor_session::Session;
 use argentor_skills::{SkillDescriptor, SkillRegistry};
 use async_trait::async_trait;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{mpsc, Mutex};
@@ -43,6 +38,7 @@ const BOLD: &str = "\x1b[1m";
 const RST: &str = "\x1b[0m";
 const GRN: &str = "\x1b[32m";
 const RED: &str = "\x1b[31m";
+#[allow(dead_code)]
 const YLW: &str = "\x1b[33m";
 const CYAN: &str = "\x1b[36m";
 const MAG: &str = "\x1b[35m";
@@ -158,7 +154,7 @@ async fn main() {
 
     section("Persona Configuration");
 
-    let personas: HashMap<(String, String), PersonaConfig> = {
+    let _personas: HashMap<(String, String), PersonaConfig> = {
         let mut m = HashMap::new();
         m.insert(
             ("xcapit".to_string(), "support_responder".to_string()),
@@ -348,7 +344,7 @@ async fn main() {
 
     section("Output Quality & Guardrails");
 
-    let output_check = guardrails.check_output(&result, Some("retiro de fondos"));
+    let _output_check = guardrails.check_output(&result, Some("retiro de fondos"));
     step(6, "🛡️", &format!("Output guardrails: {GRN}PASSED{RST}"));
 
     let evaluator = argentor_agent::evaluator::ResponseEvaluator::with_defaults();

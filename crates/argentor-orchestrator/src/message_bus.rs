@@ -210,7 +210,7 @@ impl MessageBus {
         let mut messages: Vec<AgentMessage> = state.mailboxes.remove(role).unwrap_or_default();
 
         // Drain broadcast messages as well.
-        messages.extend(state.broadcast_pending.drain(..));
+        messages.append(&mut state.broadcast_pending);
 
         if !messages.is_empty() {
             info!(

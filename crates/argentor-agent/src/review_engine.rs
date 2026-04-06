@@ -377,13 +377,14 @@ impl ReviewEngine {
     fn check_security(&self, file: &str, content: &str) -> Vec<ReviewFinding> {
         let mut findings = Vec::new();
         let is_test_file = file.contains("test") || file.contains("spec");
+        let secret_re = Regex::new(r#"(?i)(password|api_key|secret|token)\s*=\s*""#).ok();
+        let ip_re = Regex::new(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b").ok();
 
         for (line_num, line) in content.lines().enumerate() {
             let ln = line_num + 1;
 
             // SEC001: Hardcoded secrets
             if !is_test_file {
-                let secret_re = Regex::new(r#"(?i)(password|api_key|secret|token)\s*=\s*""#).ok();
                 if let Some(re) = &secret_re {
                     if re.is_match(line) {
                         findings.push(ReviewFinding {
@@ -484,7 +485,6 @@ impl ReviewEngine {
 
             // SEC006: Hardcoded IPs/URLs
             {
-                let ip_re = Regex::new(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b").ok();
                 if let Some(re) = &ip_re {
                     // Exclude 127.0.0.1 and 0.0.0.0 as they are common development addresses
                     if re.is_match(line) && !line.contains("127.0.0.1") && !line.contains("0.0.0.0")
@@ -604,9 +604,7 @@ impl ReviewEngine {
             }
             // Track block exits (simplified: count closing braces)
             if trimmed == "}" {
-                if loop_depth > 0 {
-                    loop_depth -= 1;
-                }
+                loop_depth = loop_depth.saturating_sub(1);
                 // Reset async tracking on top-level brace close
                 if loop_depth == 0 {
                     in_async_fn = false;
@@ -742,6 +740,7 @@ impl ReviewEngine {
     fn check_style(&self, file: &str, content: &str) -> Vec<ReviewFinding> {
         let mut findings = Vec::new();
         let lines: Vec<&str> = content.lines().collect();
+        let magic_re = Regex::new(r"\b(\d+)\b").ok();
 
         // STY001: Function too long (>50 lines)
         let mut fn_start: Option<(usize, String)> = None;
@@ -837,7 +836,6 @@ impl ReviewEngine {
 
             // STY004: Magic numbers
             if !trimmed.starts_with("//") && !trimmed.starts_with("///") && !trimmed.is_empty() {
-                let magic_re = Regex::new(r"\b(\d+)\b").ok();
                 if let Some(re) = &magic_re {
                     for cap in re.captures_iter(trimmed) {
                         if let Some(m) = cap.get(1) {
@@ -1061,26 +1059,23 @@ impl ReviewEngine {
             }
 
             // Integer overflow risk: casting between numeric types
-            if trimmed.contains(" as u") || trimmed.contains(" as i") {
-                if trimmed.contains(" as u8")
+            if (trimmed.contains(" as u") || trimmed.contains(" as i"))
+                && (trimmed.contains(" as u8")
                     || trimmed.contains(" as i8")
                     || trimmed.contains(" as u16")
-                    || trimmed.contains(" as i16")
-                {
-                    findings.push(ReviewFinding {
-                        dimension: ReviewDimension::Correctness,
-                        severity: FindingSeverity::Warning,
-                        file: file.to_string(),
-                        line: Some(ln),
-                        message: "Narrowing numeric cast may silently truncate the value."
-                            .to_string(),
-                        suggestion: Some(
-                            "Use `try_into()` or `TryFrom` to handle overflow explicitly."
-                                .to_string(),
-                        ),
-                        rule_id: "COR002".to_string(),
-                    });
-                }
+                    || trimmed.contains(" as i16"))
+            {
+                findings.push(ReviewFinding {
+                    dimension: ReviewDimension::Correctness,
+                    severity: FindingSeverity::Warning,
+                    file: file.to_string(),
+                    line: Some(ln),
+                    message: "Narrowing numeric cast may silently truncate the value.".to_string(),
+                    suggestion: Some(
+                        "Use `try_into()` or `TryFrom` to handle overflow explicitly.".to_string(),
+                    ),
+                    rule_id: "COR002".to_string(),
+                });
             }
 
             // Deadlock risk: nested lock acquisition

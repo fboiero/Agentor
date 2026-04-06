@@ -19,10 +19,15 @@ use uuid::Uuid;
 /// Complete definition of an agent in the registry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentDefinition {
+    /// Unique agent identifier.
     pub id: Uuid,
+    /// Human-readable agent name.
     pub name: String,
+    /// Role this agent fulfills.
     pub role: AgentRole,
+    /// Semantic version string.
     pub version: String,
+    /// Free-text description of the agent's purpose.
     pub description: String,
     /// High-level capability labels (e.g. "code-generation", "security-audit").
     pub capabilities: Vec<String>,
@@ -32,7 +37,9 @@ pub struct AgentDefinition {
     pub model_preference: Option<String>,
     /// Arbitrary key-value labels (e.g. "team" -> "backend").
     pub tags: HashMap<String, String>,
+    /// UTC timestamp of agent registration.
     pub created_at: DateTime<Utc>,
+    /// UTC timestamp of the last update.
     pub updated_at: DateTime<Utc>,
 }
 
@@ -41,19 +48,28 @@ pub struct AgentDefinition {
 /// Only fields set to `Some(...)` are applied; `None` fields are left unchanged.
 #[derive(Debug, Clone, Default)]
 pub struct AgentUpdate {
+    /// New name, if changing.
     pub name: Option<String>,
+    /// New description, if changing.
     pub description: Option<String>,
+    /// Replacement capability labels, if changing.
     pub capabilities: Option<Vec<String>>,
+    /// Replacement required skills list, if changing.
     pub required_skills: Option<Vec<String>>,
+    /// New model preference (use `Some(None)` to clear it).
     pub model_preference: Option<Option<String>>,
+    /// Replacement tags map, if changing.
     pub tags: Option<HashMap<String, String>>,
 }
 
 /// Serializable snapshot of every definition in the registry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentCatalog {
+    /// Catalog format version.
     pub version: String,
+    /// UTC timestamp of when this snapshot was exported.
     pub exported_at: DateTime<Utc>,
+    /// All agent definitions in the registry at export time.
     pub agents: Vec<AgentDefinition>,
 }
 

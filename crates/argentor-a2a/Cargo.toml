@@ -2,6 +2,13 @@
 name = "argentor-a2a"
 version.workspace = true
 edition.workspace = true
+description = "Google Agent-to-Agent protocol implementation for Argentor"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true

@@ -61,8 +61,8 @@ impl ReplCommand {
 
         let mut parts = input.splitn(3, ' ');
         let cmd = parts.next().unwrap_or("").to_lowercase();
-        let arg1 = parts.next().map(|s| s.to_string());
-        let arg2 = parts.next().map(|s| s.to_string());
+        let arg1 = parts.next().map(std::string::ToString::to_string);
+        let arg2 = parts.next().map(std::string::ToString::to_string);
 
         match cmd.as_str() {
             "help" | "?" | "h" => Self::Help(arg1),

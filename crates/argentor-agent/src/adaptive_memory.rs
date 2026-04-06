@@ -758,7 +758,7 @@ mod tests {
         // "The Rust compiler is very fast" has "is " and len > 20 ... actually len=30, good
         // "It produces optimized binaries" has "produces " and len > 20
         // "Ok" is too short
-        assert!(facts.len() >= 1);
+        assert!(!facts.is_empty());
         for fact in &facts {
             assert_eq!(fact.kind, MemoryKind::Fact);
         }

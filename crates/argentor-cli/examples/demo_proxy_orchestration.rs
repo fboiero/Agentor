@@ -106,7 +106,7 @@ fn print_metrics_table(metrics: &OrchestratorMetrics) {
         let mut groups: Vec<_> = metrics.calls_per_group.iter().collect();
         groups.sort_by_key(|(name, _)| (*name).clone());
         for (group, calls) in &groups {
-            println!("    {:<24} {BOLD}{CYAN}{}{RST}", group, calls);
+            println!("    {group:<24} {BOLD}{CYAN}{calls}{RST}");
         }
     }
 }
@@ -217,10 +217,7 @@ async fn main() -> anyhow::Result<()> {
     let mut providers: Vec<_> = stats.providers.iter().collect();
     providers.sort_by_key(|(name, _)| (*name).clone());
     for (provider, count) in &providers {
-        println!(
-            "      {CYAN}{:<16}{RST} {BOLD}{count}{RST} key(s)",
-            provider
-        );
+        println!("      {CYAN}{provider:<16}{RST} {BOLD}{count}{RST} key(s)");
     }
     delay(200).await;
 
@@ -505,15 +502,12 @@ async fn main() -> anyhow::Result<()> {
                 // Determine which proxy was selected by looking at list_proxies
                 // after recording a success (which updates the proxy state)
                 println!(
-                    "    {:<28} {CYAN}{:<14}{RST} {GRN}{BOLD}routed OK{RST} -> group \"{expected_group}\"",
-                    tool_name,
-                    expected_group,
+                    "    {tool_name:<28} {CYAN}{expected_group:<14}{RST} {GRN}{BOLD}routed OK{RST} -> group \"{expected_group}\"",
                 );
             }
             Err(e) => {
                 println!(
-                    "    {:<28} {CYAN}{:<14}{RST} {RED}{BOLD}FAILED{RST}: {}",
-                    tool_name, expected_group, e
+                    "    {tool_name:<28} {CYAN}{expected_group:<14}{RST} {RED}{BOLD}FAILED{RST}: {e}"
                 );
             }
         }
@@ -713,10 +707,7 @@ async fn main() -> anyhow::Result<()> {
     let mut vault_providers: Vec<_> = vault_stats.providers.iter().collect();
     vault_providers.sort_by_key(|(name, _)| (*name).clone());
     for (provider, count) in &vault_providers {
-        println!(
-            "      {CYAN}{:<16}{RST} {BOLD}{count}{RST} key(s)",
-            provider
-        );
+        println!("      {CYAN}{provider:<16}{RST} {BOLD}{count}{RST} key(s)");
     }
     delay(200).await;
 

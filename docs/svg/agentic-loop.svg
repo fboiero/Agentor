@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 820" font-family="'SF Mono','Fira Code',monospace" font-size="11">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1d23"/>
+      <stop offset="100%" style="stop-color:#0d1117"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="820" fill="url(#bg2)" rx="12"/>
+  <text x="300" y="32" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="bold">The Agentic Loop</text>
+  <text x="300" y="50" text-anchor="middle" fill="#8b949e" font-size="10">AgentRunner::run() — 8 stages per turn</text>
+  <!-- User Input -->
+  <rect x="200" y="65" width="200" height="35" fill="#1c2128" stroke="#58a6ff" stroke-width="2" rx="18"/>
+  <text x="300" y="87" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="bold">User Input</text>
+  <line x1="300" y1="100" x2="300" y2="120" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 1 -->
+  <rect x="130" y="120" width="340" height="50" fill="#1c2128" stroke="#3fb950" stroke-width="2" rx="8"/>
+  <text x="155" y="140" fill="#3fb950" font-size="10" font-weight="bold">1</text>
+  <text x="300" y="140" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="bold">INPUT GUARDRAILS</text>
+  <text x="300" y="160" text-anchor="middle" fill="#8b949e" font-size="9">PII detection | Prompt injection | Toxicity | Max length</text>
+  <rect x="480" y="128" width="100" height="24" fill="#f8514933" stroke="#f85149" rx="4"/>
+  <text x="530" y="145" text-anchor="middle" fill="#f85149" font-size="9">BLOCK</text>
+  <line x1="300" y1="170" x2="300" y2="190" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 2 -->
+  <rect x="130" y="190" width="340" height="45" fill="#1c2128" stroke="#f85149" stroke-width="2" rx="8"/>
+  <text x="155" y="210" fill="#f85149" font-size="10" font-weight="bold">2</text>
+  <text x="300" y="210" text-anchor="middle" fill="#f85149" font-size="12" font-weight="bold">CIRCUIT BREAKER</text>
+  <text x="300" y="227" text-anchor="middle" fill="#8b949e" font-size="9">Closed → Open → HalfOpen | Per-provider state</text>
+  <rect x="480" y="198" width="100" height="24" fill="#f8514933" stroke="#f85149" rx="4"/>
+  <text x="530" y="215" text-anchor="middle" fill="#f85149" font-size="9">OPEN → err</text>
+  <line x1="300" y1="235" x2="300" y2="255" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 3 -->
+  <rect x="130" y="255" width="340" height="45" fill="#1c2128" stroke="#d29922" stroke-width="2" rx="8"/>
+  <text x="155" y="275" fill="#d29922" font-size="10" font-weight="bold">3</text>
+  <text x="300" y="275" text-anchor="middle" fill="#d29922" font-size="12" font-weight="bold">RESPONSE CACHE</text>
+  <text x="300" y="292" text-anchor="middle" fill="#8b949e" font-size="9">LRU with TTL | Key = hash(provider + messages)</text>
+  <rect x="480" y="263" width="100" height="24" fill="#3fb95033" stroke="#3fb950" rx="4"/>
+  <text x="530" y="280" text-anchor="middle" fill="#3fb950" font-size="9">HIT → return</text>
+  <line x1="300" y1="300" x2="300" y2="320" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 4 -->
+  <rect x="130" y="320" width="340" height="55" fill="#1c2128" stroke="#58a6ff" stroke-width="2" rx="8"/>
+  <text x="155" y="342" fill="#58a6ff" font-size="10" font-weight="bold">4</text>
+  <text x="300" y="342" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="bold">LLM CALL</text>
+  <text x="300" y="358" text-anchor="middle" fill="#e6edf3" font-size="9">chat(system_prompt, messages, tool_descriptors)</text>
+  <text x="300" y="370" text-anchor="middle" fill="#8b949e" font-size="8">14 providers | Failover | Streaming (SSE)</text>
+  <line x1="300" y1="375" x2="300" y2="395" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 5 -->
+  <rect x="130" y="395" width="340" height="45" fill="#1c2128" stroke="#3fb950" stroke-width="2" rx="8"/>
+  <text x="155" y="415" fill="#3fb950" font-size="10" font-weight="bold">5</text>
+  <text x="300" y="415" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="bold">OUTPUT GUARDRAILS</text>
+  <text x="300" y="432" text-anchor="middle" fill="#8b949e" font-size="9">Validate response | Auto-redact PII | Block policy violations</text>
+  <line x1="300" y1="440" x2="300" y2="460" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 6 — Branch -->
+  <rect x="130" y="460" width="340" height="60" fill="#1c2128" stroke="#bc8cff" stroke-width="2" rx="8"/>
+  <text x="155" y="480" fill="#bc8cff" font-size="10" font-weight="bold">6</text>
+  <text x="300" y="480" text-anchor="middle" fill="#bc8cff" font-size="12" font-weight="bold">RESPONSE ROUTING</text>
+  <text x="195" y="505" text-anchor="middle" fill="#3fb950" font-size="10">Done → return</text>
+  <text x="300" y="505" text-anchor="middle" fill="#d29922" font-size="10">Text → next turn</text>
+  <text x="420" y="505" text-anchor="middle" fill="#58a6ff" font-size="10">ToolUse ↓</text>
+  <line x1="300" y1="520" x2="300" y2="545" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 7 -->
+  <rect x="130" y="545" width="340" height="55" fill="#1c2128" stroke="#d29922" stroke-width="2" rx="8"/>
+  <text x="155" y="567" fill="#d29922" font-size="10" font-weight="bold">7</text>
+  <text x="300" y="567" text-anchor="middle" fill="#d29922" font-size="12" font-weight="bold">TOOL EXECUTION</text>
+  <text x="300" y="583" text-anchor="middle" fill="#e6edf3" font-size="9">Permission check → Argument validation → Execute</text>
+  <text x="300" y="595" text-anchor="middle" fill="#8b949e" font-size="8">Native | WASM sandbox | MCP remote</text>
+  <line x1="300" y1="600" x2="300" y2="620" stroke="#484f58" stroke-width="2"/>
+  <!-- Stage 8 -->
+  <rect x="130" y="620" width="340" height="45" fill="#1c2128" stroke="#3fb950" stroke-width="2" rx="8"/>
+  <text x="155" y="640" fill="#3fb950" font-size="10" font-weight="bold">8</text>
+  <text x="300" y="640" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="bold">RESULT GUARDRAILS</text>
+  <text x="300" y="657" text-anchor="middle" fill="#8b949e" font-size="9">Sanitize tool output | Prevent data leakage | Backfill context</text>
+  <!-- Loop back arrow -->
+  <line x1="300" y1="665" x2="300" y2="690" stroke="#484f58" stroke-width="2"/>
+  <path d="M 300 690 L 300 710 Q 300 720 290 720 L 90 720 Q 80 720 80 710 L 80 140 Q 80 130 90 130 L 125 130" stroke="#484f58" stroke-width="1.5" fill="none" stroke-dasharray="6,3"/>
+  <text x="80" y="430" text-anchor="middle" fill="#484f58" font-size="9" transform="rotate(-90 80 430)">Loop back (next turn)</text>
+  <!-- Legend -->
+  <rect x="130" y="740" width="340" height="60" fill="#161b22" stroke="#30363d" rx="8"/>
+  <text x="300" y="758" text-anchor="middle" fill="#8b949e" font-size="10">All stages opt-in via builder pattern:</text>
+  <text x="300" y="775" text-anchor="middle" fill="#e6edf3" font-size="9">.with_guardrails() | .with_cache(cap, ttl) | .with_circuit_breaker(cfg)</text>
+  <text x="300" y="790" text-anchor="middle" fill="#8b949e" font-size="9">Max turns configurable | Streaming via run_streaming()</text>
+</svg>

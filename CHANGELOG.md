@@ -8,6 +8,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [0.1.0] - 2026-04-04
+
 ### Added
 
 #### Phase 1 — LLM Provider Expansion (5 → 14 providers)
@@ -244,8 +248,87 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - SDK generation to disk (Python + TypeScript)
 - demo_full_pipeline.rs showing all 10 pipeline steps
 
+#### Phase 42 — Enterprise Readiness
+- SIEM export for security event integration
+- Billing and pricing engine with plan management
+- Data residency controls with multi-region routing
+- Tenant-aware data isolation
+
+#### Phase 43 — CI/CD Pipeline + SDK Publishing Infrastructure
+- GitHub Actions workflows for SDK publishing (PyPI, npm)
+- `docker-compose.production.yml` with production hardening
+- CI pipeline integration tests
+
+#### Phase 44 — Universal Skill Toolkit (18 skills)
+- Calculator, unit converter, JSON/YAML/CSV tools, regex tester
+- UUID generator, hash generator, crypto skills (encrypt/decrypt/sign/verify)
+- Port scanner, HTTP header auditor, SSL checker, vulnerability scanner
+- Web scraper, DNS lookup, WHOIS lookup, base64 encoder/decoder
+- 18 new skills with full test coverage
+
+#### Phase 45 — Guardrails Pipeline Integration
+- Guardrails pipeline wired into agent execution loop (pre/post filtering)
+- PII detection integrated with redaction on input and output
+- Prompt injection blocking with 23+ pattern signatures
+- Toxicity and content policy filters on all agent responses
+
+#### Phase 46 — E2E Demo, Marketplace, Multi-Provider Search
+- End-to-end demo showcasing full agent pipeline
+- Plugin marketplace with skill publishing, discovery, and dependency resolution
+- Multi-provider web search: DuckDuckGo, Tavily, Brave, SearXNG
+- Unified search interface with provider fallback
+
+#### Phase 47 — Production Hardening P1
+- Connection pooling and timeout tuning across HTTP clients
+- Graceful degradation for external service failures
+- Improved error messages and structured error responses
+- Memory usage optimizations for long-running agents
+
+#### Phase 48 — Production Hardening P2
+- Load testing and performance benchmarks
+- Configuration validation at startup
+- Health check improvements with dependency status
+- Log rotation and structured logging enhancements
+
+#### Phase 49 — SDKs, OTEL, SSO, Compliance Reports, Region Routing, Marketplace API
+- Python SDK (`argentor-client`) published to PyPI
+- TypeScript SDK (`@argentor/client`) published to npm
+- OpenTelemetry OTLP export with distributed tracing
+- SSO/SAML authentication for enterprise identity providers
+- Compliance report generation in Markdown, JSON, and HTML formats
+- Multi-region data routing with configurable data residency
+- Marketplace REST API for skill discovery and installation
+
+#### Phase 50 — PyO3 Python Bridge
+- `argentor-python` crate with PyO3 native bindings
+- Python-callable Rust functions for agent execution, skill management, and configuration
+- 15th workspace crate (14 Rust + 1 PyO3)
+
+#### Phase 55 — Agent Eval, Workflow DSL, Knowledge Graph
+- Agent Eval & Benchmark suite: 5 suites, 45 test cases for measuring agent quality and regression
+- Workflow DSL: TOML-based workflow definitions — define multi-step agent workflows without writing Rust
+- Knowledge Graph memory: entity-relationship graph for structured agent memory with traversal queries
+
+#### Phase 56 — SSE Streaming, Cost Optimizer, Conversation Trees
+- SSE Streaming chat: `POST /api/v1/chat/stream` for real-time token-by-token responses
+- Cost Optimization Engine: 5 strategies (cache-first, model downgrade, token budget, batch, off-peak) for minimizing LLM spend
+- Conversation Trees: Git-like branching for conversation history — branch, merge, diff, and cherry-pick across conversation threads
+
+#### Phase 57 — ToolBuilder, Hooks, Permission Modes, In-Process MCP, query() API
+- Tool Builder: 3-line tool definitions for rapid skill creation without boilerplate
+- Hook System: Pre/Post execution hooks with deny/modify capabilities for intercepting tool calls
+- Permission Modes: 6 modes (AllowAll, DenyAll, AskUser, AllowList, DenyList, PlanOnly) for fine-grained agent control
+- In-Process MCP Server: run MCP server in-process without stdio overhead, reducing latency
+- Universal `query()` API: single unified API covering all 14 LLM providers with automatic provider detection
+
+#### Phase 58 — NDJSON Protocol, Context Assembly, Headless Mode, SDK Agent Wrappers
+- NDJSON Protocol: newline-delimited JSON for structured agent communication in pipelines
+- Context Assembly: auto-assembles git context + ARGENTOR.md project files for agent awareness
+- Headless mode: run agents without interactive terminal for CI/CD and automation use cases
+- Agent SDK wrappers: Python and TypeScript SDK wrappers for agent orchestration and embedding
+
 ### Changed
-- **README.md**: Updated badges (2395 tests, 120K+ LOC)
+- **README.md**: Updated badges (3953 tests, 140K+ LOC, 15 crates)
 - **GatewayServer**: `build_complete()` now mounts `/openapi.json` route
 - **Orchestrator**: Constructor initializes EventBus and ErrorAggregator, WorkerContext carries both for parallel tasks
 - **AgentRunner**: Constructor initializes disabled DebugRecorder and default CircuitBreakerRegistry
@@ -259,7 +342,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [0.1.0] - 2025-02-23
+## [0.0.1] - 2025-02-23
 
 ### Added
 
@@ -299,3 +382,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Rate limiting (token bucket)
 - HMAC-SHA256 webhook validation
 - Human-in-the-loop for high-risk operations
+
+---
+
+[Unreleased]: https://github.com/fboiero/Argentor/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/fboiero/Argentor/releases/tag/v0.1.0
+[0.0.1]: https://github.com/fboiero/Argentor/releases/tag/v0.0.1

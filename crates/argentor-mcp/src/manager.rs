@@ -14,9 +14,12 @@ use tracing::{error, info, warn};
 /// Configuration for a single MCP server.
 #[derive(Debug, Clone, Deserialize)]
 pub struct McpServerConfig {
+    /// Command to launch the MCP server process.
     pub command: String,
+    /// Command-line arguments.
     #[serde(default)]
     pub args: Vec<String>,
+    /// Environment variables to set for the server process.
     #[serde(default)]
     pub env: HashMap<String, String>,
     /// Enable auto-reconnect on failure (default: true).
@@ -37,11 +40,17 @@ fn default_health_interval() -> u64 {
 /// Status of a managed MCP server.
 #[derive(Debug, Clone, Serialize)]
 pub struct McpServerStatus {
+    /// Command used to launch the server.
     pub command: String,
+    /// Whether the server is currently connected.
     pub connected: bool,
+    /// Number of tools exposed by this server.
     pub tool_count: usize,
+    /// UTC timestamp of when the connection was established.
     pub connected_at: Option<DateTime<Utc>>,
+    /// UTC timestamp of the last health check.
     pub last_health_check: Option<DateTime<Utc>>,
+    /// Number of times the server has been reconnected.
     pub reconnect_count: usize,
 }
 
@@ -61,6 +70,7 @@ pub struct McpServerManager {
 }
 
 impl McpServerManager {
+    /// Create a new, empty server manager.
     pub fn new() -> Self {
         Self {
             servers: RwLock::new(HashMap::new()),

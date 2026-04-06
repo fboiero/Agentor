@@ -2,6 +2,13 @@
 name = "argentor-orchestrator"
 version.workspace = true
 edition.workspace = true
+description = "Multi-agent orchestration, task queues, and deployment for Argentor"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true
@@ -22,6 +29,7 @@ tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 cron = { workspace = true }
+toml = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

@@ -206,7 +206,9 @@ impl ResidencyValidator {
             issues.push(ResidencyIssue {
                 severity: sev,
                 field: "encryption_at_rest".into(),
-                message: "Encryption at rest is disabled — this may violate compliance requirements".into(),
+                message:
+                    "Encryption at rest is disabled — this may violate compliance requirements"
+                        .into(),
             });
         }
 
@@ -215,7 +217,8 @@ impl ResidencyValidator {
             issues.push(ResidencyIssue {
                 severity: IssueSeverity::Error,
                 field: "encryption_in_transit".into(),
-                message: "Encryption in transit (TLS) must be enabled for production deployments".into(),
+                message: "Encryption in transit (TLS) must be enabled for production deployments"
+                    .into(),
             });
         }
 
@@ -254,7 +257,9 @@ impl ResidencyValidator {
             issues.push(ResidencyIssue {
                 severity: IssueSeverity::Warning,
                 field: "pii_handling".into(),
-                message: "PII handling set to Allow — only appropriate for fully on-premises deployments".into(),
+                message:
+                    "PII handling set to Allow — only appropriate for fully on-premises deployments"
+                        .into(),
             });
         }
 
@@ -263,7 +268,8 @@ impl ResidencyValidator {
             issues.push(ResidencyIssue {
                 severity: IssueSeverity::Warning,
                 field: "data_retention_days".into(),
-                message: "Data retention under 7 days may be insufficient for audit requirements".into(),
+                message: "Data retention under 7 days may be insufficient for audit requirements"
+                    .into(),
             });
         }
 
@@ -282,7 +288,9 @@ impl ResidencyValidator {
                 issues.push(ResidencyIssue {
                     severity: IssueSeverity::Error,
                     field: "llm_routing_policy".into(),
-                    message: "ExplicitEndpoints list is empty — at least one endpoint URL is required".into(),
+                    message:
+                        "ExplicitEndpoints list is empty — at least one endpoint URL is required"
+                            .into(),
                 });
             }
         }
@@ -305,7 +313,9 @@ impl ResidencyValidator {
                     )
                     && matches!(
                         config.pii_handling,
-                        PiiHandlingPolicy::Redact | PiiHandlingPolicy::Encrypt | PiiHandlingPolicy::Reject
+                        PiiHandlingPolicy::Redact
+                            | PiiHandlingPolicy::Encrypt
+                            | PiiHandlingPolicy::Reject
                     )
                     && (config.region == DataRegion::EU || !config.cross_border_transfer)
             }
@@ -350,7 +360,10 @@ impl ResidencyValidator {
     }
 
     /// Generate a recommended config for a given region and set of compliance frameworks.
-    pub fn suggest_config(region: DataRegion, compliance_frameworks: &[&str]) -> DataResidencyConfig {
+    pub fn suggest_config(
+        region: DataRegion,
+        compliance_frameworks: &[&str],
+    ) -> DataResidencyConfig {
         let needs_gdpr = compliance_frameworks
             .iter()
             .any(|f| f.eq_ignore_ascii_case("gdpr"));
@@ -496,6 +509,7 @@ pub fn hipaa_config() -> DataResidencyConfig {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
@@ -545,14 +559,14 @@ mod tests {
     fn test_valid_eu_config_has_no_issues() {
         let cfg = eu_gdpr_config();
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.is_empty(), "Expected no issues, got: {:?}", issues);
+        assert!(issues.is_empty(), "Expected no issues, got: {issues:?}");
     }
 
     #[test]
     fn test_valid_hipaa_config_has_no_issues() {
         let cfg = hipaa_config();
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.is_empty(), "Expected no issues, got: {:?}", issues);
+        assert!(issues.is_empty(), "Expected no issues, got: {issues:?}");
     }
 
     #[test]
@@ -560,8 +574,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.data_storage_location = "".to_string();
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "data_storage_location"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "data_storage_location" && i.severity == IssueSeverity::Error));
     }
 
     #[test]
@@ -569,8 +584,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.audit_data_location = "   ".to_string();
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "audit_data_location"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "audit_data_location" && i.severity == IssueSeverity::Error));
     }
 
     #[test]
@@ -578,8 +594,9 @@ mod tests {
         let mut cfg = eu_gdpr_config();
         cfg.llm_routing_policy = LlmRoutingPolicy::AnyRegion;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "llm_routing_policy"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "llm_routing_policy" && i.severity == IssueSeverity::Error));
     }
 
     #[test]
@@ -587,8 +604,9 @@ mod tests {
         let mut cfg = eu_gdpr_config();
         cfg.llm_routing_policy = LlmRoutingPolicy::PreferRegion;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "llm_routing_policy"
-            && i.severity == IssueSeverity::Warning));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "llm_routing_policy" && i.severity == IssueSeverity::Warning));
     }
 
     #[test]
@@ -596,8 +614,9 @@ mod tests {
         let mut cfg = eu_gdpr_config();
         cfg.cross_border_transfer = true;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "cross_border_transfer"
-            && i.severity == IssueSeverity::Warning));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "cross_border_transfer" && i.severity == IssueSeverity::Warning));
     }
 
     #[test]
@@ -605,8 +624,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.pii_handling = PiiHandlingPolicy::Allow;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "pii_handling"
-            && i.severity == IssueSeverity::Warning));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "pii_handling" && i.severity == IssueSeverity::Warning));
     }
 
     #[test]
@@ -614,8 +634,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.data_retention_days = 0;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "data_retention_days"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "data_retention_days" && i.severity == IssueSeverity::Error));
     }
 
     #[test]
@@ -623,8 +644,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.data_retention_days = 3;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "data_retention_days"
-            && i.severity == IssueSeverity::Warning));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "data_retention_days" && i.severity == IssueSeverity::Warning));
     }
 
     #[test]
@@ -632,8 +654,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.llm_routing_policy = LlmRoutingPolicy::ExplicitEndpoints(vec![]);
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "llm_routing_policy"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "llm_routing_policy" && i.severity == IssueSeverity::Error));
     }
 
     #[test]
@@ -641,8 +664,9 @@ mod tests {
         let mut cfg = eu_gdpr_config();
         cfg.encryption_at_rest = false;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "encryption_at_rest"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "encryption_at_rest" && i.severity == IssueSeverity::Error));
     }
 
     #[test]
@@ -650,8 +674,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.encryption_at_rest = false;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "encryption_at_rest"
-            && i.severity == IssueSeverity::Warning));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "encryption_at_rest" && i.severity == IssueSeverity::Warning));
     }
 
     #[test]
@@ -659,8 +684,9 @@ mod tests {
         let mut cfg = us_standard_config();
         cfg.encryption_in_transit = false;
         let issues = ResidencyValidator::validate_config(&cfg);
-        assert!(issues.iter().any(|i| i.field == "encryption_in_transit"
-            && i.severity == IssueSeverity::Error));
+        assert!(issues
+            .iter()
+            .any(|i| i.field == "encryption_in_transit" && i.severity == IssueSeverity::Error));
     }
 
     // -- Compliance tests --
@@ -766,10 +792,8 @@ mod tests {
 
     #[test]
     fn test_suggest_custom_region() {
-        let cfg = ResidencyValidator::suggest_config(
-            DataRegion::Custom("me-south-1".to_string()),
-            &[],
-        );
+        let cfg =
+            ResidencyValidator::suggest_config(DataRegion::Custom("me-south-1".to_string()), &[]);
         assert_eq!(cfg.region, DataRegion::Custom("me-south-1".to_string()));
         assert!(cfg.data_storage_location.contains("me-south-1"));
         assert!(cfg.audit_data_location.contains("me-south-1"));

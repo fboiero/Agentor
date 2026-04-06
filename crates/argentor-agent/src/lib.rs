@@ -19,6 +19,8 @@ pub mod adaptive_memory;
 pub mod backends;
 /// Batch processor for grouping and executing multiple LLM requests.
 pub mod batch_processor;
+/// Agent benchmark suite for measuring performance, quality, and cost.
+pub mod benchmark;
 /// Circuit breaker for LLM provider resilience.
 pub mod circuit_breaker;
 /// Lightweight code structure analysis: symbols, dependencies, call graph.
@@ -29,6 +31,10 @@ pub mod code_planner;
 pub mod config;
 /// Token-aware context windowing.
 pub mod context;
+/// Automatic system prompt assembly from project context (git, config files, tools).
+pub mod context_assembly;
+/// Intelligent cost optimization for LLM routing.
+pub mod cost_optimizer;
 /// Debug recorder for step-by-step agent reasoning traces.
 pub mod debug_recorder;
 /// Precise diff generation, application, and validation.
@@ -41,14 +47,22 @@ pub mod evaluator;
 pub mod failover;
 /// Production-grade guardrails for filtering, validating, and sanitizing LLM inputs/outputs.
 pub mod guardrails;
+/// Hook system for intercepting tool calls and agent events (pre/post tool use, LLM calls).
+pub mod hooks;
 /// Agent identity, personality, session commands, and context compaction.
 pub mod identity;
 /// LLM client trait and HTTP transport.
 pub mod llm;
 /// Cost-aware model routing for multi-tier LLM selection.
 pub mod model_router;
+/// Permission modes for global agent tool authorization control.
+pub mod permission_mode;
 /// Versioned prompt template management with A/B testing and chains.
 pub mod prompt_manager;
+/// NDJSON protocol for headless agent communication (SDK wrapping via stdin/stdout).
+pub mod protocol;
+/// Universal high-level query API — model-agnostic, works with all 14 providers.
+pub mod query;
 /// ReAct (Reasoning + Acting) engine for structured agent reasoning.
 pub mod react;
 /// In-memory LRU response cache for LLM calls with TTL expiration.
@@ -76,6 +90,10 @@ pub use batch_processor::{
     BatchConfig, BatchProcessor, BatchProcessorStats, BatchRequest, BatchResult, RequestResult,
     RequestStatus,
 };
+pub use benchmark::{
+    BenchmarkCase, BenchmarkCategory, BenchmarkComparisonReport, BenchmarkReport, BenchmarkResult,
+    BenchmarkSuite, CategoryStats, MockBenchmarkBackend, Regression,
+};
 pub use circuit_breaker::{
     CircuitBreaker, CircuitBreakerRegistry, CircuitBreakerStatus, CircuitConfig, CircuitState,
 };
@@ -89,6 +107,12 @@ pub use code_planner::{
 };
 pub use config::{LlmProvider, ModelConfig};
 pub use context::ContextWindow;
+pub use context_assembly::{AssembledContext, ContextAssembler, GitContext};
+pub use cost_optimizer::{
+    CostModelOption, CostModelTier, CostOptimizer, CostOptimizerConfig, ModelUsageStats,
+    OptimizationStrategy, RoutingDecision as CostRoutingDecision, SpendingSummary,
+    TaskComplexity as CostTaskComplexity,
+};
 pub use debug_recorder::{
     DebugRecorder, DebugStep, DebugTrace, StepType, TokenUsage, TraceSummary,
 };
@@ -109,16 +133,27 @@ pub use guardrails::{
     redact_pii, ContentPolicy, GuardrailEngine, GuardrailResult, GuardrailRule, PiiMatch,
     RuleSeverity, RuleType, Violation,
 };
+pub use hooks::{hook_fn, Hook, HookChain, HookDecision, HookEvent};
 pub use identity::{AgentPersonality, ContextCompactor, SessionCommand, ThinkingLevel};
 pub use llm::LlmClient;
 pub use model_router::{
     ModelCost, ModelOption, ModelRouter, ModelTier, RoutingDecision, RoutingStrategy,
     TaskComplexity,
 };
+pub use permission_mode::{CapturedCall, PermissionDecision, PermissionEvaluator, PermissionMode};
 pub use prompt_manager::{
     outreach_composer_v1, register_xcapit_templates, sales_qualifier_v1, support_responder_v1,
     ticket_router_v1, ChainStep, PromptChain, PromptError, PromptManager, PromptTemplate,
     TemplateSummary, TemplateVariable, VarType,
+};
+pub use protocol::{
+    decode_message, decode_outbound, encode_inbound, encode_message, InboundMessage,
+    McpServerConfig as ProtocolMcpServerConfig, OutboundMessage, ProtocolHandler, SystemEvent,
+};
+pub use query::{
+    ask_claude, ask_deepseek, ask_gemini, ask_groq, ask_mistral, ask_ollama, ask_openai,
+    ask_openrouter, query, query_simple, query_simple_with_backend, query_with_backend,
+    query_with_callback, query_with_callback_and_backend, QueryEvent, QueryOptions, ToolConfig,
 };
 pub use react::{ReActAction, ReActConfig, ReActEngine, ReActOutcome, ReActStep, ReActTrace};
 pub use response_cache::{CacheKey, CacheMessage, CacheStats, ResponseCache};
