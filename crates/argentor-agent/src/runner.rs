@@ -412,17 +412,111 @@ impl AgentRunner {
             context.push(msg.clone());
         }
 
-        let tool_descriptors: Vec<_> = self
-            .skills
-            .list_descriptors()
-            .into_iter()
-            .cloned()
-            .collect();
+        // --- Intelligence: Dynamic Tool Discovery ---
+        // If tool discovery is enabled, select only relevant tools instead of all.
+        let tool_descriptors: Vec<_> = if let Some(discovery) = &self.tool_discovery {
+            let all_tools: Vec<_> = self
+                .skills
+                .list_descriptors()
+                .into_iter()
+                .map(|d| crate::tool_discovery::ToolEntry::new(&d.name, &d.description))
+                .collect();
+            if let Some(result) = discovery.discover(user_input, &all_tools) {
+                self.debug_recorder.record(
+                    StepType::Custom("tool_discovery".into()),
+                    format!(
+                        "Discovered {}/{} tools (~{} tokens saved)",
+                        result.selected_tools.len(),
+                        result.total_available,
+                        result.token_savings,
+                    ),
+                    None,
+                );
+                let selected_names: std::collections::HashSet<_> =
+                    result.selected_tools.iter().map(|t| t.name.as_str()).collect();
+                self.skills
+                    .list_descriptors()
+                    .into_iter()
+                    .filter(|d| selected_names.contains(d.name.as_str()))
+                    .cloned()
+                    .collect()
+            } else {
+                self.skills.list_descriptors().into_iter().cloned().collect()
+            }
+        } else {
+            self.skills.list_descriptors().into_iter().cloned().collect()
+        };
+
+        // --- Intelligence: Extended Thinking ---
+        // If thinking is enabled, perform a pre-reasoning pass before entering the loop.
+        if let Some(thinking) = &self.thinking {
+            let tool_names: Vec<&str> = tool_descriptors.iter().map(|d| d.name.as_str()).collect();
+            if let Some(think_result) = thinking.think(user_input, &tool_names) {
+                self.debug_recorder.record(
+                    StepType::Thinking,
+                    format!(
+                        "Extended thinking (confidence={:.2}, subtasks={}, recommended_tools=[{}])",
+                        think_result.confidence,
+                        think_result.decomposed_subtasks.len(),
+                        think_result.recommended_tools.join(", "),
+                    ),
+                    None,
+                );
+                if let Some(plan) = &think_result.plan {
+                    let plan_msg = Message::new(
+                        Role::System,
+                        format!("[Agent Plan] {plan}"),
+                        session_id,
+                    );
+                    context.push(plan_msg);
+                }
+            }
+        }
 
         info!(session_id = %session_id, "Starting agentic loop");
 
         for turn in 0..self.max_turns {
             info!(turn = turn, "Agentic loop turn");
+
+            // --- Intelligence: Context Compaction ---
+            // If compaction is enabled, check whether context needs summarization.
+            if let Some(compactor) = &self.compaction {
+                let messages: Vec<_> = context
+                    .messages()
+                    .iter()
+                    .map(|m| {
+                        crate::compaction::CompactableMessage::new(
+                            &format!("{:?}", m.role),
+                            &m.content,
+                            m.content.contains("tool_result") || m.content.contains("tool_use"),
+                        )
+                    })
+                    .collect();
+                if compactor.should_compact(&messages) {
+                    if let Some(result) = compactor.compact(&messages) {
+                        self.debug_recorder.record(
+                            StepType::Custom("compaction".into()),
+                            format!(
+                                "Compacted {} → {} messages ({:.0}% reduction)",
+                                result.original_message_count,
+                                result.compacted_message_count,
+                                (1.0 - result.compression_ratio) * 100.0,
+                            ),
+                            None,
+                        );
+                        context = ContextWindow::new(100);
+                        context.set_system_prompt(&self.system_prompt);
+                        for cm in &result.preserved_messages {
+                            let role = match cm.role.as_str() {
+                                "System" => Role::System,
+                                "Assistant" => Role::Assistant,
+                                _ => Role::User,
+                            };
+                            context.push(Message::new(role, &cm.content, session_id));
+                        }
+                    }
+                }
+            }
 
             // Check circuit breaker before LLM call
             let provider_name = self.llm.provider_name();
@@ -584,6 +678,30 @@ impl AgentRunner {
                         AuditOutcome::Success,
                     );
 
+                    // --- Intelligence: Self-Critique ---
+                    // If critique is enabled, review the response before returning.
+                    if let Some(critique) = &self.critique {
+                        let empty_tools: Vec<&str> = Vec::new();
+                        if let Some(cr) = critique.critique(user_input, &text, &empty_tools) {
+                            self.debug_recorder.record(
+                                StepType::Custom("critique".into()),
+                                format!(
+                                    "Self-critique: score={:.2}, accepted={}, revisions={}",
+                                    cr.final_score, cr.accepted, cr.revision_count,
+                                ),
+                                None,
+                            );
+                            if let Some(revised) = &cr.revised_response {
+                                info!(
+                                    session_id = %session_id,
+                                    original_score = cr.final_score,
+                                    "Using revised response from self-critique"
+                                );
+                                return Ok(revised.clone());
+                            }
+                        }
+                    }
+
                     info!(session_id = %session_id, turns = turn + 1, "Agentic loop completed");
                     return Ok(text);
                 }
@@ -734,6 +852,20 @@ impl AgentRunner {
                                 );
                                 session.add_message(tool_msg.clone());
                                 context.push(tool_msg);
+
+                                // --- Intelligence: Learning Feedback ---
+                                // Note: feedback is logged for post-run batch application
+                                // via `learning_mut().record_feedback()` since run() takes &self.
+                                if self.learning.is_some() {
+                                    self.debug_recorder.record(
+                                        StepType::Custom("learning".into()),
+                                        format!(
+                                            "Tool '{}': success={}, time={}ms",
+                                            call.name, !tool_result.is_error, tool_duration,
+                                        ),
+                                        None,
+                                    );
+                                }
                             }
                             Err(e) => {
                                 error!(error = %e, tool = %call.name, "Tool execution failed");
