@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Argentor - Intelligent Multi-Agent AI Framework in Rust</title>
-  <meta name="description" content="Production-grade autonomous AI agent framework with ReAct reasoning, A2A protocol, cost-aware routing, WASM sandboxing, and enterprise compliance. 3195 tests, 115K+ LOC, built in Rust.">
+  <meta name="description" content="Production-grade autonomous AI agent framework with ReAct reasoning, A2A protocol, cost-aware routing, WASM sandboxing, and enterprise compliance. 4498 tests, 187K+ LOC, built in Rust.">
 
   <!-- Asciinema Player -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/asciinema-player@3.9.0/dist/bundle/asciinema-player.css">
@@ -589,6 +589,165 @@
       .obs-grid { grid-template-columns: 1fr; }
     }
 
+    /* ── Agent Intelligence Grid ── */
+    .ai-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .ai-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .ai-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-2px);
+    }
+    .ai-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--purple), var(--cyan));
+    }
+    .ai-card .ai-icon {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    .ai-card h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .ai-card p {
+      color: var(--text2);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .ai-card .ai-tag {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(188,140,255,0.15);
+      color: var(--purple);
+      border: 1px solid rgba(188,140,255,0.3);
+    }
+
+    /* ── SDK Section ── */
+    .sdk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .sdk-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .sdk-card:hover {
+      border-color: var(--cyan);
+    }
+    .sdk-card-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sdk-card-header .sdk-lang-icon {
+      font-size: 2rem;
+    }
+    .sdk-card-header h3 {
+      font-size: 1.15rem;
+    }
+    .sdk-card-header .sdk-pkg {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: var(--text2);
+    }
+    .sdk-card-body {
+      padding: 20px 24px;
+    }
+    .sdk-card-body ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sdk-card-body li {
+      color: var(--text2);
+      font-size: 0.88rem;
+      padding: 4px 0;
+    }
+    .sdk-card-body li::before {
+      content: "\25B8 ";
+      color: var(--green);
+      margin-right: 4px;
+    }
+    .sdk-install {
+      margin-top: 12px;
+      background: var(--bg3);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: var(--green);
+    }
+
+    /* ── Dashboard Section ── */
+    .dashboard-preview {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .dashboard-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .dashboard-feat {
+      text-align: center;
+      padding: 16px;
+    }
+    .dashboard-feat .dash-icon {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+    .dashboard-feat h3 {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+    .dashboard-feat p {
+      color: var(--text2);
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 768px) {
+      .ai-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+      .sdk-grid { grid-template-columns: 1fr; }
+      .dashboard-features { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .ai-grid { grid-template-columns: 1fr; }
+      .dashboard-features { grid-template-columns: 1fr; }
+    }
+
     /* ── Scroll fade-in ── */
     .fade-in {
       opacity: 0;
@@ -611,6 +770,8 @@
       <a href="#demo">Demo</a>
       <a href="#intelligence">Intelligence</a>
       <a href="#features">Features</a>
+      <a href="#agent-intelligence">Agent AI</a>
+      <a href="#sdk">SDK</a>
       <a href="#security">Security</a>
       <a href="#architecture">Architecture</a>
       <a href="#a2a">A2A Protocol</a>
@@ -633,15 +794,18 @@
       WASM-sandboxed plugins, and enterprise compliance &mdash; all in Rust.
     </p>
     <div class="badges">
+      <img src="https://img.shields.io/badge/v1.0.0-release-blue.svg" alt="Version">
       <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License">
       <img src="https://img.shields.io/badge/Rust-1.75%2B-orange.svg" alt="Rust">
-      <img src="https://img.shields.io/badge/Tests-1367_passing-brightgreen.svg" alt="Tests">
+      <img src="https://img.shields.io/badge/Tests-4498_passing-brightgreen.svg" alt="Tests">
       <img src="https://img.shields.io/badge/Crates-14-green.svg" alt="Crates">
-      <img src="https://img.shields.io/badge/LOC-75K%2B-purple.svg" alt="Lines of Code">
+      <img src="https://img.shields.io/badge/LOC-187K%2B-purple.svg" alt="Lines of Code">
+      <img src="https://img.shields.io/badge/Skills-50%2B_built--in-green.svg" alt="Skills">
       <img src="https://img.shields.io/badge/LLM_Providers-14-orange.svg" alt="Providers">
     </div>
     <div class="buttons">
       <a href="https://github.com/fboiero/Agentor" class="btn btn-primary" target="_blank" rel="noopener">View on GitHub</a>
+      <a href="docs/GETTING_STARTED.md" class="btn btn-secondary">Getting Started</a>
       <a href="#demo" class="btn btn-secondary">Watch Demo</a>
     </div>
   </div>
@@ -711,7 +875,7 @@
       <div class="why-card">
         <div class="why-icon" style="color:var(--green)">&#x26a1;</div>
         <h3>Production-Grade</h3>
-        <p>3195 tests, 0 failures. Persistent state, control plane, web dashboard, OpenTelemetry, and A2A protocol for agent interop.</p>
+        <p>4498 tests, 0 failures. Persistent state, control plane, web dashboard, OpenTelemetry, and A2A protocol for agent interop.</p>
       </div>
     </div>
 
@@ -849,7 +1013,7 @@
   <div class="container">
     <h2>Capabilities</h2>
     <p class="section-sub">
-      14 crates, 115K+ lines of code, every component tested and documented.
+      14 crates, 187K+ lines of code, 50+ built-in skills, every component tested and documented.
     </p>
     <div class="feature-grid">
       <div class="feature-card">
@@ -920,6 +1084,150 @@
         <h3>Full CLI</h3>
         <p>Deploy, scale, and monitor agents from the terminal. A2A discovery and task management. Compliance reports, config hot-reload, and skill management.</p>
         <span class="tag tag-new">New</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Agent Intelligence (10 new modules) -->
+<section id="agent-intelligence" class="fade-in" style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <h2>Agent Intelligence</h2>
+    <p class="section-sub">
+      10 new cognitive modules that make agents think deeper, recover faster, and learn continuously.
+    </p>
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--purple)">&#x1f4ad;</div>
+        <h3>Extended Thinking</h3>
+        <p>Chain-of-thought reasoning with configurable thinking budgets. Agents break complex problems into deliberate reasoning steps before acting.</p>
+        <span class="ai-tag">Reasoning</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--red)">&#x1f50d;</div>
+        <h3>Self-Critique</h3>
+        <p>Agents review their own outputs against quality criteria, identify weaknesses, and revise before delivery. Multi-pass refinement built in.</p>
+        <span class="ai-tag">Quality</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--cyan)">&#x1f4e6;</div>
+        <h3>Context Compaction</h3>
+        <p>Intelligent summarization that compresses long conversations while preserving critical decisions and facts. Keeps agents coherent across long sessions.</p>
+        <span class="ai-tag">Memory</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--green)">&#x1f50e;</div>
+        <h3>Tool Discovery</h3>
+        <p>Dynamic tool registry with semantic search. Agents discover and compose tools at runtime based on task requirements, not static configuration.</p>
+        <span class="ai-tag">Tools</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--orange)">&#x1f91d;</div>
+        <h3>Agent Handoffs</h3>
+        <p>Structured delegation between agents with context transfer. Agents know when to escalate, what context to pass, and how to resume.</p>
+        <span class="ai-tag">Orchestration</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--magenta)">&#x1f4be;</div>
+        <h3>State Checkpointing</h3>
+        <p>Save and restore agent execution state at any point. Enables rollback, branching, and resumption of interrupted workflows.</p>
+        <span class="ai-tag">Reliability</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--cyan)">&#x1f4c8;</div>
+        <h3>Trace Visualization</h3>
+        <p>Full execution traces with reasoning steps, tool calls, and decision points. Export to OpenTelemetry or view in the built-in dashboard.</p>
+        <span class="ai-tag">Observability</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--green)">&#x2699;&#xfe0f;</div>
+        <h3>Dynamic Tool Gen</h3>
+        <p>Agents generate new tools on-the-fly from natural language descriptions. Created tools are sandboxed, tested, and optionally persisted for reuse.</p>
+        <span class="ai-tag">Tools</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--orange)">&#x1f3af;</div>
+        <h3>Process Reward Scoring</h3>
+        <p>Step-level reward signals that evaluate each reasoning step, not just the final answer. Guides agents toward better intermediate decisions.</p>
+        <span class="ai-tag">Reasoning</span>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon" style="color:var(--purple)">&#x1f4da;</div>
+        <h3>Learning Feedback</h3>
+        <p>Continuous improvement from execution outcomes. Agents store success and failure patterns, adapting their strategies across sessions.</p>
+        <span class="ai-tag">Learning</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SDK -->
+<section id="sdk" class="fade-in">
+  <div class="container">
+    <h2>SDK &mdash; Build with Argentor</h2>
+    <p class="section-sub">
+      First-class SDKs for Python and TypeScript. Build agents in your language of choice with full type safety.
+    </p>
+    <div class="sdk-grid">
+      <div class="sdk-card">
+        <div class="sdk-card-header">
+          <span class="sdk-lang-icon" style="color:var(--orange)">&#x1f40d;</span>
+          <div>
+            <h3>Python SDK</h3>
+            <div class="sdk-pkg">argentor-sdk</div>
+          </div>
+        </div>
+        <div class="sdk-card-body">
+          <ul>
+            <li>Async-first with asyncio support</li>
+            <li>Pydantic models for full type safety</li>
+            <li>Agent builder with fluent API</li>
+            <li>Built-in tool decorators</li>
+            <li>Streaming support for real-time output</li>
+            <li>Comprehensive error handling</li>
+          </ul>
+          <div class="sdk-install">pip install argentor-sdk</div>
+        </div>
+      </div>
+      <div class="sdk-card">
+        <div class="sdk-card-header">
+          <span class="sdk-lang-icon" style="color:var(--cyan)">&#x1f4cc;</span>
+          <div>
+            <h3>TypeScript SDK</h3>
+            <div class="sdk-pkg">@argentor/sdk</div>
+          </div>
+        </div>
+        <div class="sdk-card-body">
+          <ul>
+            <li>Full TypeScript types and generics</li>
+            <li>Works in Node.js and browser</li>
+            <li>Zod schema integration for tool I/O</li>
+            <li>Reactive streams with RxJS</li>
+            <li>Tree-shakeable ESM package</li>
+            <li>Auto-generated from Rust types</li>
+          </ul>
+          <div class="sdk-install">npm install @argentor/sdk</div>
+        </div>
+      </div>
+      <div class="sdk-card">
+        <div class="sdk-card-header">
+          <span class="sdk-lang-icon" style="color:var(--green)">&#x1f4bb;</span>
+          <div>
+            <h3>React Dashboard</h3>
+            <div class="sdk-pkg">@argentor/dashboard</div>
+          </div>
+        </div>
+        <div class="sdk-card-body">
+          <ul>
+            <li>Real-time agent status and health</li>
+            <li>Execution trace visualization</li>
+            <li>Token usage and cost analytics</li>
+            <li>Deployment management UI</li>
+            <li>Skill registry browser</li>
+            <li>Built with React + Tailwind CSS</li>
+          </ul>
+          <div class="sdk-install">npm install @argentor/dashboard</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1280,7 +1588,7 @@ D &#x2500; C</div>
 <span class="comment"># Run the demo (no API keys needed)</span>
 <span class="cmd">cargo run --example demo_pipeline</span>
 
-<span class="comment"># Run all 3195 tests</span>
+<span class="comment"># Run all 4498 tests</span>
 <span class="cmd">cargo test --workspace</span>
 
 <span class="comment"># Start the gateway with dashboard</span>
@@ -1297,6 +1605,10 @@ D &#x2500; C</div>
 <span class="comment"># Generate a compliance report</span>
 <span class="cmd">cargo run --bin argentor -- compliance report</span>
     </div>
+    <p style="text-align:center; margin-top:24px;">
+      <a href="docs/GETTING_STARTED.md" class="btn btn-primary" style="font-size:0.95rem;">Full Getting Started Guide</a>
+      <a href="https://github.com/fboiero/Agentor" class="btn btn-secondary" style="font-size:0.95rem; margin-left:12px;" target="_blank" rel="noopener">View on GitHub</a>
+    </p>
   </div>
 </section>
 
@@ -1304,16 +1616,19 @@ D &#x2500; C</div>
 <footer>
   <div class="container">
     <p>
-      <strong>Argentor</strong> &mdash; AGPL-3.0-only &mdash;
+      <strong>Argentor</strong> v1.0.0 &mdash; AGPL-3.0-only &mdash;
       <a href="https://github.com/fboiero/Agentor">GitHub</a> &mdash;
-      115K+ lines of Rust &mdash;
-      3195 tests, 0 failures &mdash;
+      187K+ lines of Rust &mdash;
+      4498 tests, 0 failures &mdash;
+      50+ built-in skills &mdash;
       Built by <a href="https://www.xcapit.com">Xcapit</a>
     </p>
     <div class="footer-badges">
+      <img src="https://img.shields.io/badge/v1.0.0-release-blue.svg?style=flat-square" alt="v1.0.0">
       <img src="https://img.shields.io/badge/Built%20with-Rust-orange.svg?style=flat-square" alt="Built with Rust">
       <img src="https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg?style=flat-square" alt="AGPL-3.0-only">
-      <img src="https://img.shields.io/badge/Tests-3195%20passing-brightgreen.svg?style=flat-square" alt="3195 Tests">
+      <img src="https://img.shields.io/badge/Tests-4498%20passing-brightgreen.svg?style=flat-square" alt="4498 Tests">
+      <img src="https://img.shields.io/badge/Skills-50%2B-green.svg?style=flat-square" alt="50+ Skills">
       <img src="https://img.shields.io/badge/ISO-27001%20|%2042001-red.svg?style=flat-square" alt="ISO Compliance">
     </div>
   </div>

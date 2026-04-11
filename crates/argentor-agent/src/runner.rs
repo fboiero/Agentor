@@ -82,6 +82,18 @@ pub struct AgentRunner {
     hooks: Option<HookChain>,
     /// Optional permission evaluator for global tool authorization modes.
     permission_evaluator: Option<PermissionEvaluator>,
+    /// Optional extended thinking engine for deeper reasoning before acting.
+    thinking: Option<crate::thinking::ThinkingEngine>,
+    /// Optional self-critique engine for reviewing and revising responses.
+    critique: Option<crate::critique::CritiqueEngine>,
+    /// Optional context compaction engine for automatic conversation summarization.
+    compaction: Option<crate::compaction::ContextCompactorEngine>,
+    /// Optional dynamic tool discovery engine for semantic tool selection.
+    tool_discovery: Option<crate::tool_discovery::ToolDiscoveryEngine>,
+    /// Optional checkpoint manager for save/restore of agent state.
+    checkpoint_manager: Option<crate::checkpoint::CheckpointManager>,
+    /// Optional learning engine for improving tool selection over time.
+    learning: Option<crate::learning::LearningEngine>,
 }
 
 impl AgentRunner {
@@ -107,6 +119,12 @@ impl AgentRunner {
             guardrails: None,
             hooks: None,
             permission_evaluator: None,
+            thinking: None,
+            critique: None,
+            compaction: None,
+            tool_discovery: None,
+            checkpoint_manager: None,
+            learning: None,
         }
     }
 
@@ -132,6 +150,12 @@ impl AgentRunner {
             guardrails: None,
             hooks: None,
             permission_evaluator: None,
+            thinking: None,
+            critique: None,
+            compaction: None,
+            tool_discovery: None,
+            checkpoint_manager: None,
+            learning: None,
         }
     }
 
@@ -237,6 +261,133 @@ impl AgentRunner {
     /// Get a reference to the permission evaluator (if configured).
     pub fn permission_evaluator(&self) -> Option<&PermissionEvaluator> {
         self.permission_evaluator.as_ref()
+    }
+
+    // ----- Intelligence modules (Phase E1-E3) -----
+
+    /// Enable extended thinking for deeper reasoning before acting.
+    pub fn with_thinking(mut self, config: crate::thinking::ThinkingConfig) -> Self {
+        self.thinking = Some(crate::thinking::ThinkingEngine::new(config));
+        self
+    }
+
+    /// Enable extended thinking with default settings (Standard depth).
+    pub fn with_default_thinking(mut self) -> Self {
+        self.thinking = Some(crate::thinking::ThinkingEngine::with_defaults());
+        self
+    }
+
+    /// Get a reference to the thinking engine (if enabled).
+    pub fn thinking(&self) -> Option<&crate::thinking::ThinkingEngine> {
+        self.thinking.as_ref()
+    }
+
+    /// Enable self-critique loop for reviewing and revising responses.
+    pub fn with_critique(mut self, config: crate::critique::CritiqueConfig) -> Self {
+        self.critique = Some(crate::critique::CritiqueEngine::new(config));
+        self
+    }
+
+    /// Enable self-critique with default settings.
+    pub fn with_default_critique(mut self) -> Self {
+        self.critique = Some(crate::critique::CritiqueEngine::with_defaults());
+        self
+    }
+
+    /// Get a reference to the critique engine (if enabled).
+    pub fn critique(&self) -> Option<&crate::critique::CritiqueEngine> {
+        self.critique.as_ref()
+    }
+
+    /// Enable automatic context compaction when conversation approaches token limits.
+    pub fn with_compaction(mut self, config: crate::compaction::CompactionConfig) -> Self {
+        self.compaction = Some(crate::compaction::ContextCompactorEngine::new(config));
+        self
+    }
+
+    /// Enable context compaction with default settings (30K token trigger, Hybrid strategy).
+    pub fn with_default_compaction(mut self) -> Self {
+        self.compaction = Some(crate::compaction::ContextCompactorEngine::with_defaults());
+        self
+    }
+
+    /// Get a reference to the compaction engine (if enabled).
+    pub fn compaction(&self) -> Option<&crate::compaction::ContextCompactorEngine> {
+        self.compaction.as_ref()
+    }
+
+    /// Enable dynamic tool discovery for semantic tool selection.
+    pub fn with_tool_discovery(mut self, config: crate::tool_discovery::DiscoveryConfig) -> Self {
+        self.tool_discovery = Some(crate::tool_discovery::ToolDiscoveryEngine::new(config));
+        self
+    }
+
+    /// Enable tool discovery with default settings (max 8 tools, Hybrid strategy).
+    pub fn with_default_tool_discovery(mut self) -> Self {
+        self.tool_discovery = Some(crate::tool_discovery::ToolDiscoveryEngine::with_defaults());
+        self
+    }
+
+    /// Get a reference to the tool discovery engine (if enabled).
+    pub fn tool_discovery(&self) -> Option<&crate::tool_discovery::ToolDiscoveryEngine> {
+        self.tool_discovery.as_ref()
+    }
+
+    /// Enable state checkpointing for save/restore of agent state.
+    pub fn with_checkpoint(mut self, config: crate::checkpoint::CheckpointConfig) -> Self {
+        self.checkpoint_manager = Some(crate::checkpoint::CheckpointManager::new(config));
+        self
+    }
+
+    /// Enable state checkpointing with default settings.
+    pub fn with_default_checkpoint(mut self) -> Self {
+        self.checkpoint_manager = Some(crate::checkpoint::CheckpointManager::with_defaults());
+        self
+    }
+
+    /// Get a reference to the checkpoint manager (if enabled).
+    pub fn checkpoint_manager(&self) -> Option<&crate::checkpoint::CheckpointManager> {
+        self.checkpoint_manager.as_ref()
+    }
+
+    /// Get a mutable reference to the checkpoint manager (for creating/restoring checkpoints).
+    pub fn checkpoint_manager_mut(&mut self) -> Option<&mut crate::checkpoint::CheckpointManager> {
+        self.checkpoint_manager.as_mut()
+    }
+
+    /// Enable learning feedback loop for improving tool selection over time.
+    pub fn with_learning(mut self, config: crate::learning::LearningConfig) -> Self {
+        self.learning = Some(crate::learning::LearningEngine::new(config));
+        self
+    }
+
+    /// Enable learning with default settings.
+    pub fn with_default_learning(mut self) -> Self {
+        self.learning = Some(crate::learning::LearningEngine::with_defaults());
+        self
+    }
+
+    /// Get a reference to the learning engine (if enabled).
+    pub fn learning(&self) -> Option<&crate::learning::LearningEngine> {
+        self.learning.as_ref()
+    }
+
+    /// Get a mutable reference to the learning engine (for recording feedback).
+    pub fn learning_mut(&mut self) -> Option<&mut crate::learning::LearningEngine> {
+        self.learning.as_mut()
+    }
+
+    /// Enable all intelligence features with default configurations.
+    /// Equivalent to chaining `with_default_thinking()`, `with_default_critique()`,
+    /// `with_default_compaction()`, `with_default_tool_discovery()`,
+    /// `with_default_checkpoint()`, and `with_default_learning()`.
+    pub fn with_intelligence(self) -> Self {
+        self.with_default_thinking()
+            .with_default_critique()
+            .with_default_compaction()
+            .with_default_tool_discovery()
+            .with_default_checkpoint()
+            .with_default_learning()
     }
 
     /// Run the agentic loop for a session. Returns the final assistant response.
