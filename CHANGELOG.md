@@ -8,6 +8,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+#### Agent Intelligence — Phase E1 (4 modules)
+- **Extended Thinking** (`thinking.rs`): Multi-pass reasoning engine (Quick/Standard/Deep/Exhaustive), task decomposition, confidence scoring, tool recommendation — 41 tests
+- **Self-Critique Loop** (`critique.rs`): Reflexion pattern with 6 evaluation dimensions (Accuracy, Completeness, Safety, Relevance, Clarity, ToolUsage), iterative revision, auto-fix — 33 tests
+- **Context Compaction** (`compaction.rs`): 4 strategies (Summarize, SlidingWindow, ImportanceBased, Hybrid), auto-trigger at configurable token threshold (default 30K), importance scoring — 35 tests
+- **Dynamic Tool Discovery** (`tool_discovery.rs`): Keyword + TF-IDF + Semantic hybrid strategy, usage history tracking, ~150 tokens/tool savings estimation — 33 tests
+
+#### Agent Intelligence — Phase E2 (3 modules)
+- **Agent Handoffs** (`handoff.rs`): Sequential control transfer protocol with chain tracking, circular handoff prevention, 4 context transfer modes (Full/Summary/Selective/Minimal), configurable depth limits — 33 tests
+- **State Checkpointing** (`checkpoint.rs`): Save/restore complete agent state, checkpoint diff, LRU eviction, auto-checkpoint by interval, JSON serialization — 33 tests
+- **Trace Visualization** (`trace_viz.rs`): JSON + Mermaid gantt chart + flame graph output from DebugTrace, timeline entries, cost breakdown, cache hit rate — 33 tests
+
+#### Agent Intelligence — Phase E3 (3 modules)
+- **Dynamic Tool Generation** (`dynamic_gen.rs`): Runtime tool creation from ToolSpec with Template, Expression (mini expression language), and Composite (pipeline) implementations — 45 tests
+- **Process Reward Scoring** (`reward.rs`): Per-step reasoning quality scoring across 7 categories (Reasoning, ToolSelection, ToolUsage, InformationGain, Coherence, Efficiency, Safety), trajectory classification — 32 tests
+- **Learning Feedback Loop** (`learning.rs`): Exponential moving average stats, per-context keyword success rates, pattern learning via co-occurrence analysis, trend detection — 33 tests
+
 ---
 
 ## [1.0.0] - 2026-04-11

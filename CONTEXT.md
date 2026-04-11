@@ -1,5 +1,5 @@
 # Argentor — Session Context
-> Last updated: 2026-04-11 (v1.0.0 release prep — GTM phase)
+> Last updated: 2026-04-11 (v1.0.0 + Agent Intelligence Phases E1-E3)
 
 ## Current Goal
 Production-grade multi-tenant AI agent SaaS platform — fully integrated pipeline from guardrails to analytics.
@@ -400,10 +400,29 @@ Inspired by Vercel AI SDK, LangChain, CrewAI, AutoGPT, and Semantic Kernel.
 - README badges updated (4000+ tests, 175K+ LOC, Rust 1.80+, SDK names)
 - React dashboard scaffolded with Vite + React + TypeScript (dashboard/)
 
+## Agent Intelligence (2026-04-11) — Phases E1-E3
+10 new intelligence modules based on competitive analysis vs IronClaw, LangChain, CrewAI, OpenAI Agents SDK, Claude Agent SDK.
+
+**Phase E1 — Intelligence (argentor-agent):**
+- Extended Thinking Mode (thinking.rs) — multi-pass reasoning, 41 tests
+- Self-Critique Loop (critique.rs) — Reflexion pattern, 6 dimensions, 33 tests
+- Context Compaction (compaction.rs) — auto-summarize at 30K tokens, 4 strategies, 35 tests
+- Dynamic Tool Discovery (tool_discovery.rs) — semantic tool search, TF-IDF + keywords, 33 tests
+
+**Phase E2 — Architecture:**
+- Agent Handoffs (handoff.rs in orchestrator) — OpenAI-style sequential transfer, 33 tests
+- State Checkpointing (checkpoint.rs in agent) — LangGraph time-travel save/restore, 33 tests
+- Trace Visualization (trace_viz.rs in gateway) — JSON + Mermaid gantt + flame graph, 33 tests
+
+**Phase E3 — Differentiators:**
+- Dynamic Tool Generation (dynamic_gen.rs in skills) — runtime tool creation, 45 tests
+- Process Reward Scoring (reward.rs in agent) — per-step reasoning scoring, 32 tests
+- Learning Feedback Loop (learning.rs in agent) — EMA-based tool improvement, 33 tests
+
 ## Build Health
-- `cargo test --workspace` — **4000+ tests passing**, 0 failures
+- `cargo test --workspace` — **4498 tests passing**, 0 failures
 - `cargo clippy -- -D warnings` — **0 warnings**
-- ~175,000+ LOC across 15 crates (14 workspace + 1 PyO3)
+- ~187,000+ LOC across 15 crates (14 workspace + 1 PyO3)
 - Python SDK: 58 tests passing
 - TypeScript SDK: 35 tests passing, builds clean
 

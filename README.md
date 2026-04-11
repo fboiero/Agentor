@@ -5,8 +5,8 @@
 [![CI](https://github.com/fboiero/Argentor/actions/workflows/ci.yml/badge.svg)](https://github.com/fboiero/Argentor/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-4000%2B%20passing-brightgreen.svg)]()
-[![LOC](https://img.shields.io/badge/LOC-175K%2B-informational.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-4498%20passing-brightgreen.svg)]()
+[![LOC](https://img.shields.io/badge/LOC-187K%2B-informational.svg)]()
 [![Crates](https://img.shields.io/badge/Crates-15-informational.svg)]()
 [![PyPI](https://img.shields.io/badge/PyPI-argentor--sdk-blue.svg)](https://pypi.org/project/argentor-sdk/)
 [![npm](https://img.shields.io/badge/npm-%40argentor%2Fsdk-red.svg)](https://www.npmjs.com/package/@argentor/sdk)
@@ -171,6 +171,18 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **Python SDK** (`argentor-sdk` on PyPI) — httpx + pydantic, sync + async, 24 models
 - **TypeScript SDK** (`@argentor/sdk` on npm) — fetch-based, strict TypeScript, SSE streaming
 - **PyO3 Python bridge** (`argentor-python` crate) — native Rust-to-Python bindings for direct embedding
+
+### Agent Intelligence (Key Differentiator)
+- **Extended Thinking Mode** — multi-pass reasoning (Quick/Standard/Deep/Exhaustive) with task decomposition and confidence scoring
+- **Self-Critique Loop** — Reflexion pattern: agent reviews and revises its own responses across 6 quality dimensions
+- **Automatic Context Compaction** — summarizes conversation history when approaching token limits (4 strategies)
+- **Dynamic Tool Discovery** — semantic search for relevant tools instead of loading all (TF-IDF + keyword hybrid)
+- **Agent Handoffs** — sequential control transfer between specialized agents (OpenAI Agents SDK pattern)
+- **State Checkpointing** — save/restore complete agent state for time-travel debugging (LangGraph pattern)
+- **Trace Visualization** — JSON, Mermaid gantt charts, and flame graph output for execution debugging
+- **Dynamic Tool Generation** — agents create new tools at runtime from declarative specs
+- **Process Reward Scoring** — per-step reasoning quality scoring across 7 categories
+- **Learning Feedback Loop** — tool selector that improves over time with execution outcome data
 
 ### Agent Evaluation & Benchmarks
 - **Agent Eval & Benchmark suite** — 5 benchmark suites, 45 test cases for measuring agent quality

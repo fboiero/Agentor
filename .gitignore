@@ -7,3 +7,6 @@
 !skills/**/*.wasm
 Cargo.lock
 /generated-sdks/
+sdks/python/argentor/__pycache__/
+sdks/typescript/node_modules/
+sdks/typescript/package-lock.json
