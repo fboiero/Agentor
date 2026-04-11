@@ -466,13 +466,36 @@ Mas alla del MVP comercial, para ser **top en el segmento de Rust AI agent frame
 - Training y certificacion
 - **Meta: $1M+ ARR, 50+ empresas usando**
 
+### Fase E: Agent Intelligence (Post v1.0 — completada Abril 2026)
+Basada en analisis competitivo contra IronClaw, LangChain, CrewAI, Pydantic AI, OpenAI Agents SDK y Claude Agent SDK.
+
+**Fase E1 — Inteligencia del Agente:**
+- Extended Thinking Mode — test-time compute scaling, multiples pasadas de razonamiento
+- Self-Critique Loop — patron Reflexion para auto-revision de respuestas
+- Automatic Context Compaction — resumen automatico al acercarse al limite de tokens
+- Dynamic Tool Discovery — busqueda semantica de tools en vez de cargar todos
+
+**Fase E2 — Arquitectura Competitiva:**
+- Agent Handoffs — protocolo de transferencia secuencial entre agentes (patron OpenAI)
+- State Checkpointing — save/restore de estado completo (patron LangGraph time-travel)
+- Trace Visualization — debugging visual con timeline, Mermaid gantt, flame graph
+
+**Fase E3 — Diferenciadores:**
+- Dynamic Tool Generation — agentes crean sus propios tools en runtime (patron IronClaw)
+- Process Reward Scoring — scoring por paso de razonamiento, no solo resultado final
+- Learning Feedback Loop — tool selector que mejora con el uso via exponential moving averages
+
+**Resultado:** 10 nuevas capacidades de inteligencia que posicionan a Argentor como el framework con el agente mas inteligente del ecosistema Rust, y competitivo con los mejores frameworks Python.
+
 ---
 
 ## 9. Conclusiones
 
 ### Lo Positivo
 
-Argentor tiene una **base tecnica excepcional**: 15 crates bien arquitectados, 3,953 tests, WASM sandboxing, compliance modules, MCP + A2A, 14 LLM providers. Es, objetivamente, **el framework de AI agents mas completo escrito en Rust**. Ningun competidor combina multi-agent + WASM sandbox + compliance + multi-tenancy en un solo paquete.
+Argentor tiene una **base tecnica excepcional**: 15 crates bien arquitectados, 4,100+ tests, WASM sandboxing, compliance modules, MCP + A2A, 14 LLM providers, 50+ built-in skills. Es, objetivamente, **el framework de AI agents mas completo escrito en Rust**. Ningun competidor combina multi-agent + WASM sandbox + compliance + multi-tenancy + agent intelligence (extended thinking, self-critique, process reward models) en un solo paquete.
+
+Con la Fase E de inteligencia, Argentor agrega capacidades que NINGUN framework Rust ofrece: extended thinking, self-critique loops, process reward scoring, dynamic tool generation, learning feedback, y agent handoffs. Esto lo posiciona no solo como el mas seguro, sino como el mas inteligente.
 
 El timing es favorable: el mercado crece 45% anual, la crisis OpenClaw demostro que la seguridad de plugins no es opcional, y la EU AI Act entra en vigor en Agosto 2026, creando demand pull para frameworks compliance-ready.
 

@@ -25,6 +25,8 @@ pub mod plugin;
 pub mod registry;
 /// Core skill trait and descriptor.
 pub mod skill;
+/// Dynamic tool generation — agents create new tools at runtime from specs.
+pub mod dynamic_gen;
 /// Fluent builder for defining skills without boilerplate (like `@tool` in Python SDKs).
 pub mod tool_builder;
 /// Skill vetting, signing, and secure registry index.

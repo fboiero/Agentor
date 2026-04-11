@@ -77,11 +77,51 @@ pub mod stream;
 pub mod structured_output;
 /// Test output parsing and TDD loop automation.
 pub mod test_oracle;
+/// State checkpointing for save/restore of complete agent state (LangGraph-style time-travel).
+pub mod checkpoint;
+/// Automatic context compaction — summarizes conversation when approaching token limits.
+pub mod compaction;
+/// Self-critique loop — Reflexion pattern for reviewing and revising agent responses.
+pub mod critique;
+/// Learning feedback loop — tool selector that improves over time with execution outcomes.
+pub mod learning;
+/// Process reward scoring — scores each reasoning step, not just the final output.
+pub mod reward;
+/// Extended thinking mode — test-time compute scaling for deeper reasoning.
+pub mod thinking;
 /// Token counting and cost estimation for different LLM providers.
 pub mod token_counter;
+/// Dynamic tool discovery — semantic search for relevant tools instead of loading all.
+pub mod tool_discovery;
 /// Smart tool selection to reduce token waste and improve relevance.
 pub mod tool_selector;
 
+pub use checkpoint::{
+    AgentState, Checkpoint, CheckpointConfig, CheckpointDiff, CheckpointManager,
+    CheckpointMessage, ModelSnapshot, ToolCallSnapshot,
+};
+pub use compaction::{
+    CompactedMessage, CompactionConfig, CompactionResult, CompactionStrategy,
+    ContextCompactorEngine,
+};
+pub use critique::{
+    Critique, CritiqueConfig, CritiqueDimension, CritiqueEngine, CritiqueResult,
+};
+pub use learning::{
+    LearnedPattern, LearningConfig, LearningEngine, LearningFeedback, LearningReport,
+    ToolLearningStats, ToolRecommendation, Trend,
+};
+pub use reward::{
+    AggregateMethod, ProcessRewardModel, ProcessRewardResult, RewardConfig, RewardFlag,
+    StepCategory, StepReward, TrajectoryQuality,
+};
+pub use thinking::{
+    ThinkingConfig, ThinkingDepth, ThinkingEngine, ThinkingResult, ThinkingStep,
+    ThinkingStepType,
+};
+pub use tool_discovery::{
+    DiscoveredTool, DiscoveryConfig, DiscoveryResult, DiscoveryStrategy, ToolDiscoveryEngine,
+};
 pub use adaptive_memory::{
     AdaptiveMemory, AdaptiveMemoryConfig, MemoryEntry, MemoryKind, RecallResult,
 };

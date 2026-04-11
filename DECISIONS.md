@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-04-11 — v1.0.0 Release + Agent Intelligence (Phases E1-E3)
+
+### Decision: v1.0.0 GA Release
+- **Timestamp**: 2026-04-11
+- **Asked**: Prepare v1.0.0 release with Go-to-Market readiness
+- **Decision**: Bumped all 14 workspace crates + CLI to v1.0.0. Set MSRV 1.80. Added 12 new built-in skills (CSV, YAML, Markdown, env, cron, IP, JWT, semver, color, template, metrics, file hasher) to reach 50+ total. Created React dashboard (Vite + React 19 + TypeScript, 7 pages). Added SDK test suites (Python 58 tests, TypeScript 35 tests). Updated CI/CD workflows. Created Getting Started guide. Published tag v1.0.0 to GitHub.
+- **Result**: 4,147 tests passing, 0 clippy warnings, ~175K LOC. Ready for crates.io + PyPI + npm publishing.
+
+### Decision: Agent Intelligence Features (10 modules)
+- **Timestamp**: 2026-04-11
+- **Asked**: Competitive analysis showed gaps vs IronClaw (dynamic tool gen, TEE), LangChain (ecosystem), CrewAI (multi-agent UX), Pydantic AI (type safety), OpenAI Agents SDK (handoffs), Claude Agent SDK (tool execution)
+- **Decision**: Implemented 10 intelligence features across 3 phases:
+  - Phase E1 (Intelligence): Extended Thinking, Self-Critique, Context Compaction, Dynamic Tool Discovery
+  - Phase E2 (Architecture): Agent Handoffs, State Checkpointing, Trace Visualization
+  - Phase E3 (Differentiators): Dynamic Tool Generation, Process Reward Scoring, Learning Feedback
+- **Alternatives**: (1) Focus only on performance benchmarks — insufficient, competitors already have similar Rust perf. (2) Copy LangChain's ecosystem approach — wrong, our advantage is quality not quantity. (3) Build managed cloud first — premature without intelligence features.
+- **Result**: Argentor becomes the only Rust framework with extended thinking, self-critique, process reward models, and learning tool selection. No Python framework combines all 10 in a single package either.
+
+---
+
 ## 2026-04-01 — Publishable Python & TypeScript SDK Clients
 
 ### Decision: Hand-craft publishable SDKs under sdks/

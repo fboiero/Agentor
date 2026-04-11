@@ -61,6 +61,8 @@ pub mod sso;
 pub mod streaming;
 /// Trace visualization system for debugging agent execution.
 pub mod trace_viewer;
+/// Enhanced trace visualization with timeline, Mermaid gantt, and flame graph output.
+pub mod trace_viz;
 /// Webhook endpoint configuration and handling.
 pub mod webhook;
 /// Outbound webhook notification system.
