@@ -13,6 +13,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/track-bash-output.sh",
             "statusMessage": "Tracking bash output..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
           }
         ]
       }
@@ -25,6 +30,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-calls.sh",
             "statusMessage": "Logging tool failure..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
           }
         ]
       }
@@ -36,6 +46,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-stats.sh",
             "statusMessage": "Recording session start..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
           }
         ]
       }
@@ -48,6 +63,34 @@
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-stats.sh",
             "async": true,
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
           }
         ]
       }
