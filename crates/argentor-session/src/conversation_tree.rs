@@ -201,16 +201,14 @@ impl ConversationTree {
         let name = branch_name.into();
 
         if self.branches.contains_key(&name) {
-            return Err(ArgentorError::Session(format!(
-                "branch '{}' already exists",
-                name
-            )));
+            return Err(ArgentorError::Session(
+                format!("branch '{name}' already exists"),
+            ));
         }
         if !self.nodes.contains_key(&from_node) {
-            return Err(ArgentorError::Session(format!(
-                "node {} not found",
-                from_node
-            )));
+            return Err(ArgentorError::Session(
+                format!("node {from_node} not found"),
+            ));
         }
 
         self.branches.insert(name.clone(), from_node);
@@ -228,10 +226,9 @@ impl ConversationTree {
     /// Switch the active branch.
     pub fn checkout(&mut self, branch: &str) -> ArgentorResult<()> {
         if !self.branches.contains_key(branch) {
-            return Err(ArgentorError::Session(format!(
-                "branch '{}' does not exist",
-                branch
-            )));
+            return Err(ArgentorError::Session(
+                format!("branch '{branch}' does not exist"),
+            ));
         }
         self.active_branch = branch.to_string();
         self.updated_at = Utc::now();
@@ -246,10 +243,9 @@ impl ConversationTree {
         summary: &str,
     ) -> ArgentorResult<Uuid> {
         if !self.branches.contains_key(source_branch) {
-            return Err(ArgentorError::Session(format!(
-                "branch '{}' does not exist",
-                source_branch
-            )));
+            return Err(ArgentorError::Session(
+                format!("branch '{source_branch}' does not exist"),
+            ));
         }
         if source_branch == self.active_branch {
             return Err(ArgentorError::Session(
@@ -257,10 +253,7 @@ impl ConversationTree {
             ));
         }
 
-        let merge_content = format!(
-            "[merge from '{}'] {}",
-            source_branch, summary
-        );
+        let merge_content = format!("[merge from '{source_branch}'] {summary}");
         let merge_msg = Message::system(merge_content, self.id);
         let node_id = self.add_message(merge_msg);
 
@@ -293,10 +286,9 @@ impl ConversationTree {
             ));
         }
         if self.branches.remove(branch).is_none() {
-            return Err(ArgentorError::Session(format!(
-                "branch '{}' does not exist",
-                branch
-            )));
+            return Err(ArgentorError::Session(
+                format!("branch '{branch}' does not exist"),
+            ));
         }
         self.updated_at = Utc::now();
         Ok(())

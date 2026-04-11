@@ -396,6 +396,7 @@ impl ProtocolHandler {
     }
 
     /// Handle an `init` message: set up the agent runner and session.
+    #[allow(clippy::too_many_arguments)]
     fn handle_init(
         &mut self,
         session_id: Option<String>,
@@ -490,7 +491,10 @@ impl ProtocolHandler {
             }];
         }
 
+        // Safety: early return above guarantees runner and session are Some
+        #[allow(clippy::unwrap_used)]
         let runner = self.runner.as_ref().unwrap();
+        #[allow(clippy::unwrap_used)]
         let session = self.session.as_mut().unwrap();
 
         let start = Instant::now();

@@ -10,6 +10,50 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.0] - 2026-04-11
+
+### Highlights
+
+Argentor v1.0.0 is the first production-ready release. All 58 development phases are complete, all three priority tiers from the strategic roadmap are closed, and the framework is ready for enterprise adoption.
+
+### Added
+
+#### Release Infrastructure
+- **Version 1.0.0** across all 14 workspace crates + CLI
+- **MSRV set to 1.80** (`rust-version` in workspace metadata)
+- **Getting Started guide** (`docs/GETTING_STARTED.md`) — quickstart, SDK examples, Docker usage
+- **SDK CI/CD workflows** — Python (PyPI) and TypeScript (npm) publishing with multi-version testing
+- **SDK test suites** — 58 Python tests (pytest) + 35 TypeScript tests (vitest)
+
+#### New Built-in Skills (12 skills, reaching 50+ total)
+- **CsvProcessorSkill** — CSV parsing, column selection, filtering, statistics, CSV-JSON conversion
+- **YamlProcessorSkill** — YAML parse/stringify, validate, merge, YAML-JSON conversion
+- **MarkdownRendererSkill** — Markdown to plain text, heading/link/code extraction, TOC generation
+- **EnvManagerSkill** — Environment variable read/list/check, .env parsing, variable expansion
+- **CronParserSkill** — Cron expression parsing, next N occurrences, human-readable descriptions
+- **IpToolsSkill** — IP parsing, CIDR validation, subnet calculator, IP range expansion
+- **JwtToolSkill** — JWT decode (no verification), claim inspection, expiry checking
+- **SemverToolSkill** — Semantic version parse, compare, bump, range matching
+- **ColorConverterSkill** — Hex-RGB-HSL conversion, color names, contrast ratio, lighten/darken
+- **TemplateEngineSkill** — `{{variable}}` rendering with conditionals and loops
+- **MetricsCollectorSkill** — Counter/gauge/histogram collection, Prometheus/JSON export
+- **FileHasherSkill** — SHA-256/SHA-512/MD5 file hashing, checksum verification, bulk hashing
+
+#### SDK Publishing
+- **Python SDK** (`argentor-sdk`) v1.0.0 — sync + async clients, 24 Pydantic models, SSE streaming
+- **TypeScript SDK** (`@argentor/sdk`) v1.0.0 — strict TypeScript, ESM, SSE parser, full type definitions
+- LICENSE files included in SDK packages for PyPI/npm distribution
+
+### Changed
+- Workspace version bumped from `0.1.0` to `1.0.0`
+- Internal crate dependency versions synced to `1.0.0`
+- Categories updated to `web-programming`, `asynchronous`, `network-programming`
+- README badges updated (4000+ tests, 175K+ LOC, Rust 1.80+, SDK package names)
+- `publish-sdks.yml` workflow rewritten to use hand-crafted SDKs at `sdks/` instead of generated stubs
+- CI pipeline now tests Python and TypeScript SDKs on every push
+
+---
+
 ## [0.1.0] - 2026-04-04
 
 ### Added
@@ -385,6 +429,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-[Unreleased]: https://github.com/fboiero/Argentor/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/fboiero/Argentor/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/fboiero/Argentor/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/fboiero/Argentor/releases/tag/v0.1.0
 [0.0.1]: https://github.com/fboiero/Argentor/releases/tag/v0.0.1

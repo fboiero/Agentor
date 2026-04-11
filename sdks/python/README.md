@@ -1,4 +1,4 @@
-# argentor-sdk
+# argentor-sdk v1.0.0
 
 Python SDK client for the [Argentor](https://github.com/fboiero/Agentor) AI agent framework REST API.
 

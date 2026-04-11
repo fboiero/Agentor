@@ -326,6 +326,7 @@ pub fn hook_fn(
         regex::Regex::new(&p).unwrap_or_else(|e| {
             tracing::warn!("Invalid hook matcher regex '{p}': {e} — will match nothing");
             // Fallback: pattern that matches nothing
+            #[allow(clippy::unwrap_used)] // static regex, infallible
             regex::Regex::new(r"^\b$").unwrap()
         })
     });

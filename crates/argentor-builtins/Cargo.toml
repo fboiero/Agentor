@@ -2,7 +2,7 @@
 name = "argentor-builtins"
 version.workspace = true
 edition.workspace = true
-description = "40+ built-in skills (web search, crypto, file ops, security) for Argentor"
+description = "50+ built-in skills (web search, crypto, file ops, security, data processing) for Argentor"
 license.workspace = true
 repository.workspace = true
 authors.workspace = true

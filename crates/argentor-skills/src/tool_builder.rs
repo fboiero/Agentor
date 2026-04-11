@@ -43,18 +43,20 @@ struct ParamDef {
     required: bool,
 }
 
+/// Type alias for a synchronous tool handler function.
+type SyncHandlerFn = dyn Fn(&serde_json::Value) -> ArgentorResult<String> + Send + Sync;
+
+/// Type alias for an asynchronous tool handler function.
+type AsyncHandlerFn = dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ArgentorResult<String>> + Send>>
+    + Send
+    + Sync;
+
 /// The runtime handler stored inside a [`BuiltTool`].
 enum ToolHandler {
     /// Synchronous handler — called with a reference to the arguments.
-    Sync(Box<dyn Fn(&serde_json::Value) -> ArgentorResult<String> + Send + Sync>),
+    Sync(Box<SyncHandlerFn>),
     /// Asynchronous handler — called with owned arguments, returns a pinned future.
-    Async(
-        Box<
-            dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ArgentorResult<String>> + Send>>
-                + Send
-                + Sync,
-        >,
-    ),
+    Async(Box<AsyncHandlerFn>),
 }
 
 /// Fluent builder for creating [`Skill`] implementations without boilerplate.
@@ -66,14 +68,8 @@ pub struct ToolBuilder {
     description: String,
     params: Vec<ParamDef>,
     capabilities: Vec<Capability>,
-    handler: Option<Box<dyn Fn(&serde_json::Value) -> ArgentorResult<String> + Send + Sync>>,
-    async_handler: Option<
-        Box<
-            dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ArgentorResult<String>> + Send>>
-                + Send
-                + Sync,
-        >,
-    >,
+    handler: Option<Box<SyncHandlerFn>>,
+    async_handler: Option<Box<AsyncHandlerFn>>,
 }
 
 impl ToolBuilder {

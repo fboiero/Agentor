@@ -21,8 +21,8 @@ use std::sync::Arc;
 fn register_builtins_registers_expected_count() {
     let mut registry = SkillRegistry::new();
     register_builtins(&mut registry);
-    // register_builtins adds: 9 core + 17 utility skills = 26
-    assert_eq!(registry.skill_count(), 26);
+    // register_builtins adds: 9 core + 17 utility + 12 new skills = 38
+    assert_eq!(registry.skill_count(), 38);
 }
 
 #[test]
@@ -74,8 +74,8 @@ fn register_builtins_with_memory_registers_all_skills() {
     let store: Arc<dyn VectorStore> = Arc::new(InMemoryVectorStore::new());
     let embedder: Arc<dyn EmbeddingProvider> = Arc::new(LocalEmbedding::default());
     register_builtins_with_memory(&mut registry, store, embedder);
-    // 9 core + 17 utility + memory_store + memory_search = 28
-    assert_eq!(registry.skill_count(), 28);
+    // 9 core + 17 utility + 12 new + memory_store + memory_search = 40
+    assert_eq!(registry.skill_count(), 40);
     assert!(registry.get("memory_store").is_some());
     assert!(registry.get("memory_search").is_some());
 }

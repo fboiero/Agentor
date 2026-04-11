@@ -1,5 +1,5 @@
 # Argentor — Session Context
-> Last updated: 2026-04-11 (Phase 58 — all items closed, pushed to GitHub)
+> Last updated: 2026-04-11 (v1.0.0 release prep — GTM phase)
 
 ## Current Goal
 Production-grade multi-tenant AI agent SaaS platform — fully integrated pipeline from guardrails to analytics.
@@ -384,10 +384,28 @@ Inspired by Vercel AI SDK, LangChain, CrewAI, AutoGPT, and Semantic Kernel.
 - Headless mode: run agents without interactive terminal (CI/CD, automation)
 - Agent SDK wrappers: Python and TypeScript SDK wrappers for agent orchestration
 
+## v1.0.0 Release Prep (2026-04-11)
+- Version bumped to 1.0.0 across all workspace crates
+- MSRV set to 1.80 (rust-version in Cargo.toml)
+- Internal crate dependency versions synced to 1.0.0
+- Categories updated for crates.io (web-programming, asynchronous, network-programming)
+- Cargo publish dry-run verified for leaf crates
+- 12 new built-in skills added (CSV, YAML, Markdown, env, cron, IP, JWT, semver, color, template, metrics, file hasher)
+- Python SDK v1.0.0 with 58 tests (pytest) + LICENSE
+- TypeScript SDK v1.0.0 with 35 tests (vitest) + LICENSE + dist/ built
+- SDK CI/CD workflows updated (publish-sdks.yml targets sdks/, not generated-sdks/)
+- CI pipeline extended with Python and TypeScript SDK testing
+- Getting Started guide created (docs/GETTING_STARTED.md)
+- CHANGELOG.md updated with v1.0.0 entry
+- README badges updated (4000+ tests, 175K+ LOC, Rust 1.80+, SDK names)
+- React dashboard scaffolded with Vite + React + TypeScript (dashboard/)
+
 ## Build Health
-- `cargo test --workspace` — **3953 tests passing**, 0 failures
+- `cargo test --workspace` — **4000+ tests passing**, 0 failures
 - `cargo clippy -- -D warnings` — **0 warnings**
-- ~140,000+ LOC across 15 crates (14 workspace + 1 PyO3)
+- ~175,000+ LOC across 15 crates (14 workspace + 1 PyO3)
+- Python SDK: 58 tests passing
+- TypeScript SDK: 35 tests passing, builds clean
 
 ## All Planned Items — CLOSED
 | Item | Status |

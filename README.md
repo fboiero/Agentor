@@ -4,12 +4,12 @@
 
 [![CI](https://github.com/fboiero/Argentor/actions/workflows/ci.yml/badge.svg)](https://github.com/fboiero/Argentor/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-3953%20passing-brightgreen.svg)]()
-[![LOC](https://img.shields.io/badge/LOC-140K%2B-informational.svg)]()
+[![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org)
+[![Tests](https://img.shields.io/badge/Tests-4000%2B%20passing-brightgreen.svg)]()
+[![LOC](https://img.shields.io/badge/LOC-175K%2B-informational.svg)]()
 [![Crates](https://img.shields.io/badge/Crates-15-informational.svg)]()
-[![PyPI](https://img.shields.io/badge/PyPI-argentor--client-blue.svg)](https://pypi.org/project/argentor-client/)
-[![npm](https://img.shields.io/badge/npm-%40argentor%2Fclient-red.svg)](https://www.npmjs.com/package/@argentor/client)
+[![PyPI](https://img.shields.io/badge/PyPI-argentor--sdk-blue.svg)](https://pypi.org/project/argentor-sdk/)
+[![npm](https://img.shields.io/badge/npm-%40argentor%2Fsdk-red.svg)](https://www.npmjs.com/package/@argentor/sdk)
 
 ---
 
@@ -93,7 +93,7 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **Git operations skill** — libgit2-based, no shell commands
 
 ### Universal Skill Toolkit
-- **40+ built-in skills** — calculator, unit converter, JSON/YAML/CSV tools, regex tester, UUID/hash generators, crypto (encrypt/decrypt/sign/verify), web search, security scanning (port scan, header audit, SSL check, vulnerability scan), and more
+- **50+ built-in skills** — calculator, CSV/YAML/JSON tools, regex, UUID/hash generators, crypto, web search, security scanning, template engine, JWT tools, color converter, semver tools, cron parser, and more
 - **Multi-provider web search** — DuckDuckGo, Tavily, Brave, SearXNG with unified interface
 - **Plugin marketplace** — skill publishing, discovery, dependency resolution, and version management
 
@@ -168,8 +168,8 @@ Argentor also provides a complete platform for building multi-agent systems — 
 - **DevTeam** — Pre-configured teams with 8 workflow templates and quality gates
 
 ### SDKs and Language Bridges
-- **Python SDK** (`argentor-client` on PyPI) — httpx + pydantic, async support
-- **TypeScript SDK** (`@argentor/client` on npm) — fetch-based, full type definitions
+- **Python SDK** (`argentor-sdk` on PyPI) — httpx + pydantic, sync + async, 24 models
+- **TypeScript SDK** (`@argentor/sdk` on npm) — fetch-based, strict TypeScript, SSE streaming
 - **PyO3 Python bridge** (`argentor-python` crate) — native Rust-to-Python bindings for direct embedding
 
 ### Agent Evaluation & Benchmarks

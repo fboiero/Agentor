@@ -1039,7 +1039,7 @@ fn builtin_entry(cfg: BuiltinEntryConfig<'_>) -> MarketplaceEntry {
     }
 }
 
-/// Returns `MarketplaceEntry` instances for the 18 built-in utility skills.
+/// Returns `MarketplaceEntry` instances for the 30 built-in utility skills.
 ///
 /// Categories used: `data`, `text`, `crypto`, `encoding`, `web`, `search`, `security`, `ai`.
 pub fn builtin_catalog_entries() -> Vec<MarketplaceEntry> {
@@ -1245,6 +1245,142 @@ pub fn builtin_catalog_entries() -> Vec<MarketplaceEntry> {
             keywords: &["code", "complexity", "lint", "ast", "dependency"],
             rating: 4.6,
             downloads: 10200,
+        }),
+        // -- Data & Text (new) (4) --
+        builtin_entry(BuiltinEntryConfig {
+            name: "csv_processor",
+            version: "1.0.0",
+            description: "CSV parsing, column selection, filtering, sorting, statistics, and CSV/JSON conversion",
+            author: "argentor",
+            categories: &["data"],
+            tags: &["csv", "data", "parsing"],
+            keywords: &["csv", "parse", "filter", "sort", "statistics", "json"],
+            rating: 4.5,
+            downloads: 8200,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "yaml_processor",
+            version: "1.0.0",
+            description: "YAML parse/stringify, validate, merge, and YAML/JSON conversion",
+            author: "argentor",
+            categories: &["data"],
+            tags: &["yaml", "data", "parsing"],
+            keywords: &["yaml", "parse", "validate", "merge", "json", "config"],
+            rating: 4.4,
+            downloads: 7800,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "markdown_renderer",
+            version: "1.0.0",
+            description: "Markdown processing: plain text conversion, extract headings/links/code blocks, TOC generation",
+            author: "argentor",
+            categories: &["text"],
+            tags: &["markdown", "text", "render"],
+            keywords: &["markdown", "headings", "links", "toc", "code_blocks", "plain_text"],
+            rating: 4.5,
+            downloads: 8500,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "template_engine",
+            version: "1.0.0",
+            description: "Simple {{variable}} template rendering with conditionals, loops, and defaults",
+            author: "argentor",
+            categories: &["text"],
+            tags: &["template", "render", "text"],
+            keywords: &["template", "render", "variable", "conditional", "loop", "mustache"],
+            rating: 4.6,
+            downloads: 9100,
+        }),
+        // -- Versioning & Config (3) --
+        builtin_entry(BuiltinEntryConfig {
+            name: "semver_tool",
+            version: "1.0.0",
+            description: "Semantic version parse, compare, bump (major/minor/patch), range matching",
+            author: "argentor",
+            categories: &["data"],
+            tags: &["semver", "version", "compare"],
+            keywords: &["semver", "version", "bump", "compare", "range", "sort"],
+            rating: 4.4,
+            downloads: 7500,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "env_manager",
+            version: "1.0.0",
+            description: "Environment variable operations: read, list, check, .env parsing, and variable expansion",
+            author: "argentor",
+            categories: &["data", "security"],
+            tags: &["env", "config", "dotenv"],
+            keywords: &["env", "environment", "dotenv", "variable", "config", "expand"],
+            rating: 4.3,
+            downloads: 7200,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "cron_parser",
+            version: "1.0.0",
+            description: "Parse cron expressions, calculate next occurrences, validate, and describe",
+            author: "argentor",
+            categories: &["data"],
+            tags: &["cron", "schedule", "time"],
+            keywords: &["cron", "schedule", "next", "validate", "describe", "recurring"],
+            rating: 4.5,
+            downloads: 8000,
+        }),
+        // -- Crypto & Network (new) (3) --
+        builtin_entry(BuiltinEntryConfig {
+            name: "jwt_tool",
+            version: "1.0.0",
+            description: "JWT decode (no verification), inspect claims, check expiry, extract header/payload",
+            author: "argentor",
+            categories: &["crypto", "security"],
+            tags: &["jwt", "token", "decode"],
+            keywords: &["jwt", "decode", "claims", "expiry", "header", "payload"],
+            rating: 4.6,
+            downloads: 9500,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "ip_tools",
+            version: "1.0.0",
+            description: "IP parsing, CIDR validation, subnet calculator, IP classification, reverse DNS",
+            author: "argentor",
+            categories: &["web", "security"],
+            tags: &["ip", "network", "cidr"],
+            keywords: &["ip", "cidr", "subnet", "ipv4", "ipv6", "network", "classify"],
+            rating: 4.4,
+            downloads: 7800,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "file_hasher",
+            version: "1.0.0",
+            description: "Hash file contents (SHA-256, SHA-512), checksum verification, bulk hashing",
+            author: "argentor",
+            categories: &["crypto", "data"],
+            tags: &["hash", "file", "checksum"],
+            keywords: &["hash", "file", "sha256", "sha512", "checksum", "verify", "integrity"],
+            rating: 4.5,
+            downloads: 8300,
+        }),
+        // -- Observability (2) --
+        builtin_entry(BuiltinEntryConfig {
+            name: "metrics_collector",
+            version: "1.0.0",
+            description: "In-memory counter/gauge/histogram collection, Prometheus and JSON export",
+            author: "argentor",
+            categories: &["data"],
+            tags: &["metrics", "monitoring", "prometheus"],
+            keywords: &["metrics", "counter", "gauge", "histogram", "prometheus", "monitoring"],
+            rating: 4.5,
+            downloads: 8700,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "color_converter",
+            version: "1.0.0",
+            description: "Color conversion (Hex/RGB/HSL), named colors, contrast ratio, lighten/darken",
+            author: "argentor",
+            categories: &["data"],
+            tags: &["color", "conversion", "design"],
+            keywords: &["color", "hex", "rgb", "hsl", "contrast", "lighten", "darken", "wcag"],
+            rating: 4.3,
+            downloads: 6800,
         }),
     ]
 }
@@ -2285,14 +2421,14 @@ mod tests {
     #[test]
     fn builtin_entries_count() {
         let entries = builtin_catalog_entries();
-        assert_eq!(entries.len(), 18);
+        assert_eq!(entries.len(), 30);
     }
 
     #[test]
     fn builtin_entries_unique_names() {
         let entries = builtin_catalog_entries();
         let names: HashSet<&str> = entries.iter().map(|e| e.manifest.name.as_str()).collect();
-        assert_eq!(names.len(), 18);
+        assert_eq!(names.len(), 30);
     }
 
     #[test]
@@ -2349,7 +2485,7 @@ mod tests {
         for entry in builtin_catalog_entries() {
             catalog.add(entry);
         }
-        assert_eq!(catalog.count(), 18);
+        assert_eq!(catalog.count(), 30);
 
         // Search for "hash"
         let search = MarketplaceSearch {

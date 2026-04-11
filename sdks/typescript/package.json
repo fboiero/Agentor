@@ -1,6 +1,6 @@
 {
   "name": "@argentor/sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "TypeScript SDK client for the Argentor AI agent framework REST API",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -61,6 +61,7 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "eslint": "^9.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

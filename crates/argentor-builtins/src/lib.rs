@@ -25,6 +25,12 @@ pub mod browser_automation;
 pub mod calculator;
 /// Language-aware code analysis skill.
 pub mod code_analysis;
+/// Color conversion skill (Hex/RGB/HSL, contrast ratio, lighten/darken).
+pub mod color_converter;
+/// Cron expression parsing, validation, and scheduling skill.
+pub mod cron_parser;
+/// CSV parsing, filtering, sorting, statistics, and format conversion.
+pub mod csv_processor;
 /// Data format validation skill.
 pub mod data_validator;
 /// Date/time operations skill.
@@ -37,8 +43,12 @@ pub mod dns_lookup;
 pub mod docker_sandbox;
 /// Encoding/decoding skill (Base64, hex, URL, HTML, JWT).
 pub mod encode_decode;
+/// Environment variable management and .env file parsing skill.
+pub mod env_manager;
 /// File-system-based artifact backend for persistent storage.
 pub mod file_artifact_backend;
+/// File hashing skill (SHA-256, SHA-512, MD5, checksum verification).
+pub mod file_hasher;
 /// File read skill.
 pub mod file_read;
 /// File write skill.
@@ -51,12 +61,20 @@ pub mod hash_tool;
 pub mod http_fetch;
 /// Human-in-the-loop approval skill and channels.
 pub mod human_approval;
+/// IP address tools skill (parsing, CIDR, subnet calculation).
+pub mod ip_tools;
 /// JSON query and manipulation skill.
 pub mod json_query;
+/// JWT inspection skill (decode, claims, expiry check).
+pub mod jwt_tool;
 /// Knowledge graph skill for entity-relationship operations.
 pub mod knowledge_graph_skill;
+/// Markdown processing skill (plain text, headings, links, TOC).
+pub mod markdown_renderer;
 /// Semantic memory store and search skills.
 pub mod memory;
+/// In-memory metrics collection skill (counters, gauges, histograms).
+pub mod metrics_collector;
 /// Prompt injection detection and PII scanning skill.
 pub mod prompt_guard;
 /// Regex operations skill.
@@ -67,6 +85,8 @@ pub mod rss_reader;
 pub mod sdk_generator;
 /// Secret scanning skill for detecting leaked credentials.
 pub mod secret_scanner;
+/// Semantic versioning skill (parse, compare, bump, range matching).
+pub mod semver_tool;
 /// Shell command execution skill.
 pub mod shell;
 /// Stdin-based interactive approval channel.
@@ -75,6 +95,8 @@ pub mod stdin_approval;
 pub mod summarizer;
 /// Task status reporting skill.
 pub mod task_status;
+/// Simple template engine skill ({{variable}} rendering, conditionals, loops).
+pub mod template_engine;
 /// Test runner skill for multi-language test execution and result parsing.
 pub mod test_runner;
 /// Text transformation skill for string manipulation operations.
@@ -85,6 +107,8 @@ pub mod uuid_generator;
 pub mod web_scraper;
 /// Web search skill using DuckDuckGo HTML endpoint.
 pub mod web_search;
+/// YAML processing skill (parse, stringify, validate, merge, conversion).
+pub mod yaml_processor;
 /// XcapitSFF backend integration skills.
 pub mod xcapitsff_skills;
 
@@ -94,12 +118,17 @@ pub use browser::BrowserSkill;
 pub use browser_automation::{BrowserAction, BrowserAutomationSkill, BrowserConfig, BrowserResult};
 pub use calculator::CalculatorSkill;
 pub use code_analysis::CodeAnalysisSkill;
+pub use color_converter::ColorConverterSkill;
+pub use cron_parser::CronParserSkill;
+pub use csv_processor::CsvProcessorSkill;
 pub use data_validator::DataValidatorSkill;
 pub use datetime_tool::DateTimeSkill;
 pub use diff_tool::DiffSkill;
 pub use dns_lookup::DnsLookupSkill;
 pub use encode_decode::EncodeDecodeSkill;
+pub use env_manager::EnvManagerSkill;
 pub use file_artifact_backend::FileArtifactBackend;
+pub use file_hasher::FileHasherSkill;
 pub use file_read::FileReadSkill;
 pub use file_write::FileWriteSkill;
 pub use git::GitSkill;
@@ -109,23 +138,30 @@ pub use human_approval::{
     ApprovalChannel, ApprovalDecision, ApprovalRequest, AutoApproveChannel,
     CallbackApprovalChannel, HumanApprovalSkill, RiskLevel,
 };
+pub use ip_tools::IpToolsSkill;
 pub use json_query::JsonQuerySkill;
+pub use jwt_tool::JwtToolSkill;
 pub use knowledge_graph_skill::KnowledgeGraphSkill;
+pub use markdown_renderer::MarkdownRendererSkill;
 pub use memory::{MemorySearchSkill, MemoryStoreSkill};
+pub use metrics_collector::MetricsCollectorSkill;
 pub use prompt_guard::PromptGuardSkill;
 pub use regex_tool::RegexSkill;
 pub use rss_reader::RssReaderSkill;
 pub use sdk_generator::SdkGenerator;
 pub use secret_scanner::SecretScannerSkill;
+pub use semver_tool::SemverToolSkill;
 pub use shell::{CommandPolicy, ShellSkill};
 pub use stdin_approval::StdinApprovalChannel;
 pub use summarizer::SummarizerSkill;
 pub use task_status::TaskStatusSkill;
+pub use template_engine::TemplateEngineSkill;
 pub use test_runner::TestRunnerSkill;
 pub use text_transform::TextTransformSkill;
 pub use uuid_generator::UuidGeneratorSkill;
 pub use web_scraper::WebScraperSkill;
 pub use web_search::{SearchProvider, WebSearchSkill};
+pub use yaml_processor::YamlProcessorSkill;
 pub use xcapitsff_skills::{
     register_xcapitsff_skills, XcapitCustomer360Skill, XcapitKbSearchSkill, XcapitLeadInfoSkill,
     XcapitSearchSkill, XcapitTicketInfoSkill,
@@ -143,13 +179,16 @@ use argentor_memory::{EmbeddingProvider, VectorStore};
 use argentor_skills::SkillRegistry;
 use std::sync::Arc;
 
-/// Register the 18 utility skills inspired by Vercel AI SDK, LangChain, CrewAI,
+/// Register the 29 utility skills inspired by Vercel AI SDK, LangChain, CrewAI,
 /// AutoGPT, and Semantic Kernel. These are self-contained (no external API keys).
 ///
-/// **Data & Text:** calculator, text_transform, json_query, regex_tool, data_validator, datetime_tool
-/// **Crypto & Encoding:** hash_tool, encode_decode, uuid_generator
-/// **Web & Search:** web_search, web_scraper, rss_reader, dns_lookup
+/// **Data & Text:** calculator, text_transform, json_query, regex_tool, data_validator,
+///   datetime_tool, csv_processor, yaml_processor, markdown_renderer, template_engine
+/// **Crypto & Encoding:** hash_tool, encode_decode, uuid_generator, jwt_tool, file_hasher
+/// **Versioning & Config:** semver_tool, env_manager, cron_parser
+/// **Web & Network:** web_search, web_scraper, rss_reader, dns_lookup, ip_tools
 /// **Security & AI:** prompt_guard, secret_scanner, diff_tool, summarizer
+/// **Observability:** metrics_collector, color_converter
 pub fn register_utility_skills(registry: &mut SkillRegistry) {
     // Data & Text
     registry.register(Arc::new(CalculatorSkill::default()));
@@ -158,20 +197,34 @@ pub fn register_utility_skills(registry: &mut SkillRegistry) {
     registry.register(Arc::new(RegexSkill::default()));
     registry.register(Arc::new(DataValidatorSkill::default()));
     registry.register(Arc::new(DateTimeSkill::default()));
+    registry.register(Arc::new(CsvProcessorSkill::default()));
+    registry.register(Arc::new(YamlProcessorSkill::default()));
+    registry.register(Arc::new(MarkdownRendererSkill::default()));
+    registry.register(Arc::new(TemplateEngineSkill::default()));
     // Crypto & Encoding
     registry.register(Arc::new(HashSkill::default()));
     registry.register(Arc::new(EncodeDecodeSkill::default()));
     registry.register(Arc::new(UuidGeneratorSkill::default()));
-    // Web & Search
+    registry.register(Arc::new(JwtToolSkill::default()));
+    registry.register(Arc::new(FileHasherSkill::default()));
+    // Versioning & Config
+    registry.register(Arc::new(SemverToolSkill::default()));
+    registry.register(Arc::new(EnvManagerSkill::default()));
+    registry.register(Arc::new(CronParserSkill::default()));
+    // Web & Network
     registry.register(Arc::new(WebSearchSkill::default()));
     registry.register(Arc::new(WebScraperSkill::default()));
     registry.register(Arc::new(RssReaderSkill::default()));
     registry.register(Arc::new(DnsLookupSkill::default()));
+    registry.register(Arc::new(IpToolsSkill::default()));
     // Security & AI
     registry.register(Arc::new(PromptGuardSkill::default()));
     registry.register(Arc::new(SecretScannerSkill::default()));
     registry.register(Arc::new(DiffSkill::default()));
     registry.register(Arc::new(SummarizerSkill::default()));
+    // Observability & Utilities
+    registry.register(Arc::new(MetricsCollectorSkill::new()));
+    registry.register(Arc::new(ColorConverterSkill::default()));
 }
 
 /// Register all built-in skills into the given registry.
