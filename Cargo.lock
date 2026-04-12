@@ -160,6 +160,7 @@ dependencies = [
  "argentor-session",
  "argentor-skills",
  "async-trait",
+ "base64 0.22.1",
  "chrono",
  "futures-util",
  "regex",

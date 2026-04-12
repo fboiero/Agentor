@@ -49,8 +49,9 @@ pub use embedding::{EmbeddingProvider, LocalEmbedding};
 pub use embeddings_providers::{
     parse_cohere_embedding_response, parse_openai_embedding_response,
     parse_voyage_embedding_response, BatchEmbeddingProvider, CacheStats, CachedEmbeddingProvider,
-    CohereEmbeddingProvider, EmbeddingConfig, EmbeddingProviderFactory, OpenAiEmbeddingProvider,
-    VoyageEmbeddingProvider,
+    CohereEmbedV4Provider, CohereEmbeddingProvider, EmbeddingConfig, EmbeddingProviderFactory,
+    JinaEmbeddingProvider, MistralEmbedProvider, NomicEmbedProvider, OpenAiEmbeddingProvider,
+    SentenceTransformersProvider, TogetherEmbedProvider, VoyageEmbeddingProvider,
 };
 pub use hybrid::HybridSearcher;
 pub use knowledge_graph::{

@@ -1,7 +1,10 @@
+use crate::backends::bedrock::BedrockBackend;
 use crate::backends::claude::ClaudeBackend;
 use crate::backends::claude_code::ClaudeCodeBackend;
+use crate::backends::cohere::CohereBackend;
 use crate::backends::gemini::GeminiBackend;
 use crate::backends::openai::OpenAiBackend;
+use crate::backends::replicate::ReplicateBackend;
 use crate::backends::LlmBackend;
 use crate::config::{LlmProvider, ModelConfig};
 use crate::failover::FailoverBackend;
@@ -45,6 +48,9 @@ impl LlmClient {
                 LlmProvider::Claude => Box::new(ClaudeBackend::new(cfg)),
                 LlmProvider::Gemini => Box::new(GeminiBackend::new(cfg)),
                 LlmProvider::ClaudeCode => Box::new(ClaudeCodeBackend::new(cfg)),
+                LlmProvider::Cohere => Box::new(CohereBackend::new(cfg)),
+                LlmProvider::Bedrock => Box::new(BedrockBackend::new(cfg)),
+                LlmProvider::Replicate => Box::new(ReplicateBackend::new(cfg)),
                 // All OpenAI-compatible providers
                 LlmProvider::OpenAi
                 | LlmProvider::OpenRouter
@@ -56,7 +62,9 @@ impl LlmClient {
                 | LlmProvider::Cerebras
                 | LlmProvider::Together
                 | LlmProvider::DeepSeek
-                | LlmProvider::VLlm => Box::new(OpenAiBackend::new(cfg)),
+                | LlmProvider::VLlm
+                | LlmProvider::Fireworks
+                | LlmProvider::HuggingFace => Box::new(OpenAiBackend::new(cfg)),
             }
         };
 

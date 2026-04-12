@@ -1,11 +1,17 @@
+/// AWS Bedrock backend (stub — real path requires the `aws-sdk-bedrock` crate).
+pub mod bedrock;
 /// Anthropic Claude API backend.
 pub mod claude;
 /// Claude Code (local CLI) backend.
 pub mod claude_code;
+/// Cohere API backend (stub).
+pub mod cohere;
 /// Google Gemini API backend.
 pub mod gemini;
 /// OpenAI API backend.
 pub mod openai;
+/// Replicate API backend (stub — async prediction polling pattern).
+pub mod replicate;
 
 use crate::llm::LlmResponse;
 use crate::stream::StreamEvent;

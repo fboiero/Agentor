@@ -1,0 +1,100 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in Argentor
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+assignees:
+  - fboiero
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! Please fill out the sections below so we can investigate quickly.
+
+        Before submitting, please search existing issues to avoid duplicates.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, deterministic steps to reproduce the issue. Include commands, inputs, and any relevant configuration.
+      placeholder: |
+        1. Run `cargo run --bin argentor -- serve`
+        2. Send request `...`
+        3. Observe error `...`
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include full error messages, stack traces, or panic output when possible.
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: e.g. macOS 14.4, Ubuntu 22.04, Windows 11
+      placeholder: macOS 14.4 (arm64)
+    validations:
+      required: true
+
+  - type: input
+    id: rust-version
+    attributes:
+      label: Rust version
+      description: Output of `rustc --version`
+      placeholder: rustc 1.80.0 (stable)
+    validations:
+      required: true
+
+  - type: input
+    id: argentor-version
+    attributes:
+      label: Argentor version
+      description: Git commit SHA, tag, or crate version
+      placeholder: v1.0.0 / commit 1e3c213
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Any relevant log output. Please wrap in code blocks.
+      render: shell
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might help — screenshots, related issues, workarounds you tried.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: I am running a supported version of Argentor
+          required: true

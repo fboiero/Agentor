@@ -37,6 +37,8 @@ pub mod data_validator;
 pub mod datetime_tool;
 /// Text diff generation and patching skill.
 pub mod diff_tool;
+/// DOCX (Microsoft Word) document loader skill.
+pub mod docx_loader;
 /// DNS lookup, reverse resolution, and connectivity checks.
 pub mod dns_lookup;
 /// Docker-sandboxed shell execution.
@@ -45,6 +47,10 @@ pub mod docker_sandbox;
 pub mod encode_decode;
 /// Environment variable management and .env file parsing skill.
 pub mod env_manager;
+/// EPUB ebook loader skill.
+pub mod epub_loader;
+/// Excel (XLSX) spreadsheet loader skill.
+pub mod excel_loader;
 /// File-system-based artifact backend for persistent storage.
 pub mod file_artifact_backend;
 /// File hashing skill (SHA-256, SHA-512, MD5, checksum verification).
@@ -57,6 +63,8 @@ pub mod file_write;
 pub mod git;
 /// Cryptographic hashing skill (SHA-256, SHA-512, HMAC-SHA256).
 pub mod hash_tool;
+/// HTML document loader skill.
+pub mod html_loader;
 /// HTTP fetch skill.
 pub mod http_fetch;
 /// Human-in-the-loop approval skill and channels.
@@ -75,6 +83,10 @@ pub mod markdown_renderer;
 pub mod memory;
 /// In-memory metrics collection skill (counters, gauges, histograms).
 pub mod metrics_collector;
+/// PDF document loader skill.
+pub mod pdf_loader;
+/// PowerPoint (PPTX) presentation loader skill.
+pub mod pptx_loader;
 /// Prompt injection detection and PII scanning skill.
 pub mod prompt_guard;
 /// Regex operations skill.
@@ -111,6 +123,8 @@ pub mod web_search;
 pub mod yaml_processor;
 /// XcapitSFF backend integration skills.
 pub mod xcapitsff_skills;
+/// Internal minimal ZIP archive reader for OOXML loaders.
+pub mod zip_reader;
 
 pub use agent_delegate::{AgentDelegateSkill, TaskInfo, TaskQueueHandle, TaskSummary};
 pub use artifact_store::{ArtifactBackend, ArtifactStoreSkill, InMemoryArtifactBackend};
@@ -125,14 +139,18 @@ pub use data_validator::DataValidatorSkill;
 pub use datetime_tool::DateTimeSkill;
 pub use diff_tool::DiffSkill;
 pub use dns_lookup::DnsLookupSkill;
+pub use docx_loader::DocxLoaderSkill;
 pub use encode_decode::EncodeDecodeSkill;
 pub use env_manager::EnvManagerSkill;
+pub use epub_loader::EpubLoaderSkill;
+pub use excel_loader::ExcelLoaderSkill;
 pub use file_artifact_backend::FileArtifactBackend;
 pub use file_hasher::FileHasherSkill;
 pub use file_read::FileReadSkill;
 pub use file_write::FileWriteSkill;
 pub use git::GitSkill;
 pub use hash_tool::HashSkill;
+pub use html_loader::HtmlLoaderSkill;
 pub use http_fetch::HttpFetchSkill;
 pub use human_approval::{
     ApprovalChannel, ApprovalDecision, ApprovalRequest, AutoApproveChannel,
@@ -145,6 +163,8 @@ pub use knowledge_graph_skill::KnowledgeGraphSkill;
 pub use markdown_renderer::MarkdownRendererSkill;
 pub use memory::{MemorySearchSkill, MemoryStoreSkill};
 pub use metrics_collector::MetricsCollectorSkill;
+pub use pdf_loader::PdfLoaderSkill;
+pub use pptx_loader::PptxLoaderSkill;
 pub use prompt_guard::PromptGuardSkill;
 pub use regex_tool::RegexSkill;
 pub use rss_reader::RssReaderSkill;
@@ -225,6 +245,13 @@ pub fn register_utility_skills(registry: &mut SkillRegistry) {
     // Observability & Utilities
     registry.register(Arc::new(MetricsCollectorSkill::new()));
     registry.register(Arc::new(ColorConverterSkill::default()));
+    // Document Loaders (RAG)
+    registry.register(Arc::new(PdfLoaderSkill::default()));
+    registry.register(Arc::new(DocxLoaderSkill::default()));
+    registry.register(Arc::new(HtmlLoaderSkill::default()));
+    registry.register(Arc::new(EpubLoaderSkill::default()));
+    registry.register(Arc::new(ExcelLoaderSkill::default()));
+    registry.register(Arc::new(PptxLoaderSkill::default()));
 }
 
 /// Register all built-in skills into the given registry.

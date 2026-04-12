@@ -1,102 +1,232 @@
 # Contributing to Argentor
 
-Thank you for your interest in contributing to Argentor! This document provides guidelines for contributing to the project.
+Thanks for your interest in contributing! Argentor is an open, community-driven autonomous agent framework, and we welcome contributions of code, documentation, examples, tests, security reviews, and ideas.
 
-## Code of Conduct
+This guide explains how to get set up, how we work, and what we expect from contributions. Please read it end-to-end before opening your first PR.
 
-Be respectful, constructive, and inclusive. We welcome contributors from all backgrounds and experience levels.
+## Table of contents
 
-## Getting Started
+- [Project philosophy](#project-philosophy)
+- [Code of conduct](#code-of-conduct)
+- [Development setup](#development-setup)
+- [Project structure](#project-structure)
+- [Making a change](#making-a-change)
+- [Commit conventions](#commit-conventions)
+- [Testing requirements](#testing-requirements)
+- [Code style](#code-style)
+- [Documentation requirements](#documentation-requirements)
+- [Pull request process](#pull-request-process)
+- [Where to start](#where-to-start)
+- [Security issues](#security-issues)
+- [Maintainer contact](#maintainer-contact)
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/Argentor.git`
-3. Create a feature branch: `git checkout -b feature/your-feature`
-4. Make your changes
-5. Run tests: `cargo test --workspace`
-6. Run lints: `cargo clippy --workspace`
-7. Format code: `cargo fmt --all`
-8. Commit and push
-9. Open a Pull Request
+## Project philosophy
 
-## Development Setup
+Argentor is built on three non-negotiable principles:
+
+1. **Security-first.** Every skill runs sandboxed (WASM with `wasmtime`). Every capability is explicit. There is no "just give it network access" shortcut. If a feature makes it easier to escape the sandbox or bypass capability checks, it will not be merged.
+2. **Rust-native.** We use the Rust type system to prevent whole classes of bugs. Prefer compile-time guarantees over runtime checks. Use `thiserror` for library errors, `anyhow` only in binaries. No `unwrap()` in library code outside tests.
+3. **Performance-conscious.** Agent loops run in hot paths. Allocations, lock contention, and unnecessary async overhead matter. Benchmarks are welcome. Premature optimization is not — profile first.
+
+Readability and maintainability beat cleverness. We optimize for the reviewer, not the author.
+
+## Code of conduct
+
+This project adopts the [Contributor Covenant 2.1](./CODE_OF_CONDUCT.md). By participating you agree to uphold it. Violations can be reported privately to **fboiero@xcapit.com**.
+
+## Development setup
 
 ### Prerequisites
 
-- Rust 1.75+ (install via [rustup](https://rustup.rs))
-- For WASM skills: `rustup target add wasm32-wasip1`
+- **Rust 1.80+** (install via [rustup](https://rustup.rs))
+- **WASM target** for skill development: `rustup target add wasm32-wasip1`
+- **Optional**: `cargo-nextest` for faster tests, `cargo-deny` for dependency audit
 
-### Build & Test
+### Clone and build
 
 ```bash
-cargo build --workspace       # Build all 13 crates
-cargo test --workspace        # Run all tests
-cargo clippy --workspace      # Zero warnings policy
-cargo fmt --all -- --check    # Check formatting
+git clone https://github.com/fboiero/Argentor.git
+cd Argentor
+cargo build --workspace
 ```
 
-## Project Structure
+### Run the test suite
 
-```
-crates/
-  argentor-core/          # Base types (Message, ToolCall, etc.)
-  argentor-security/      # Capability-based security
-  argentor-session/       # Session management
-  argentor-skills/        # Skill trait + WASM runtime
-  argentor-agent/         # AgentRunner (agentic loop)
-  argentor-channels/      # Messaging adapters
-  argentor-gateway/       # HTTP/WebSocket server
-  argentor-builtins/      # Built-in skills
-  argentor-memory/        # Vector memory
-  argentor-mcp/           # MCP client + proxy
-  argentor-orchestrator/  # Multi-agent orchestration
-  argentor-compliance/    # GDPR, ISO, DPGA
-  argentor-cli/           # CLI binary
+```bash
+cargo test --workspace
 ```
 
-## Coding Standards
+Most contributors run this at least once before opening a PR. CI runs it on every push.
 
-### Rust
-- Use `rustfmt` defaults — do not customize formatting
-- Zero `clippy` warnings — CI enforces this
-- Write tests for all new public functions
-- Use `thiserror` for error types, `anyhow` only in the CLI
-- Prefer `async` with `tokio` runtime
+### Run the demo pipeline (no API keys required)
 
-### Security
-- All skills must use capability-based permissions
-- Never allow unbounded resource access
-- Validate inputs at system boundaries
-- Use `argentor_security::Sanitizer` for untrusted content
+```bash
+cargo run --example demo_pipeline
+```
 
-### Tests
-- Unit tests go in the same file (`#[cfg(test)]`)
-- Use `#[tokio::test]` for async tests
-- Name tests descriptively: `test_<what>_<scenario>`
+This exercises the full end-to-end agent loop using the built-in `DemoBackend` — no external API access required. It is the fastest way to sanity-check local changes.
 
-## Pull Request Process
+## Project structure
 
-1. **One PR per feature/fix** — keep PRs focused
-2. **Describe what and why** — not just what changed, but why
-3. **Include tests** — new features must have tests
-4. **Update docs** — if you change public APIs, update documentation
-5. **Pass CI** — all tests, clippy, and fmt checks must pass
+Argentor is a Cargo workspace of focused crates. Each crate has a single clear responsibility — we avoid "kitchen sink" crates.
 
-## Areas Where We Need Help
+| Crate | Responsibility |
+|-------|----------------|
+| `argentor-core` | Base types: `Message`, `ToolCall`, `ToolResult`, error variants |
+| `argentor-security` | `Capability`, `PermissionSet`, `RateLimiter`, `AuditLog`, TLS config |
+| `argentor-session` | `Session`, `FileSessionStore`, persistence contracts |
+| `argentor-skills` | `Skill` trait, `SkillRegistry`, `WasmSkillRuntime` (wasmtime) |
+| `argentor-agent` | `AgentRunner`, `ModelConfig`, agentic loop, streaming |
+| `argentor-channels` | `Channel` trait, adapter scaffolding |
+| `argentor-gateway` | axum WebSocket gateway, `ConnectionManager`, `MessageRouter` |
+| `argentor-builtins` | Built-in skills (echo, time, help, memory_store, memory_search) |
+| `argentor-memory` | `VectorStore`, `FileVectorStore`, `LocalEmbedding` |
+| `argentor-mcp` | MCP client (JSON-RPC 2.0 over stdio), `McpSkill` adapter |
+| `argentor-orchestrator` | Multi-agent engine, `TaskQueue`, `AgentMonitor`, profiles |
+| `argentor-compliance` | GDPR, ISO 27001, ISO 42001, DPGA modules |
+| `argentor-cli` | `argentor` binary (serve, skill list, etc.) |
 
-- Additional channel adapters (Matrix, WhatsApp)
-- MCP server integrations
-- WASM skill examples
-- Documentation translations (especially Spanish)
+If you propose a new crate, include justification in the PR description (why it does not fit in an existing crate).
+
+## Making a change
+
+1. **Open an issue first for non-trivial work.** Bug fixes and tiny docs changes are fine without one, but features, refactors, and API changes should be discussed first so nobody wastes effort on a direction we cannot accept.
+2. **Fork the repo** on GitHub and clone your fork.
+3. **Create a feature branch** off `master`:
+   ```bash
+   git checkout -b feat/skill-validator
+   git checkout -b fix/session-race-condition
+   git checkout -b docs/clarify-capability-model
+   ```
+   Branch naming: `<type>/<short-kebab-case-description>` where `<type>` is `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, or `ci`.
+4. **Make the smallest change that solves the problem.** Unrelated cleanups belong in separate PRs.
+5. **Run the full local gate** before pushing (see [Pull request process](#pull-request-process)).
+6. **Push and open a PR** against `master`.
+
+## Commit conventions
+
+We use [Conventional Commits](https://www.conventionalcommits.org/). Examples:
+
+```
+feat(skills): add wasm module validation at load time
+fix(session): prevent race when two writers flush concurrently
+docs(readme): clarify capability grant syntax
+refactor(agent): extract streaming decoder into its own module
+test(mcp): cover stdio reconnect on upstream crash
+perf(memory): avoid double allocation in embedding lookup
+chore(deps): bump wasmtime to 26
+ci: cache cargo registry between jobs
+```
+
+Rules:
+
+- **Do NOT add `Co-Authored-By` or AI attribution lines.** This is project policy.
+- Keep the subject under 72 characters. Imperative mood ("add", not "added").
+- Use the body for the **why**, not the what — the diff shows the what.
+- Breaking changes: add `!` after the scope and a `BREAKING CHANGE:` footer.
+
+## Testing requirements
+
+**Every change that touches behavior must include a test.** No exceptions for "it's obvious" or "it's tiny."
+
+- **Unit tests** live next to the code in a `#[cfg(test)] mod tests` block.
+- **Integration tests** live in `crates/<crate>/tests/*.rs`.
+- **Async tests** use `#[tokio::test]`.
+- **Property tests** (where useful) use `proptest`.
+- **Name tests descriptively**: `test_<subject>_<scenario>_<expected>` — e.g. `test_rate_limiter_blocks_burst_over_quota`.
+- **Cover the failure path**, not just the happy path. A test that only asserts success on valid input is half a test.
+
+Run the suite locally:
+
+```bash
+cargo test --workspace
+cargo test --workspace --no-default-features     # for crates with optional features
+```
+
+If you add a dependency, also run:
+
+```bash
+cargo deny check        # license + advisory audit (if installed)
+```
+
+## Code style
+
+We enforce zero-warning builds. Before pushing:
+
+```bash
+cargo fmt --all
+cargo fmt --all -- --check                              # CI runs this
+cargo clippy --workspace --all-targets -- -D warnings   # CI runs this
+```
+
+Style rules:
+
+- Use `rustfmt` defaults. Do not customize formatting per-file.
+- `clippy` warnings are treated as errors in CI. Fix them, do not `#[allow]` them unless you add a justification comment.
+- Prefer `&str` over `String` in signatures when you do not need ownership.
+- Prefer iterators over manual loops when the intent is clearer.
+- Avoid `unwrap()` and `expect()` in library code. If a panic is truly unreachable, document **why** in the `expect` message.
+- Public items require rustdoc (see below).
+
+## Documentation requirements
+
+- **Public items** (`pub fn`, `pub struct`, `pub trait`, `pub enum`) require rustdoc comments. Describe what it does, arguments, return value, errors, and at least one example for non-trivial APIs.
+- **Changes to public API** must update `CHANGELOG.md` under the next release.
+- **New features** should include a usage example in the crate's README or the top-level `docs/` directory.
+- **Breaking changes** must document the migration path.
+
+Build docs locally to verify they render:
+
+```bash
+cargo doc --workspace --no-deps --open
+```
+
+## Pull request process
+
+1. **One PR = one logical change.** If you find yourself writing "also" in the description, split the PR.
+2. **Keep PRs small.** Under ~400 lines of diff is ideal. Larger PRs take longer to review and are more likely to be rejected.
+3. **Fill out the PR template completely.** The checklist exists for a reason.
+4. **CI must be green.** All of: `cargo test`, `cargo clippy`, `cargo fmt --check`, and any security/deny jobs.
+5. **Respond to review promptly.** If you cannot address feedback within a reasonable time, leave a comment so reviewers know the status.
+6. **Rebase, do not merge.** Keep history linear. Use `git rebase master` to pull in upstream changes.
+7. **Squash on merge** is the default unless the PR has a genuinely useful multi-commit history.
+
+Expect at least one reviewer. Complex changes may need two. Security-relevant changes require explicit sign-off from the maintainer.
+
+## Where to start
+
+Not sure what to work on? Good options:
+
+- **[`good first issue`](https://github.com/fboiero/Argentor/labels/good%20first%20issue)** — small, well-scoped tasks ideal for new contributors.
+- **[`help wanted`](https://github.com/fboiero/Argentor/labels/help%20wanted)** — tasks we actively want help on.
+- **Documentation** — there is always more to clarify, translate (especially Spanish), or expand. Doc PRs are reviewed quickly.
+- **Examples** — add a new WASM skill example, a new channel adapter sketch, or an end-to-end demo.
+- **Tests** — add coverage for edge cases or regression tests for fixed bugs.
+- **Benchmarks** — we have headroom. If you profile and find a hot spot, a reproducible benchmark is welcome.
+
+Areas where we specifically want help:
+
+- Additional channel adapters (Matrix, WhatsApp, Signal)
+- MCP server integrations and examples
+- WASM skill examples in languages other than Rust (AssemblyScript, Go via TinyGo, etc.)
+- Documentation translations (especially Spanish — this is an Argentinian-led project)
 - Security audits and penetration testing
-- Performance benchmarks
 - DPGA nomination process support
 
-## Reporting Issues
+## Security issues
 
-- Use GitHub Issues
-- Include: steps to reproduce, expected vs actual behavior, Rust version, OS
-- For security vulnerabilities, please email directly instead of opening a public issue
+**Do not open public issues for critical vulnerabilities.** See [SECURITY.md](./SECURITY.md) for the responsible disclosure process.
+
+For low-severity hardening suggestions, use the `[Security]` issue template.
+
+## Maintainer contact
+
+- **Maintainer**: Franco Boiero (`@fboiero`)
+- **Email**: fboiero@xcapit.com
+- **GitHub Discussions**: https://github.com/fboiero/Argentor/discussions
+
+For general questions prefer Discussions over email — it helps the whole community.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the AGPL-3.0-only license.
+By contributing, you agree that your contributions will be licensed under the [AGPL-3.0-only](./LICENSE) license that covers the project.

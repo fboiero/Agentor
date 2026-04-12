@@ -48,6 +48,19 @@ pub enum LlmProvider {
     /// vLLM — OpenAI-compatible API for self-hosted inference.
     #[serde(alias = "vllm")]
     VLlm,
+    /// Fireworks AI — OpenAI-compatible API for open-weights models.
+    Fireworks,
+    /// Hugging Face Inference API — OpenAI-compatible endpoint.
+    #[serde(alias = "hugging_face", alias = "huggingface")]
+    HuggingFace,
+    /// Cohere — native `v2/chat` REST API (not OpenAI-compatible).
+    Cohere,
+    /// AWS Bedrock — SigV4-signed requests. Ships as a stub; real path
+    /// requires the `aws-sdk-bedrock` crate behind an `aws-bedrock` feature.
+    #[serde(alias = "aws_bedrock", alias = "aws-bedrock")]
+    Bedrock,
+    /// Replicate — async prediction polling API.
+    Replicate,
 }
 
 /// Configuration for an LLM model used by the agent.
@@ -98,6 +111,8 @@ impl ModelConfig {
         match self.provider {
             // Local providers — no API key required.
             LlmProvider::ClaudeCode | LlmProvider::Ollama | LlmProvider::VLlm => true,
+            // Bedrock uses AWS credentials from the environment, not api_key.
+            LlmProvider::Bedrock => true,
             _ => !self.api_key.is_empty(),
         }
     }
@@ -148,6 +163,11 @@ impl ModelConfig {
                 LlmProvider::Together => "https://api.together.xyz",
                 LlmProvider::DeepSeek => "https://api.deepseek.com",
                 LlmProvider::VLlm => &VLLM_HOST,
+                LlmProvider::Fireworks => "https://api.fireworks.ai/inference",
+                LlmProvider::HuggingFace => "https://api-inference.huggingface.co",
+                LlmProvider::Cohere => "https://api.cohere.com",
+                LlmProvider::Bedrock => "https://bedrock-runtime.us-east-1.amazonaws.com",
+                LlmProvider::Replicate => "https://api.replicate.com",
             }
         }
     }

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/fboiero/Argentor/tree/master/docs
+    about: Read the docs before opening an issue
+  - name: Discussions
+    url: https://github.com/fboiero/Argentor/discussions
+    about: Ask questions and discuss with the community

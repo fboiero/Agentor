@@ -313,3 +313,22 @@ crates/
 - [TECHNICAL_REPORT.md](./TECHNICAL_REPORT.md) — Architecture deep dive
 - [OpenAPI Spec](http://localhost:8080/openapi.json) — Full API reference (when server is running)
 - [GitHub Issues](https://github.com/fboiero/Argentor/issues) — Report bugs or request features
+
+---
+
+## Next: Tutorials
+
+Ten hands-on tutorials take you from "empty directory" to "production-grade multi-agent system". Each one is self-contained, uses real Argentor APIs, and shows expected output.
+
+- [Tutorial 1: First Agent](./tutorials/01-first-agent.md) — Build your first agent in 5 minutes
+- [Tutorial 2: Using Skills](./tutorials/02-using-skills.md) — Calculator, file reader, web search, capabilities
+- [Tutorial 3: Multi-Agent Orchestration](./tutorials/03-multi-agent-orchestration.md) — Spec/Coder/Tester/Reviewer teams
+- [Tutorial 4: RAG Pipeline](./tutorials/04-rag-pipeline.md) — Vector stores, embeddings, hybrid search
+- [Tutorial 5: Custom Skills](./tutorials/05-custom-skills.md) — `ToolBuilder`, `Skill` trait, WASM plugins
+- [Tutorial 6: Guardrails & Security](./tutorials/06-guardrails-security.md) — PII, prompt injection, sanitization, audit
+- [Tutorial 7: Agent Intelligence](./tutorials/07-agent-intelligence.md) — Thinking, critique, compaction, discovery
+- [Tutorial 8: MCP Integration](./tutorials/08-mcp-integration.md) — Client, server, proxy, credential vault
+- [Tutorial 9: Production Deployment](./tutorials/09-deployment.md) — Docker, Kubernetes, Helm, observability
+- [Tutorial 10: Observability](./tutorials/10-observability.md) — OpenTelemetry, traces, metrics, alerts
+
+See the [tutorials index](./tutorials/README.md) for recommended learning paths.

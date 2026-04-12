@@ -1039,9 +1039,10 @@ fn builtin_entry(cfg: BuiltinEntryConfig<'_>) -> MarketplaceEntry {
     }
 }
 
-/// Returns `MarketplaceEntry` instances for the 30 built-in utility skills.
+/// Returns `MarketplaceEntry` instances for the 36 built-in utility skills.
 ///
-/// Categories used: `data`, `text`, `crypto`, `encoding`, `web`, `search`, `security`, `ai`.
+/// Categories used: `data`, `text`, `crypto`, `encoding`, `web`, `search`,
+/// `security`, `ai`, `document`.
 pub fn builtin_catalog_entries() -> Vec<MarketplaceEntry> {
     vec![
         // -- Data & Text (6) --
@@ -1381,6 +1382,73 @@ pub fn builtin_catalog_entries() -> Vec<MarketplaceEntry> {
             keywords: &["color", "hex", "rgb", "hsl", "contrast", "lighten", "darken", "wcag"],
             rating: 4.3,
             downloads: 6800,
+        }),
+        // -- Document Loaders (6) --
+        builtin_entry(BuiltinEntryConfig {
+            name: "pdf_loader",
+            version: "1.0.0",
+            description: "PDF document loader: extract text, metadata, count pages, extract page range",
+            author: "argentor-team",
+            categories: &["document", "data"],
+            tags: &["pdf", "document", "rag", "loader"],
+            keywords: &["pdf", "extract", "text", "metadata", "pages", "document"],
+            rating: 4.6,
+            downloads: 11000,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "docx_loader",
+            version: "1.0.0",
+            description: "DOCX (Word) document loader: extract text, paragraphs, tables, word count",
+            author: "argentor-team",
+            categories: &["document", "data"],
+            tags: &["docx", "word", "document", "rag"],
+            keywords: &["docx", "word", "paragraphs", "tables", "extract", "text"],
+            rating: 4.5,
+            downloads: 9500,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "html_loader",
+            version: "1.0.0",
+            description: "HTML to text loader: strip tags, extract links, images, metadata (title, description)",
+            author: "argentor-team",
+            categories: &["document", "web"],
+            tags: &["html", "loader", "rag", "document"],
+            keywords: &["html", "strip", "tags", "links", "metadata", "extract"],
+            rating: 4.5,
+            downloads: 10500,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "epub_loader",
+            version: "1.0.0",
+            description: "EPUB ebook loader: extract chapters, text, metadata (title, author, language)",
+            author: "argentor-team",
+            categories: &["document", "data"],
+            tags: &["epub", "ebook", "document", "rag"],
+            keywords: &["epub", "ebook", "chapters", "text", "metadata", "opf"],
+            rating: 4.4,
+            downloads: 7600,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "excel_loader",
+            version: "1.0.0",
+            description: "XLSX spreadsheet loader: list sheets, read sheet, get cell, count rows, CSV/JSON export",
+            author: "argentor-team",
+            categories: &["document", "data"],
+            tags: &["excel", "xlsx", "spreadsheet", "loader"],
+            keywords: &["excel", "xlsx", "sheet", "cell", "csv", "json", "spreadsheet"],
+            rating: 4.6,
+            downloads: 10200,
+        }),
+        builtin_entry(BuiltinEntryConfig {
+            name: "pptx_loader",
+            version: "1.0.0",
+            description: "PowerPoint (PPTX) loader: extract text, slides, count slides, speaker notes",
+            author: "argentor-team",
+            categories: &["document", "data"],
+            tags: &["pptx", "powerpoint", "presentation", "rag"],
+            keywords: &["pptx", "powerpoint", "slides", "text", "speaker", "notes"],
+            rating: 4.4,
+            downloads: 8200,
         }),
     ]
 }
@@ -2421,14 +2489,14 @@ mod tests {
     #[test]
     fn builtin_entries_count() {
         let entries = builtin_catalog_entries();
-        assert_eq!(entries.len(), 30);
+        assert_eq!(entries.len(), 36);
     }
 
     #[test]
     fn builtin_entries_unique_names() {
         let entries = builtin_catalog_entries();
         let names: HashSet<&str> = entries.iter().map(|e| e.manifest.name.as_str()).collect();
-        assert_eq!(names.len(), 30);
+        assert_eq!(names.len(), 36);
     }
 
     #[test]
@@ -2485,7 +2553,7 @@ mod tests {
         for entry in builtin_catalog_entries() {
             catalog.add(entry);
         }
-        assert_eq!(catalog.count(), 30);
+        assert_eq!(catalog.count(), 36);
 
         // Search for "hash"
         let search = MarketplaceSearch {

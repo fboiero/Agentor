@@ -29,6 +29,10 @@ pub mod code_graph;
 pub mod code_planner;
 /// Model and provider configuration.
 pub mod config;
+/// Multimodal message types (text + images) for vision-capable LLMs.
+pub mod multimodal;
+/// Vision-capable LLM backends (Claude, OpenAI, Gemini).
+pub mod vision_backends;
 /// Token-aware context windowing.
 pub mod context;
 /// Automatic system prompt assembly from project context (git, config files, tools).
@@ -146,6 +150,8 @@ pub use code_planner::{
     PlannerConfig, RiskAssessment, TaskType, TestStrategy,
 };
 pub use config::{LlmProvider, ModelConfig};
+pub use multimodal::{ImageInput, MultimodalMessage, VisionBackend, VisionCapability};
+pub use vision_backends::{ClaudeVisionBackend, GeminiVisionBackend, OpenAiVisionBackend};
 pub use context::ContextWindow;
 pub use context_assembly::{AssembledContext, ContextAssembler, GitContext};
 pub use cost_optimizer::{

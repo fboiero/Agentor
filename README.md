@@ -678,6 +678,16 @@ The Helm chart includes templates for Deployment, Service, Ingress, HPA, PVC, an
 
 ---
 
+## What's Next?
+
+- **[10 Step-by-Step Tutorials](docs/tutorials/)** — From empty directory to production-ready multi-agent systems. Covers first agent, skills, orchestration, RAG, custom skills, guardrails, agent intelligence, MCP, deployment, and observability.
+- [Getting Started Guide](docs/GETTING_STARTED.md) — 5-minute quick start (CLI, SDKs, Docker).
+- [Deployment Guide](docs/DEPLOYMENT.md) — Production deployment (Docker, Kubernetes, Helm, multi-region).
+- [Technical Report](docs/TECHNICAL_REPORT.md) — Architecture deep dive.
+- [Comparison](docs/COMPARISON.md) — How Argentor compares to LangChain, CrewAI, AutoGen.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

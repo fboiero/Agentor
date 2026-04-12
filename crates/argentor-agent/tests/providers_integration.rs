@@ -877,3 +877,237 @@ fn custom_base_url_overrides_default() {
     };
     assert_eq!(config.base_url(), "https://custom.api.com");
 }
+
+// ============================================================
+// Newly added providers — OpenAI-compatible (Fireworks, HuggingFace)
+// ============================================================
+
+#[tokio::test]
+async fn fireworks_uses_openai_format() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .and(header("Authorization", "Bearer test-key-123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(openai_text_response()))
+        .mount(&server)
+        .await;
+
+    let config = make_config(LlmProvider::Fireworks, &server.uri());
+    let backend = argentor_agent::backends::openai::OpenAiBackend::new(config);
+    let result = backend
+        .chat(None, &[user_message("Hi")], &[])
+        .await
+        .unwrap();
+    assert!(matches!(result, LlmResponse::Done(_)));
+}
+
+#[tokio::test]
+async fn huggingface_uses_openai_format() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .and(header("Authorization", "Bearer test-key-123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(openai_text_response()))
+        .mount(&server)
+        .await;
+
+    let config = make_config(LlmProvider::HuggingFace, &server.uri());
+    let backend = argentor_agent::backends::openai::OpenAiBackend::new(config);
+    let result = backend
+        .chat(None, &[user_message("Hi")], &[])
+        .await
+        .unwrap();
+    assert!(matches!(result, LlmResponse::Done(_)));
+}
+
+// ============================================================
+// Newly added providers — dispatch through LlmClient
+// ============================================================
+
+#[tokio::test]
+async fn llm_client_dispatches_fireworks_to_openai_backend() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(openai_text_response()))
+        .mount(&server)
+        .await;
+
+    let config = make_config(LlmProvider::Fireworks, &server.uri());
+    let client = argentor_agent::LlmClient::new(config);
+    let result = client.chat(None, &[user_message("Hi")], &[]).await.unwrap();
+    assert!(matches!(result, LlmResponse::Done(_)));
+    assert_eq!(client.provider_name(), "openai");
+}
+
+#[tokio::test]
+async fn llm_client_dispatches_huggingface_to_openai_backend() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(openai_text_response()))
+        .mount(&server)
+        .await;
+
+    let config = make_config(LlmProvider::HuggingFace, &server.uri());
+    let client = argentor_agent::LlmClient::new(config);
+    let result = client.chat(None, &[user_message("Hi")], &[]).await.unwrap();
+    assert!(matches!(result, LlmResponse::Done(_)));
+}
+
+#[tokio::test]
+async fn llm_client_dispatches_cohere_to_cohere_backend() {
+    let config = make_config(LlmProvider::Cohere, "https://api.cohere.com");
+    let client = argentor_agent::LlmClient::new(config);
+    assert_eq!(client.provider_name(), "cohere");
+    // Stub returns Done without hitting HTTP.
+    let result = client.chat(None, &[user_message("Hi")], &[]).await.unwrap();
+    assert!(matches!(result, LlmResponse::Done(_)));
+}
+
+#[tokio::test]
+async fn llm_client_dispatches_bedrock_to_bedrock_backend() {
+    let mut config = make_config(LlmProvider::Bedrock, "https://bedrock-runtime.us-east-1.amazonaws.com");
+    config.api_key = String::new();
+    let client = argentor_agent::LlmClient::new(config);
+    assert_eq!(client.provider_name(), "bedrock");
+    let err = client
+        .chat(None, &[user_message("Hi")], &[])
+        .await
+        .expect_err("bedrock stub must error");
+    assert!(err.to_string().contains("AWS"));
+}
+
+#[tokio::test]
+async fn llm_client_dispatches_replicate_to_replicate_backend() {
+    let mut config = make_config(LlmProvider::Replicate, "https://api.replicate.com");
+    config.model_id = "meta/meta-llama-3-70b-instruct".into();
+    let client = argentor_agent::LlmClient::new(config);
+    assert_eq!(client.provider_name(), "replicate");
+    let result = client.chat(None, &[user_message("Hi")], &[]).await.unwrap();
+    assert!(matches!(result, LlmResponse::Done(_)));
+}
+
+// ============================================================
+// Newly added providers — default base URLs
+// ============================================================
+
+#[test]
+fn new_provider_default_base_urls_correct() {
+    let test_cases = vec![
+        (LlmProvider::Fireworks, "https://api.fireworks.ai/inference"),
+        (
+            LlmProvider::HuggingFace,
+            "https://api-inference.huggingface.co",
+        ),
+        (LlmProvider::Cohere, "https://api.cohere.com"),
+        (
+            LlmProvider::Bedrock,
+            "https://bedrock-runtime.us-east-1.amazonaws.com",
+        ),
+        (LlmProvider::Replicate, "https://api.replicate.com"),
+    ];
+
+    for (provider, expected_url) in test_cases {
+        let config = ModelConfig {
+            provider,
+            model_id: "test".into(),
+            api_key: "key".into(),
+            api_base_url: None,
+            temperature: 0.7,
+            max_tokens: 1024,
+            max_turns: 10,
+            fallback_models: vec![],
+            retry_policy: None,
+        };
+        assert_eq!(
+            config.base_url(),
+            expected_url,
+            "Wrong base URL for {:?}",
+            config.provider
+        );
+    }
+}
+
+#[test]
+fn new_provider_serde_roundtrip() {
+    let providers = vec![
+        "\"fireworks\"",
+        "\"huggingface\"",
+        "\"cohere\"",
+        "\"bedrock\"",
+        "\"replicate\"",
+    ];
+
+    for json_str in &providers {
+        let parsed: LlmProvider = serde_json::from_str(json_str).unwrap();
+        let serialized = serde_json::to_string(&parsed).unwrap();
+        assert_eq!(
+            &serialized, json_str,
+            "Round-trip failed for {json_str} (serialized as {serialized})"
+        );
+    }
+}
+
+#[test]
+fn new_provider_aliases_work() {
+    let hf_underscore: LlmProvider = serde_json::from_str("\"hugging_face\"").unwrap();
+    assert!(matches!(hf_underscore, LlmProvider::HuggingFace));
+
+    let bedrock_underscore: LlmProvider = serde_json::from_str("\"aws_bedrock\"").unwrap();
+    assert!(matches!(bedrock_underscore, LlmProvider::Bedrock));
+
+    let bedrock_dashed: LlmProvider = serde_json::from_str("\"aws-bedrock\"").unwrap();
+    assert!(matches!(bedrock_dashed, LlmProvider::Bedrock));
+}
+
+#[test]
+fn bedrock_is_available_without_api_key() {
+    let config = ModelConfig {
+        provider: LlmProvider::Bedrock,
+        model_id: "anthropic.claude-3-5-sonnet-20240620-v1:0".into(),
+        api_key: String::new(),
+        api_base_url: None,
+        temperature: 0.7,
+        max_tokens: 1024,
+        max_turns: 10,
+        fallback_models: vec![],
+        retry_policy: None,
+    };
+    assert!(
+        config.is_available(),
+        "Bedrock uses AWS credentials, not api_key — should be available"
+    );
+}
+
+#[test]
+fn cohere_requires_api_key_for_availability() {
+    let config = ModelConfig {
+        provider: LlmProvider::Cohere,
+        model_id: "command-r-08-2024".into(),
+        api_key: String::new(),
+        api_base_url: None,
+        temperature: 0.7,
+        max_tokens: 1024,
+        max_turns: 10,
+        fallback_models: vec![],
+        retry_policy: None,
+    };
+    assert!(!config.is_available());
+}
+
+#[test]
+fn replicate_requires_api_key_for_availability() {
+    let config = ModelConfig {
+        provider: LlmProvider::Replicate,
+        model_id: "meta/meta-llama-3-70b-instruct".into(),
+        api_key: String::new(),
+        api_base_url: None,
+        temperature: 0.7,
+        max_tokens: 1024,
+        max_turns: 10,
+        fallback_models: vec![],
+        retry_policy: None,
+    };
+    assert!(!config.is_available());
+}

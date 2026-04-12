@@ -422,6 +422,11 @@ impl ProtocolHandler {
             "together" => LlmProvider::Together,
             "deepseek" => LlmProvider::DeepSeek,
             "vllm" => LlmProvider::VLlm,
+            "fireworks" => LlmProvider::Fireworks,
+            "huggingface" | "hugging_face" | "hf" => LlmProvider::HuggingFace,
+            "cohere" => LlmProvider::Cohere,
+            "bedrock" | "aws_bedrock" | "aws-bedrock" => LlmProvider::Bedrock,
+            "replicate" => LlmProvider::Replicate,
             _ => {
                 return vec![OutboundMessage::Error {
                     message: format!("Unknown provider: {provider}"),

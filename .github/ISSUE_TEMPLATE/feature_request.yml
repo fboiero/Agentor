@@ -1,0 +1,77 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Argentor
+title: "[Feature] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature! The more context you provide, the faster we can evaluate it.
+
+        Before submitting, please search existing issues and discussions to avoid duplicates.
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What problem are you trying to solve? Describe the concrete scenario, not just the abstract idea.
+      placeholder: |
+        As a skill author, I want to ... so that I can ...
+        Currently, I have to ... which is slow / error-prone / impossible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you would like. Include API sketches, CLI flags, or config examples when relevant.
+      placeholder: |
+        Add a new `argentor skill validate <path>` subcommand that ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you evaluate? Why is the proposed solution better?
+      placeholder: |
+        - Approach A: ... (rejected because ...)
+        - Approach B: ... (partial fit, but ...)
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which area of the project does this touch?
+      options:
+        - Core (argentor-core, types)
+        - Security / capabilities
+        - Skills / WASM runtime
+        - Agent runner / orchestrator
+        - MCP integration
+        - Gateway / channels
+        - Memory / vector store
+        - Compliance (GDPR, ISO, DPGA)
+        - CLI / tooling
+        - Documentation
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links, references, prior art, related issues, or anything else that helps evaluate the proposal.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and discussions — this is not a duplicate
+          required: true
+        - label: I am willing to help implement this feature (optional)
+          required: false

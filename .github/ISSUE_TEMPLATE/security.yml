@@ -1,0 +1,84 @@
+name: Security Disclosure (non-critical only)
+description: Report a non-critical security issue. For critical vulnerabilities, use email disclosure — see below.
+title: "[Security] "
+labels: ["security", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **IMPORTANT — Critical vulnerabilities**
+        >
+        > If you have discovered a **critical** security vulnerability (remote code execution, authentication bypass, data exfiltration, sandbox escape, privilege escalation, etc.), **DO NOT** file a public issue.
+        >
+        > Instead, email **fboiero@xcapit.com** directly. See [SECURITY.md](https://github.com/fboiero/Argentor/blob/master/SECURITY.md) for the full disclosure policy, expected response times, and PGP details.
+        >
+        > Use this form only for **low-severity** or already-public security concerns (e.g. hardening suggestions, dependency advisories with available patches, documentation fixes for security guidance).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the security issue. Do NOT include exploit code or proof-of-concept here — email it if needed.
+    validations:
+      required: true
+
+  - type: input
+    id: affected-version
+    attributes:
+      label: Affected version(s)
+      description: Which Argentor version(s) are affected?
+      placeholder: v1.0.0 and earlier
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity assessment
+      description: Your best estimate of the impact. Maintainers will reassess during triage.
+      options:
+        - Low — hardening suggestion, no known exploit path
+        - Informational — documentation or configuration guidance
+        - Medium — limited impact, requires specific conditions
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - Core / types
+        - Security / capabilities
+        - WASM skill runtime / sandbox
+        - Session store
+        - Gateway / WebSocket
+        - MCP client
+        - Memory / vector store
+        - Compliance modules
+        - Dependencies (cargo advisory)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested mitigation
+      description: Any suggested fix, workaround, or reference to upstream patch.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links to CVE, advisory, research, or prior discussion.
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: This is NOT a critical vulnerability — I understand critical issues must be emailed privately to fboiero@xcapit.com
+          required: true
+        - label: I am not including exploit code or proof-of-concept in this public issue
+          required: true
