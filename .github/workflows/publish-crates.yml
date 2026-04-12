@@ -1,0 +1,91 @@
+name: Publish Crates (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (don't actually publish)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish-crates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build echo-skill WASM (needed for tests)
+        run: cargo build --target wasm32-wasip1 --release --manifest-path skills/echo-skill/Cargo.toml
+
+      - name: Publish crates in dependency order
+        run: |
+          CRATES=(
+            argentor-core
+            argentor-security
+            argentor-session
+            argentor-memory
+            argentor-skills
+            argentor-channels
+            argentor-compliance
+            argentor-mcp
+            argentor-builtins
+            argentor-agent
+            argentor-a2a
+            argentor-orchestrator
+            argentor-gateway
+          )
+
+          DRY_RUN="${{ inputs.dry_run }}"
+          PUBLISHED=0
+          SKIPPED=0
+          FAILED=0
+
+          for crate in "${CRATES[@]}"; do
+            echo "========================================="
+            echo "Publishing $crate..."
+            echo "========================================="
+
+            PUBLISH_CMD="cargo publish -p $crate --no-verify"
+            if [ "$DRY_RUN" = "true" ]; then
+              PUBLISH_CMD="cargo publish -p $crate --dry-run"
+            fi
+
+            if ! $PUBLISH_CMD 2>&1 | tee /tmp/publish_output.txt; then
+              if grep -q "already uploaded" /tmp/publish_output.txt; then
+                echo "INFO: $crate already published, skipping."
+                SKIPPED=$((SKIPPED + 1))
+              else
+                echo "ERROR: $crate publish failed!"
+                echo "--- Error output ---"
+                cat /tmp/publish_output.txt
+                echo "--- End error output ---"
+                FAILED=$((FAILED + 1))
+                exit 1
+              fi
+            else
+              echo "SUCCESS: $crate published!"
+              PUBLISHED=$((PUBLISHED + 1))
+            fi
+
+            echo ""
+            sleep 30  # Wait for crates.io index update
+          done
+
+          echo "========================================="
+          echo "SUMMARY"
+          echo "========================================="
+          echo "Published: $PUBLISHED"
+          echo "Skipped (already uploaded): $SKIPPED"
+          echo "Failed: $FAILED"
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
