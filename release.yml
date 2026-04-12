@@ -122,7 +122,15 @@ jobs:
           )
           for crate in "${CRATES[@]}"; do
             echo "Publishing $crate..."
-            cargo publish -p "$crate" --no-verify || echo "WARNING: $crate publish failed or already exists"
+            if ! cargo publish -p "$crate" --no-verify 2>&1 | tee /tmp/publish_output.txt; then
+              if grep -q "already uploaded" /tmp/publish_output.txt; then
+                echo "INFO: $crate already published, skipping."
+              else
+                echo "ERROR: $crate publish failed!"
+                cat /tmp/publish_output.txt
+                exit 1
+              fi
+            fi
             sleep 30  # Wait for crates.io index update
           done
         env:
@@ -163,7 +171,7 @@ jobs:
         run: |
           npm install
           npx tsc
-          npm publish --access public || echo "WARNING: npm publish failed or already exists"
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
