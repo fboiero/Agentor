@@ -1,0 +1,29 @@
+[package]
+name = "argentor-cloud"
+version.workspace = true
+edition.workspace = true
+description = "Managed cloud runtime for Argentor — multi-tenant agent hosting, billing, dashboard"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argentor-core.workspace = true
+argentor-security.workspace = true
+argentor-session.workspace = true
+argentor-skills.workspace = true
+argentor-agent.workspace = true
+argentor-orchestrator.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+thiserror.workspace = true

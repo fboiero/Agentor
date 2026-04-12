@@ -37,6 +37,7 @@ async fn main() {
     all_measurements.extend(scenario_memory_under_load().await);
     all_measurements.extend(scenario_loc_complexity().await);
     all_measurements.extend(scenario_mock_llm_loop().await);
+    all_measurements.extend(scenario_multi_turn_loop().await);
     all_measurements.extend(scenario_ecosystem_gaps().await);
 
     // Final memory check
@@ -524,6 +525,219 @@ async fn scenario_mock_llm_loop() -> Vec<Measurement> {
     println!("  Comparison: AutoAgents 4.97 rps, Rig 4.44 rps, LangChain 4.26 rps (DEV.to 2026)");
 
     vec![m_seq, m_thru]
+}
+
+// ─── Scenario 11: Multi-turn Conversation Latency ──────────────────────────
+async fn scenario_multi_turn_loop() -> Vec<Measurement> {
+    print_header("Scenario 11: Multi-turn (5 turns) — measure context growth penalty");
+
+    use argentor_agent::backends::LlmBackend;
+    use argentor_agent::llm::LlmResponse;
+    use argentor_agent::stream::StreamEvent;
+    use argentor_core::{ArgentorResult, Message};
+    use argentor_skills::SkillDescriptor;
+    use async_trait::async_trait;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tokio::sync::mpsc;
+    use tokio::task::JoinHandle;
+
+    /// Mock backend that tracks turn count and simulates 50ms LLM latency.
+    /// Response content varies per turn so transcript grows realistically.
+    struct MockMultiTurnBackend {
+        turn: AtomicUsize,
+        last_context_size: AtomicUsize,
+    }
+
+    #[async_trait]
+    impl LlmBackend for MockMultiTurnBackend {
+        async fn chat(
+            &self,
+            _system: Option<&str>,
+            messages: &[Message],
+            _tools: &[SkillDescriptor],
+        ) -> ArgentorResult<LlmResponse> {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            let msgs = messages.len();
+            self.last_context_size.store(msgs, Ordering::SeqCst);
+            let turn = self.turn.fetch_add(1, Ordering::SeqCst);
+            // Return a variable-length response so context grows more than just +2 msgs/turn
+            Ok(LlmResponse::Done(format!(
+                "Turn {turn} reply: observed {msgs} messages in context. \
+                 Continuing the conversation with additional reasoning tokens \
+                 so that the transcript grows at a realistic rate per turn."
+            )))
+        }
+        async fn chat_stream(
+            &self,
+            _: Option<&str>,
+            _: &[Message],
+            _: &[SkillDescriptor],
+        ) -> ArgentorResult<(mpsc::Receiver<StreamEvent>, JoinHandle<ArgentorResult<LlmResponse>>)> {
+            let (_tx, rx) = mpsc::channel(1);
+            let handle = tokio::spawn(async { Ok(LlmResponse::Done("stub".to_string())) });
+            Ok((rx, handle))
+        }
+        fn provider_name(&self) -> &str {
+            "mock-multi-turn"
+        }
+    }
+
+    let mut registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&mut registry);
+    let registry = Arc::new(registry);
+    let permissions = PermissionSet::new();
+    let audit = Arc::new(AuditLog::new(std::path::PathBuf::from(
+        "/tmp/argentor-bench-audit",
+    )));
+
+    let backend = MockMultiTurnBackend {
+        turn: AtomicUsize::new(0),
+        last_context_size: AtomicUsize::new(0),
+    };
+
+    let runner = argentor_agent::AgentRunner::from_backend(
+        Box::new(backend),
+        registry,
+        permissions,
+        audit,
+        10,
+    );
+
+    // User messages for 5 distinct turns — each grows the session transcript.
+    let prompts = [
+        "Hello, can you introduce yourself and your capabilities?",
+        "Great, now tell me about the Argentor framework architecture.",
+        "Can you compare that to other agent frameworks like LangChain?",
+        "What are the main security guarantees provided by WASM sandboxing?",
+        "Finally, summarize everything we've discussed so far in one paragraph.",
+    ];
+
+    const TURNS: usize = 5;
+    let mut session = argentor_session::Session::new();
+    let mut per_turn_latencies_ms: [f64; TURNS] = [0.0; TURNS];
+    let mut per_turn_context_msgs: [usize; TURNS] = [0; TURNS];
+
+    let mem_before_kb = memory::current_rss_kb();
+    let total_start = Instant::now();
+
+    for (i, prompt) in prompts.iter().enumerate() {
+        let turn_start = Instant::now();
+        let _ = runner.run(&mut session, prompt).await;
+        let elapsed = turn_start.elapsed();
+        per_turn_latencies_ms[i] = elapsed.as_secs_f64() * 1000.0;
+        per_turn_context_msgs[i] = session.message_count();
+    }
+
+    let total_duration = total_start.elapsed();
+    let mem_after_kb = memory::current_rss_kb();
+    let mem_delta_kb = mem_after_kb.saturating_sub(mem_before_kb);
+
+    // Per-turn degradation: turn 5 vs turn 1 percentage overhead.
+    let turn1 = per_turn_latencies_ms[0];
+    let turn5 = per_turn_latencies_ms[TURNS - 1];
+    let overhead_pct = if turn1 > 0.0 {
+        ((turn5 - turn1) / turn1) * 100.0
+    } else {
+        0.0
+    };
+
+    // Context growth: messages added per turn on average.
+    let context_growth_per_turn = if TURNS > 0 {
+        per_turn_context_msgs[TURNS - 1] as f64 / TURNS as f64
+    } else {
+        0.0
+    };
+
+    let mut measurements = Vec::new();
+
+    let make_single_measure =
+        |metric: &str, value: f64, unit: &str| -> Measurement {
+            Measurement {
+                scenario: "multi_turn_loop".into(),
+                metric: metric.to_string(),
+                value,
+                unit: unit.to_string(),
+                samples: 1,
+                min: value,
+                max: value,
+                p50: value,
+                p95: value,
+                p99: value,
+            }
+        };
+
+    for (i, lat) in per_turn_latencies_ms.iter().enumerate() {
+        let metric = format!("turn_{}_latency_ms", i + 1);
+        let m = make_single_measure(&metric, *lat, "ms");
+        println!(
+            "  {:<35} {:>10.3} ms (context: {} messages)",
+            m.metric,
+            m.value,
+            per_turn_context_msgs[i]
+        );
+        measurements.push(m);
+    }
+
+    let m_over = make_single_measure("turn_5_vs_turn_1_overhead_pct", overhead_pct, "%");
+    println!(
+        "  {:<35} {:>10.3} % (turn 1: {:.3}ms, turn 5: {:.3}ms)",
+        m_over.metric, m_over.value, turn1, turn5
+    );
+    measurements.push(m_over);
+
+    let m_total = make_single_measure(
+        "total_5_turn_duration_ms",
+        total_duration.as_secs_f64() * 1000.0,
+        "ms",
+    );
+    println!(
+        "  {:<35} {:>10.3} ms (5 turns end-to-end)",
+        m_total.metric, m_total.value
+    );
+    measurements.push(m_total);
+
+    let m_ctx = make_single_measure(
+        "context_growth_per_turn_msgs",
+        context_growth_per_turn,
+        "msgs/turn",
+    );
+    println!(
+        "  {:<35} {:>10.2} msgs/turn (final context: {} messages)",
+        m_ctx.metric,
+        m_ctx.value,
+        per_turn_context_msgs[TURNS - 1]
+    );
+    measurements.push(m_ctx);
+
+    let m_mem = make_single_measure(
+        "memory_growth_5_turns_kb",
+        mem_delta_kb as f64,
+        "KB",
+    );
+    println!(
+        "  {:<35} {:>10.0} KB (RSS {} → {} KB)",
+        m_mem.metric, m_mem.value, mem_before_kb, mem_after_kb
+    );
+    measurements.push(m_mem);
+
+    // Framework overhead per turn = turn latency - 50ms mock LLM sleep.
+    let per_turn_overhead_ms: Vec<f64> = per_turn_latencies_ms
+        .iter()
+        .map(|lat| (lat - 50.0).max(0.0))
+        .collect();
+    let avg_overhead: f64 =
+        per_turn_overhead_ms.iter().sum::<f64>() / per_turn_overhead_ms.len() as f64;
+    let m_fw = make_single_measure("avg_framework_overhead_per_turn_ms", avg_overhead, "ms");
+    println!(
+        "  {:<35} {:>10.3} ms (after subtracting 50ms mock LLM sleep)",
+        m_fw.metric, m_fw.value
+    );
+    measurements.push(m_fw);
+
+    println!("  Comparison: LangChain framework overhead reported ~250ms/turn (Speakeasy 2026)");
+    println!("  Expected: framework overhead <5ms/turn even at turn 5 with growing context");
+
+    measurements
 }
 
 // ─── Scenario 8: LOC Complexity ─────────────────────────────────────────────

@@ -1,0 +1,33 @@
+[package]
+name = "argentor-tee"
+version.workspace = true
+edition.workspace = true
+description = "Trusted Execution Environment (TEE) integration for Argentor — AWS Nitro, Intel SGX, AMD SEV"
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+homepage.workspace = true
+keywords = ["tee", "sgx", "nitro", "confidential-computing", "security"]
+categories = ["cryptography", "hardware-support"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+aws-nitro = []
+intel-sgx = []
+amd-sev = []
+all-tee = ["aws-nitro", "intel-sgx", "amd-sev"]
+
+[dependencies]
+argentor-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+async-trait.workspace = true
+sha2.workspace = true
+hex.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

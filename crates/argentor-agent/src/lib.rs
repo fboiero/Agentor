@@ -33,6 +33,10 @@ pub mod config;
 pub mod multimodal;
 /// Vision-capable LLM backends (Claude, OpenAI, Gemini).
 pub mod vision_backends;
+/// Voice (STT/TTS) types and traits.
+pub mod voice;
+/// Voice backends (Whisper, Deepgram, OpenAI TTS, ElevenLabs).
+pub mod voice_backends;
 /// Token-aware context windowing.
 pub mod context;
 /// Automatic system prompt assembly from project context (git, config files, tools).
@@ -152,6 +156,13 @@ pub use code_planner::{
 pub use config::{LlmProvider, ModelConfig};
 pub use multimodal::{ImageInput, MultimodalMessage, VisionBackend, VisionCapability};
 pub use vision_backends::{ClaudeVisionBackend, GeminiVisionBackend, OpenAiVisionBackend};
+pub use voice::{
+    AudioFormat, AudioInput, SttBackend, TranscriptSegment, TranscriptionRequest,
+    TranscriptionResult, TtsBackend, VoiceConfig,
+};
+pub use voice_backends::{
+    DeepgramSttBackend, ElevenLabsTtsBackend, OpenAiTtsBackend, OpenAiWhisperBackend,
+};
 pub use context::ContextWindow;
 pub use context_assembly::{AssembledContext, ContextAssembler, GitContext};
 pub use cost_optimizer::{
