@@ -15,6 +15,7 @@ members = [
     "crates/argentor-orchestrator",
     "crates/argentor-compliance",
     "crates/argentor-a2a",
+    "experiments/comparison",
 ]
 exclude = [
     "skills/*",

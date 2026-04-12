@@ -315,7 +315,8 @@ fn evaluate_rule(rule: &GuardrailRule, text: &str, is_output: bool) -> Vec<Viola
 
 // -- PII -------------------------------------------------------------------
 
-/// Compiled PII regexes (created once per call; Regex::new is cheap for these patterns).
+/// Compiled PII regexes — initialized ONCE via OnceLock (singleton).
+/// This is critical for performance: Regex::new is expensive (~100µs each).
 struct PiiPatterns {
     email: Regex,
     phone: Regex,
@@ -323,15 +324,19 @@ struct PiiPatterns {
     credit_card: Regex,
 }
 
-fn pii_patterns() -> PiiPatterns {
-    // Safety: all patterns below are static string literals — compilation is infallible.
-    #[allow(clippy::unwrap_used)]
-    PiiPatterns {
-        email: Regex::new(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").unwrap(),
-        phone: Regex::new(r"\b(\+?1[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b").unwrap(),
-        ssn: Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap(),
-        credit_card: Regex::new(r"\b(?:\d[ -]*?){13,19}\b").unwrap(),
-    }
+static PII_PATTERNS: std::sync::OnceLock<PiiPatterns> = std::sync::OnceLock::new();
+
+fn pii_patterns() -> &'static PiiPatterns {
+    PII_PATTERNS.get_or_init(|| {
+        // Safety: all patterns below are static string literals — compilation is infallible.
+        #[allow(clippy::unwrap_used)]
+        PiiPatterns {
+            email: Regex::new(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").unwrap(),
+            phone: Regex::new(r"\b(\+?1[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b").unwrap(),
+            ssn: Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap(),
+            credit_card: Regex::new(r"\b(?:\d[ -]*?){13,19}\b").unwrap(),
+        }
+    })
 }
 
 fn check_pii(rule: &GuardrailRule, text: &str) -> Vec<Violation> {

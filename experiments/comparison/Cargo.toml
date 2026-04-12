@@ -1,0 +1,20 @@
+[package]
+name = "argentor-comparison"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Competitive comparison experiment suite for Argentor"
+
+[dependencies]
+argentor-core = { path = "../../crates/argentor-core" }
+argentor-security = { path = "../../crates/argentor-security" }
+argentor-session = { path = "../../crates/argentor-session" }
+argentor-skills = { path = "../../crates/argentor-skills" }
+argentor-agent = { path = "../../crates/argentor-agent" }
+argentor-builtins = { path = "../../crates/argentor-builtins" }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+sysinfo = "0.32"
+async-trait = "0.1"
