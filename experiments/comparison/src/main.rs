@@ -37,6 +37,7 @@ async fn main() {
     all_measurements.extend(scenario_memory_under_load().await);
     all_measurements.extend(scenario_loc_complexity().await);
     all_measurements.extend(scenario_mock_llm_loop().await);
+    all_measurements.extend(scenario_ecosystem_gaps().await);
 
     // Final memory check
     let final_memory_kb = memory::current_rss_kb();
@@ -350,6 +351,58 @@ async fn scenario_memory_under_load() -> Vec<Measurement> {
     println!("  Comparison: Rust frameworks peak ~1GB, Python frameworks peak ~5GB (DEV.to 2026)");
     let _ = sessions; // keep alive
     vec![m]
+}
+
+// ─── Scenario 10: Ecosystem Gaps (where we LOSE honestly) ──────────────────
+async fn scenario_ecosystem_gaps() -> Vec<Measurement> {
+    print_header("Scenario 10: Honest Gaps vs Competitors (where we LOSE)");
+
+    let mut registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&mut registry);
+    let argentor_skills = registry.list_descriptors().len();
+    let argentor_llm_providers = 14; // From config.rs LlmProvider enum
+    let argentor_vector_stores = 1; // LocalEmbedding only
+
+    // These are HONEST measurements showing where we're behind
+    let gaps = vec![
+        ("ecosystem_gaps", "skills_count", argentor_skills as f64, "skills",
+         "LangChain 500+, CrewAI 100+ — we have 50"),
+        ("ecosystem_gaps", "llm_providers", argentor_llm_providers as f64, "providers",
+         "LangChain 100+, OpenRouter 300+ — we have 14"),
+        ("ecosystem_gaps", "vector_stores", argentor_vector_stores as f64, "stores",
+         "LangChain 200+ — we have 1 (local FNV embedding)"),
+        ("ecosystem_gaps", "github_stars", 0.0, "stars",
+         "LangChain 118K, CrewAI 45.9K, IronClaw 11.6K — we have 0"),
+        ("ecosystem_gaps", "pypi_downloads", 0.0, "downloads",
+         "LangChain 47M — we have 0 (not yet published)"),
+        ("ecosystem_gaps", "production_executions", 0.0, "executions",
+         "CrewAI 2 BILLION (12M/day) — we have 0"),
+        ("ecosystem_gaps", "fortune_500_customers", 0.0, "customers",
+         "CrewAI: PepsiCo, J&J, PwC, DoD, etc. — we have 0"),
+    ];
+
+    let mut measurements = Vec::new();
+    for (scenario, metric, value, unit, comparison) in gaps {
+        let m = Measurement {
+            scenario: scenario.to_string(),
+            metric: metric.to_string(),
+            value,
+            unit: unit.to_string(),
+            samples: 1,
+            min: value,
+            max: value,
+            p50: value,
+            p95: value,
+            p99: value,
+        };
+        println!(
+            "  {:<35} {:>10.0} {} ⚠️ {}",
+            metric, value, unit, comparison
+        );
+        measurements.push(m);
+    }
+
+    measurements
 }
 
 // ─── Scenario 9: Mock LLM Loop (apples-to-apples vs Python frameworks) ─────
