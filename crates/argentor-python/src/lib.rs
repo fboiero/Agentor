@@ -10,6 +10,18 @@ use pyo3::prelude::*;
 use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
+// Sub-modules: dynamic Python tool loading + LangChain shim
+// ---------------------------------------------------------------------------
+
+pub mod dynamic_load;
+pub mod langchain_compat;
+
+pub use dynamic_load::{
+    discover_python_tools, load_langchain_tool, PythonToolConfig, PythonToolSkill,
+};
+pub use langchain_compat::{LangChainAdapter, LangChainCategory};
+
+// ---------------------------------------------------------------------------
 // PyMessage
 // ---------------------------------------------------------------------------
 

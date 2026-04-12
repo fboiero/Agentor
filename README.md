@@ -612,6 +612,8 @@ Argentor targets all 9 DPGA indicators:
 
 Argentor implements [Model Context Protocol](https://modelcontextprotocol.io/) for tool integration.
 
+**5,800+ pre-built integrations** via MCP — see [docs/MCP_REGISTRY.md](docs/MCP_REGISTRY.md) for the top 100 servers (filesystem, GitHub, Postgres, Slack, AWS, Stripe, Grafana, and more) and [docs/MCP_INTEGRATION_GUIDE.md](docs/MCP_INTEGRATION_GUIDE.md) for the end-to-end integration playbook.
+
 ### Client Mode
 
 Connect to external MCP servers:

@@ -47,6 +47,41 @@ Add `argentor-mcp` to your project:
 argentor-mcp = { git = "https://github.com/fboiero/Agentor", branch = "master" }
 ```
 
+### Connecting to public MCP servers
+
+The public MCP ecosystem has **5,800+ servers** covering filesystems, databases, cloud APIs, developer tools, and SaaS products. See [docs/MCP_REGISTRY.md](../MCP_REGISTRY.md) for a curated catalog of the top 100 across 10 categories, or the full integration flow in [docs/MCP_INTEGRATION_GUIDE.md](../MCP_INTEGRATION_GUIDE.md).
+
+Three quick examples:
+
+**Filesystem** — read, write, and search files in a directory:
+
+```toml
+[mcp.servers.filesystem]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+```
+
+**GitHub** — issues, PRs, repos, Actions, code search:
+
+```toml
+[mcp.servers.github]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
+env = { GITHUB_PERSONAL_ACCESS_TOKEN = "${GITHUB_TOKEN}" }
+```
+
+**Postgres** — read-only queries with schema introspection:
+
+```toml
+[mcp.servers.postgres]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL}"]
+```
+
+With these three entries added to `argentor.toml`, your agent gets filesystem, GitHub, and Postgres access with no additional Rust code.
+
+### Connect programmatically
+
 Connect to the reference filesystem server:
 
 ```rust

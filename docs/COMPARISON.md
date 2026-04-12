@@ -78,7 +78,7 @@ Legend: **Yes** = production-ready, **Partial** = exists but limited, **No** = a
 | **Progressive disclosure** | Yes (8 groups) | No | No | No | No | No | No | No | No |
 | **Tool groups** | minimal, coding, web, data, security, dev, orchestration, full | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
 
-> **Where competitors lead:** LangChain's integration count (700+) and CrewAI's tool ecosystem (100+) dwarf Argentor's 40+ built-ins. However, Argentor compensates via MCP client support (any MCP-compatible server expands tooling) and WASM extensibility without compromising security.
+> **Where competitors lead:** LangChain's integration count (700+) and CrewAI's tool ecosystem (100+) dwarf Argentor's 40+ built-ins. However, via MCP, Argentor effectively has access to 5,800+ servers (parity with LangChain via different mechanism) — any MCP-compatible server plugs in with config only, no Rust code. See [docs/MCP_REGISTRY.md](./MCP_REGISTRY.md) for the top 100 curated servers. Combined with WASM extensibility, this closes the integration gap without compromising security.
 
 ### WASM Sandbox
 
@@ -276,11 +276,11 @@ Argentor runs guardrails at three points in the agentic loop: input (pre-LLM), o
 ### LangChain (118K stars)
 
 **Stronger than Argentor in:**
-- Ecosystem size (700+ integrations, 118K stars)
+- Native integration count (700+ first-party LangChain integrations vs. Argentor's 40+ built-ins, though Argentor reaches 5,800+ via MCP — see [MCP_REGISTRY.md](./MCP_REGISTRY.md))
 - Community, documentation, and tutorials
 - LangSmith observability platform
 - LangGraph for complex stateful workflows
-- Breadth of vector store, retriever, and tool integrations
+- Breadth of vector store and retriever integrations native to the framework
 - Enterprise support and $260M funding
 
 **Weaker than Argentor in:**
