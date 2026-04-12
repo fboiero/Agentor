@@ -11,7 +11,7 @@
 | **Different audience** | Python/LangChain developers, not Rust |
 | **Independent releases** | PyPI cadence (Python releases) vs crates.io (Rust) |
 | **Lighter Argentor repo** | Don't pull Python deps into the main Rust project |
-| **Different licensing option** | Could be MIT (more permissive) for wider adoption |
+| **Consistent licensing** | Same AGPL-3.0-only as main Argentor project |
 
 ## Step 1 — Create the GitHub repository
 
@@ -19,7 +19,7 @@
 gh repo create fboiero/argentor-langchain-bridge \
   --public \
   --description "MCP server that exposes LangChain tools to Argentor and any MCP-compatible client" \
-  --license mit
+  --license agpl-3.0
 ```
 
 ## Step 2 — Clone and scaffold
@@ -74,13 +74,13 @@ name = "argentor-langchain-bridge"
 version = "0.1.0"
 description = "MCP server exposing LangChain tools to Argentor and MCP-compatible clients"
 authors = [{name = "Argentor Contributors"}]
-license = "MIT"
+license = "AGPL-3.0-only"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
