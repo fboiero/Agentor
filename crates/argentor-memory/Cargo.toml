@@ -16,6 +16,7 @@ workspace = true
 [features]
 default = []
 http-embeddings = ["reqwest"]
+http-vectorstore = ["reqwest"]
 
 [dependencies]
 argentor-core.workspace = true

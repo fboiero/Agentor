@@ -26,12 +26,20 @@ pub mod embeddings_providers;
 pub mod hybrid;
 /// Knowledge graph for entity-relationship-based memory.
 pub mod knowledge_graph;
+/// pgvector (PostgreSQL extension) vector store adapter.
+pub mod pgvector;
+/// Pinecone vector store adapter.
+pub mod pinecone;
+/// Qdrant vector store adapter.
+pub mod qdrant;
 /// Query expansion for improved recall.
 pub mod query_expansion;
 /// Retrieval-Augmented Generation pipeline.
 pub mod rag;
 /// Vector store trait and file-backed implementation.
 pub mod store;
+/// Weaviate vector store adapter.
+pub mod weaviate;
 
 pub use bm25::Bm25Index;
 pub use conversation::{
@@ -48,8 +56,12 @@ pub use hybrid::HybridSearcher;
 pub use knowledge_graph::{
     Entity, EntityType, GraphSummary, KnowledgeGraph, RelationType, Relationship,
 };
+pub use pgvector::PgVectorStore;
+pub use pinecone::PineconeStore;
+pub use qdrant::QdrantStore;
 pub use query_expansion::{QueryExpander, RuleBasedExpander};
 pub use rag::{
     ChunkingStrategy, Document, DocumentChunk, RagConfig, RagPipeline, RagResult, ScoredChunk,
 };
 pub use store::{FileVectorStore, InMemoryVectorStore, MemoryEntry, SearchResult, VectorStore};
+pub use weaviate::WeaviateStore;
