@@ -380,7 +380,7 @@ args = ["wikipedia-mcp"]
 | cohere-mcp | Community | Cohere rerank and embed | API key |
 | anthropic-mcp | Community | Anthropic Claude via MCP (bridge) | API key |
 | gemini-mcp | Community | Google Gemini API | API key |
-| langchain-bridge | Community | Expose LangChain tools as MCP | None |
+| argentor-langchain-bridge | [fboiero/argentor-langchain-bridge](https://github.com/fboiero/argentor-langchain-bridge) | Expose LangChain's 1,000+ tools as MCP (official bridge) | None (per-tool) |
 | llamaindex-bridge | Community | Expose LlamaIndex retrievers as MCP | None |
 
 ```toml
