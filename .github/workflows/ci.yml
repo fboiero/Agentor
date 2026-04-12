@@ -121,6 +121,33 @@ jobs:
           path: target/criterion/
           retention-days: 30
 
+  comparison-experiment:
+    name: Comparison Experiment
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-comparison-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-comparison-
+      - name: Run comparison experiment
+        run: |
+          cargo run -p argentor-comparison --release --quiet 2>/dev/null | \
+            awk '/^\[/{flag=1} flag{print}' > experiment_results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comparison-experiment-results
+          path: experiment_results.json
+          retention-days: 90
+
   sdk-python:
     name: Python SDK
     runs-on: ubuntu-latest
