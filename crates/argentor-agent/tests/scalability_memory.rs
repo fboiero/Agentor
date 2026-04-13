@@ -153,7 +153,7 @@ async fn test_memory_stable_after_1000_agent_runs() {
 /// keep this test focused on the drop semantics rather than RSS bytes.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_memory_freed_after_dropping_registry() {
-    let mut registry = SkillRegistry::new();
+    let registry = SkillRegistry::new();
     for _ in 0..50 {
         registry.register(Arc::new(CalculatorSkill::new()));
     }
@@ -222,12 +222,9 @@ async fn test_response_cache_respects_capacity() {
 }
 
 /// Append 100K audit entries — file size must remain bounded relative to the
-/// volume sent. NOTE: `AuditLog` does NOT currently implement rotation; this
-/// test asserts that the writer accepts the load without panicking and the
-/// resulting file is finite. Marking #[ignore] because the per-entry file
-/// task spawn pattern is slow under high volume on CI.
+/// volume sent. Tests that `AuditLog` with rotation handles high volume
+/// correctly with buffering and batch flushing.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[ignore = "audit log spawns a tokio task per write, so 100K entries take >30s on CI; rotation is not yet implemented"]
 async fn test_audit_log_rotation_under_volume() {
     let dir = tempfile::tempdir().unwrap();
     let log = AuditLog::new(dir.path().to_path_buf());
@@ -241,7 +238,13 @@ async fn test_audit_log_rotation_under_volume() {
             details: serde_json::json!({"i": i}),
             outcome: AuditOutcome::Success,
         };
-        log.log(entry);
+        log.log_action(
+            entry.session_id,
+            entry.action,
+            entry.skill_name,
+            entry.details,
+            entry.outcome,
+        );
     }
 
     // Allow the background writer time to drain.

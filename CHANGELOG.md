@@ -8,6 +8,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **AuditLog rotation refactor**: Single writer task with `mpsc::UnboundedSender`,
+  file rotation at max_file_size (100 MB default), batch flushing (100 ms default),
+  max_files cap (10). Public API unchanged. Closes #11.
+
 ---
 
 ## [1.1.0] - 2026-04-12
