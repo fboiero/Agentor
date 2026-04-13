@@ -8,6 +8,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **LearningEngine interior mutability refactor**: `LearningEngine` now uses
+  `Arc<RwLock<LearningState>>` for interior mutability, allowing all public methods
+  to take `&self` instead of `&mut self`. New dep: `parking_lot`. Closes #9.
+
 ---
 
 ## [1.1.0] - 2026-04-12
