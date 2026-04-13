@@ -70,7 +70,6 @@ fn test_blocks_absolute_outside_sandbox() {
 /// PermissionSet would be vulnerable. Documented as accepted: skills MUST
 /// canonicalize before calling check_file_read.
 #[test]
-#[ignore = "SECURITY-TODO: PermissionSet does not URL-decode — skills must canonicalize first"]
 fn test_blocks_url_encoded_traversal() {
     let perms = perms_with_tmp();
     let encoded = "/tmp/%2e%2e/%2e%2e/etc/passwd";
@@ -84,7 +83,6 @@ fn test_blocks_url_encoded_traversal() {
 ///
 /// KNOWN GAP: same as URL encoding — relies on caller canonicalization.
 #[test]
-#[ignore = "SECURITY-TODO: Unicode/UTF-8 overlong sequences not normalized — known gap"]
 fn test_blocks_unicode_encoded_traversal() {
     let perms = perms_with_tmp();
     let attack = "/tmp/%c0%ae%c0%ae%c0%afetc/passwd";
@@ -108,7 +106,6 @@ fn test_blocks_unicode_encoded_traversal() {
 /// missing here. Tracked as SECURITY-TODO; needs explicit NUL rejection
 /// in `check_file_read*`.
 #[test]
-#[ignore = "SECURITY-TODO: PermissionSet does not reject NUL bytes; relies on OS for last-line defence"]
 fn test_blocks_null_byte_injection() {
     let perms = perms_with_tmp();
     let attack = "/tmp/safe.txt\x00../../etc/passwd";
