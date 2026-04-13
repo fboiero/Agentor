@@ -120,16 +120,51 @@ jobs:
             argentor-orchestrator
             argentor-gateway
           )
+          MAX_RETRIES=3
           for crate in "${CRATES[@]}"; do
+            echo "========================================="
             echo "Publishing $crate..."
-            if ! cargo publish -p "$crate" --no-verify 2>&1 | tee /tmp/publish_output.txt; then
-              if grep -q "already uploaded" /tmp/publish_output.txt; then
-                echo "INFO: $crate already published, skipping."
+            echo "========================================="
+            RETRY=0
+            SUCCESS=false
+            while [ $RETRY -lt $MAX_RETRIES ]; do
+              if cargo publish -p "$crate" --no-verify 2>&1 | tee /tmp/publish_output.txt; then
+                echo "SUCCESS: $crate published!"
+                SUCCESS=true
+                break
               else
-                echo "ERROR: $crate publish failed!"
-                cat /tmp/publish_output.txt
-                exit 1
+                if grep -q "already uploaded\|already exists" /tmp/publish_output.txt; then
+                  echo "INFO: $crate already published, skipping."
+                  SUCCESS=true
+                  break
+                elif grep -q "429\|Too Many Requests\|rate.limit" /tmp/publish_output.txt; then
+                  RETRY=$((RETRY + 1))
+                  WAIT_UNTIL=$(grep -oP 'try again after \K[^"]+' /tmp/publish_output.txt || echo "")
+                  if [ -n "$WAIT_UNTIL" ]; then
+                    echo "RATE LIMITED: Waiting until $WAIT_UNTIL (retry $RETRY/$MAX_RETRIES)"
+                    TARGET_EPOCH=$(date -d "$WAIT_UNTIL" +%s 2>/dev/null || echo "0")
+                    NOW_EPOCH=$(date +%s)
+                    if [ "$TARGET_EPOCH" -gt "$NOW_EPOCH" ]; then
+                      WAIT_SECS=$(( TARGET_EPOCH - NOW_EPOCH + 10 ))
+                      echo "Sleeping ${WAIT_SECS}s..."
+                      sleep "$WAIT_SECS"
+                    else
+                      sleep 120
+                    fi
+                  else
+                    echo "RATE LIMITED: Waiting 120s (retry $RETRY/$MAX_RETRIES)..."
+                    sleep 120
+                  fi
+                else
+                  echo "ERROR: $crate publish failed!"
+                  cat /tmp/publish_output.txt
+                  exit 1
+                fi
               fi
+            done
+            if [ "$SUCCESS" = "false" ]; then
+              echo "ERROR: $crate failed after $MAX_RETRIES retries!"
+              exit 1
             fi
             sleep 30  # Wait for crates.io index update
           done
