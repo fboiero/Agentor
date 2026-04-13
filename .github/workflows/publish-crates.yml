@@ -67,10 +67,13 @@ jobs:
             SUCCESS=false
             while [ $RETRY -lt $MAX_RETRIES ]; do
               # Run cargo publish and capture exit code properly.
-              # Using a pipeline with tee masks the real exit code even with pipefail
-              # in some GHA shell configurations, so we redirect to a file and check $?.
+              # Using a pipeline with tee masks the real exit code; and with `set -e`
+              # a failing command terminates the script before $? can be captured.
+              # Solution: disable -e temporarily, capture exit code, re-enable.
+              set +e
               $PUBLISH_CMD > /tmp/publish_output.txt 2>&1
               PUBLISH_EXIT=$?
+              set -e
               cat /tmp/publish_output.txt
               if [ $PUBLISH_EXIT -eq 0 ]; then
                 echo "SUCCESS: $crate published!"

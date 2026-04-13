@@ -130,9 +130,12 @@ jobs:
             RETRY=0
             SUCCESS=false
             while [ $RETRY -lt $MAX_RETRIES ]; do
-              # Capture exit code reliably — pipe-to-tee masks cargo's exit code in some GHA shells
+              # Capture exit code reliably — pipe-to-tee masks cargo's exit code;
+              # also disable set -e so a non-zero cargo exit doesn't abort the script.
+              set +e
               cargo publish -p "$crate" --no-verify > /tmp/publish_output.txt 2>&1
               PUBLISH_EXIT=$?
+              set -e
               cat /tmp/publish_output.txt
               if [ $PUBLISH_EXIT -eq 0 ]; then
                 echo "SUCCESS: $crate published!"
