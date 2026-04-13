@@ -66,7 +66,13 @@ jobs:
             RETRY=0
             SUCCESS=false
             while [ $RETRY -lt $MAX_RETRIES ]; do
-              if $PUBLISH_CMD 2>&1 | tee /tmp/publish_output.txt; then
+              # Run cargo publish and capture exit code properly.
+              # Using a pipeline with tee masks the real exit code even with pipefail
+              # in some GHA shell configurations, so we redirect to a file and check $?.
+              $PUBLISH_CMD > /tmp/publish_output.txt 2>&1
+              PUBLISH_EXIT=$?
+              cat /tmp/publish_output.txt
+              if [ $PUBLISH_EXIT -eq 0 ]; then
                 echo "SUCCESS: $crate published!"
                 PUBLISHED=$((PUBLISHED + 1))
                 SUCCESS=true
