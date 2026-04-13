@@ -50,3 +50,5 @@ tempfile = "3"
 argentor-builtins.workspace = true
 argentor-a2a.workspace = true
 async-trait.workspace = true
+sysinfo = "0.32"
+tower = { version = "0.5", features = ["full"] }

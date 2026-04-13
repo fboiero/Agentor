@@ -40,3 +40,4 @@ argentor-builtins.workspace = true
 toml.workspace = true
 uuid.workspace = true
 wiremock.workspace = true
+sysinfo = "0.32"
