@@ -152,11 +152,22 @@ pub struct DebugRecorder {
     trace_id: String,
     inner: Arc<RwLock<RecorderInner>>,
     enabled: bool,
+    /// Maximum number of steps retained. 0 = unbounded (legacy behavior).
+    /// When reached, oldest steps are dropped (ring buffer / FIFO).
+    /// Closes #10 — prevents unbounded memory growth in long-running agents.
+    max_steps: usize,
 }
+
+/// Default cap on retained steps — enough for a typical multi-turn conversation
+/// with tool calls, small enough to bound memory on runaway agents.
+pub const DEFAULT_MAX_STEPS: usize = 1000;
 
 #[derive(Debug)]
 struct RecorderInner {
-    steps: Vec<DebugStep>,
+    /// Deque for O(1) push_back and pop_front when cap reached.
+    steps: std::collections::VecDeque<DebugStep>,
+    /// Total steps ever recorded (including evicted). Used to report accurate counts.
+    total_recorded: u64,
     next_seq: u64,
     started_at: DateTime<Utc>,
     total_input_tokens: u64,
@@ -165,12 +176,19 @@ struct RecorderInner {
 }
 
 impl DebugRecorder {
-    /// Create a new recorder.
+    /// Create a new recorder with the default step cap ([`DEFAULT_MAX_STEPS`]).
     pub fn new(trace_id: impl Into<String>) -> Self {
+        Self::with_capacity(trace_id, DEFAULT_MAX_STEPS)
+    }
+
+    /// Create a new recorder with a custom step cap.
+    /// Pass `0` for unbounded (not recommended in production).
+    pub fn with_capacity(trace_id: impl Into<String>, max_steps: usize) -> Self {
         Self {
             trace_id: trace_id.into(),
             inner: Arc::new(RwLock::new(RecorderInner {
-                steps: Vec::new(),
+                steps: std::collections::VecDeque::with_capacity(max_steps.min(1024)),
+                total_recorded: 0,
                 next_seq: 1,
                 started_at: Utc::now(),
                 total_input_tokens: 0,
@@ -178,6 +196,7 @@ impl DebugRecorder {
                 metadata: serde_json::Value::Object(serde_json::Map::new()),
             })),
             enabled: true,
+            max_steps,
         }
     }
 
@@ -186,7 +205,8 @@ impl DebugRecorder {
         Self {
             trace_id: String::new(),
             inner: Arc::new(RwLock::new(RecorderInner {
-                steps: Vec::new(),
+                steps: std::collections::VecDeque::new(),
+                total_recorded: 0,
                 next_seq: 1,
                 started_at: Utc::now(),
                 total_input_tokens: 0,
@@ -194,7 +214,32 @@ impl DebugRecorder {
                 metadata: serde_json::Value::Null,
             })),
             enabled: false,
+            max_steps: 0,
         }
+    }
+
+    /// Get the configured step cap (0 = unbounded).
+    pub fn max_steps(&self) -> usize {
+        self.max_steps
+    }
+
+    /// Get the total number of steps ever recorded (including evicted).
+    pub fn total_recorded(&self) -> u64 {
+        self.inner
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .total_recorded
+    }
+
+    /// Check how many steps have been evicted due to the cap.
+    pub fn evicted_count(&self) -> u64 {
+        let inner = self
+            .inner
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        inner
+            .total_recorded
+            .saturating_sub(inner.steps.len() as u64)
     }
 
     /// Check if the recorder is enabled.
@@ -220,8 +265,14 @@ impl DebugRecorder {
 
         let seq = inner.next_seq;
         inner.next_seq += 1;
+        inner.total_recorded += 1;
 
-        inner.steps.push(DebugStep {
+        // Evict oldest if at capacity (ring buffer semantics)
+        if self.max_steps > 0 && inner.steps.len() >= self.max_steps {
+            inner.steps.pop_front();
+        }
+
+        inner.steps.push_back(DebugStep {
             seq,
             step_type,
             description: description.into(),
@@ -252,10 +303,16 @@ impl DebugRecorder {
 
         let seq = inner.next_seq;
         inner.next_seq += 1;
+        inner.total_recorded += 1;
         inner.total_input_tokens += input_tokens;
         inner.total_output_tokens += output_tokens;
 
-        inner.steps.push(DebugStep {
+        // Evict oldest if at capacity (ring buffer semantics)
+        if self.max_steps > 0 && inner.steps.len() >= self.max_steps {
+            inner.steps.pop_front();
+        }
+
+        inner.steps.push_back(DebugStep {
             seq,
             step_type,
             description: description.into(),
@@ -306,7 +363,7 @@ impl DebugRecorder {
             trace_id: self.trace_id.clone(),
             started_at: inner.started_at,
             ended_at: Some(now),
-            steps: inner.steps.clone(),
+            steps: inner.steps.iter().cloned().collect(),
             total_duration_ms: Some(duration),
             total_tokens: TokenUsage {
                 input: inner.total_input_tokens,

@@ -11,6 +11,29 @@
 //! - [`AuditLog`] — Append-only audit trail persisted to disk.
 //! - [`Sanitizer`] — Input sanitization utilities.
 //! - [`TlsConfig`] — TLS and mutual-TLS configuration.
+//!
+//! # Security boundaries (IMPORTANT)
+//!
+//! This crate provides **policy primitives**: it answers "is this path allowed?",
+//! "is this IP allowed?", etc., given a [`PermissionSet`]. It does NOT:
+//!
+//! - Resolve DNS. If a skill accepts hostnames, it must resolve and re-check the
+//!   resolved IP at request time (see `HttpFetchSkill` in `argentor-builtins`).
+//!   **DNS rebinding** protection is a skill-level concern, not a PermissionSet one.
+//!   See GitHub issue #8 for the canonical reference.
+//!
+//! - Follow filesystem symlinks. [`PermissionSet`] validates paths logically;
+//!   skills that read/write files are responsible for canonicalizing (e.g.
+//!   `std::fs::canonicalize`) and re-checking the resolved path to prevent
+//!   symlink escape.
+//!
+//! - Decode transport-layer encodings (URL percent-encoding, base64). Callers
+//!   that receive user-controlled encoded input must decode before passing to
+//!   [`PermissionSet`]. Tracked gaps: GitHub issues #4 (URL-encoded traversal),
+//!   #5 (Unicode/UTF-8 overlong).
+//!
+//! In short: `argentor-security` is the last-line-of-defense policy engine.
+//! Skills are the first-line-of-defense input validators.
 
 /// Alert rule engine for production monitoring.
 pub mod alert_engine;

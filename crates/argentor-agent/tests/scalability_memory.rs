@@ -296,22 +296,58 @@ async fn test_no_leak_on_failover_path() {
     );
 }
 
-/// Debug recorder — emit 10K steps and verify it does not OOM.
-///
-/// NOTE: `DebugRecorder` currently has NO step cap (Vec grows unbounded). This
-/// test documents that limitation: we only assert the recorder stores all
-/// emitted steps, and that it does not panic. If a cap is added in the
-/// future, change the assertion to `<= 1000`.
+/// Verifies #10 fix: DebugRecorder with default cap (1000) retains exactly
+/// 1000 steps even after 10K emissions, evicting oldest (ring buffer).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_debug_recorder_capped() {
     let recorder = DebugRecorder::new("trace-1");
+    // Default cap is DEFAULT_MAX_STEPS = 1000
+    assert_eq!(recorder.max_steps(), 1000);
+
     for i in 0..10_000 {
         recorder.record(StepType::Input, format!("step-{i}"), None);
     }
-    let count = recorder.step_count();
-    // CURRENT behavior: unbounded — all steps retained.
-    assert_eq!(count, 10_000, "debug recorder retained every emitted step");
-    // Future-proof reminder if cap is added: count <= cap.
+
+    // Cap enforced: only the most recent 1000 steps retained
+    assert_eq!(recorder.step_count(), 1000, "cap should retain exactly 1000");
+    // Total recorded (including evicted) is accurate
+    assert_eq!(recorder.total_recorded(), 10_000);
+    // Eviction count = 10_000 emitted - 1000 retained
+    assert_eq!(recorder.evicted_count(), 9_000);
+
+    // The retained steps are the MOST RECENT ones (ring buffer FIFO eviction).
+    let trace = recorder.finalize();
+    assert_eq!(trace.steps.len(), 1000);
+    assert_eq!(
+        trace.steps.last().map(|s| s.description.as_str()),
+        Some("step-9999")
+    );
+    assert_eq!(
+        trace.steps.first().map(|s| s.description.as_str()),
+        Some("step-9000")
+    );
+}
+
+/// Verifies DebugRecorder with custom cap.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_debug_recorder_custom_cap() {
+    let recorder = DebugRecorder::with_capacity("trace-custom", 100);
+    for i in 0..500 {
+        recorder.record(StepType::Input, format!("step-{i}"), None);
+    }
+    assert_eq!(recorder.step_count(), 100);
+    assert_eq!(recorder.total_recorded(), 500);
+}
+
+/// Verifies DebugRecorder with cap=0 is unbounded (legacy behaviour).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_debug_recorder_unbounded_when_zero_cap() {
+    let recorder = DebugRecorder::with_capacity("trace-unbounded", 0);
+    for i in 0..5_000 {
+        recorder.record(StepType::Input, format!("step-{i}"), None);
+    }
+    assert_eq!(recorder.step_count(), 5_000);
+    assert_eq!(recorder.evicted_count(), 0);
 }
 
 /// Event-bus history equivalent: AuditLog accepts 100K entries without
