@@ -65,7 +65,7 @@ pub mod tls;
 pub use alert_engine::{
     Alert, AlertCondition, AlertEngine, AlertEngineStats, AlertRule, AlertSeverity,
 };
-pub use audit::AuditLog;
+pub use audit::{AuditConfig, AuditLog};
 pub use audit_export::{
     AuditExportState, AuditExporter, ExportConfig, ExportFormat, ExportQuery, ExportResponse,
 };
