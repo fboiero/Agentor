@@ -113,7 +113,6 @@ fn test_blocks_base64_encoded_injection() {
 /// KNOWN GAP: current matching is case-folded ASCII; homoglyphs slip through.
 /// Tracked separately so we know this attack vector is unguarded.
 #[test]
-#[ignore = "SECURITY-TODO: homoglyph normalization not implemented — documented limitation"]
 fn test_blocks_unicode_homoglyph_injection() {
     let engine = GuardrailEngine::new();
     // 'i' in "ignore" replaced with Cyrillic 'і' (U+0456)

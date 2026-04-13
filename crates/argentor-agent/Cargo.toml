@@ -33,6 +33,8 @@ tokio-stream = "0.1"
 toml.workspace = true
 regex.workspace = true
 base64 = "0.22"
+unicode-normalization = "0.1"
+parking_lot.workspace = true
 
 [dev-dependencies]
 tempfile = "3"

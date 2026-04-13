@@ -8,6 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+- **Homoglyph detection in prompt injection checks** (CWE-176 / OWASP LLM01):
+  Guardrails engine now applies NFKC normalization + Cyrillic-to-Latin confusable
+  mapping (~26 pairs) before pattern matching, preventing Unicode homoglyph bypass
+  of prompt-injection detection. Dep: `unicode-normalization`. Closes #7.
+
 ---
 
 ## [1.1.0] - 2026-04-12

@@ -45,6 +45,7 @@
 use regex::Regex;
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
+use unicode_normalization::UnicodeNormalization;
 
 // ---------------------------------------------------------------------------
 // Core types
@@ -577,11 +578,35 @@ fn prompt_injection_patterns() -> Vec<&'static str> {
     ]
 }
 
+/// Normalize homoglyphs by applying NFKC normalization and mapping Cyrillic confusables to Latin
+fn normalize_homoglyphs(text: &str) -> String {
+    let normalized: String = text.nfkc().collect();
+
+    let cyrillic_map = [
+        ('а', 'a'), ('е', 'e'), ('о', 'o'), ('р', 'p'), ('с', 'c'), ('у', 'y'),
+        ('і', 'i'), ('ј', 'j'), ('ѕ', 's'), ('һ', 'h'), ('ԁ', 'd'), ('ԝ', 'w'),
+        ('А', 'A'), ('В', 'B'), ('С', 'C'), ('Е', 'E'), ('Н', 'H'), ('І', 'I'),
+        ('К', 'K'), ('М', 'M'), ('О', 'O'), ('Р', 'P'), ('Ѕ', 'S'), ('Т', 'T'),
+        ('У', 'Y'), ('Х', 'X'),
+    ];
+
+    let mut result = String::new();
+    for ch in normalized.chars() {
+        if let Some((_, latin)) = cyrillic_map.iter().find(|(cyrillic, _)| *cyrillic == ch) {
+            result.push(*latin);
+        } else {
+            result.push(ch);
+        }
+    }
+    result
+}
+
 fn check_prompt_injection(rule: &GuardrailRule, text: &str) -> Vec<Violation> {
     let lower = text.to_lowercase();
+    let normalized = normalize_homoglyphs(&lower);
     let mut vs = Vec::new();
     for pattern in prompt_injection_patterns() {
-        if let Some(pos) = lower.find(pattern) {
+        if let Some(pos) = normalized.find(pattern) {
             vs.push(Violation {
                 rule_name: rule.name.clone(),
                 severity: rule.severity.clone(),
