@@ -8,6 +8,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+- **Path traversal hardening** (CWE-22, CWE-158, CWE-176): `PermissionSet` now
+  rejects null-byte injection, URL-encoded traversal (`%2e%2e%2f`), overlong
+  UTF-8 sequences (`\xC0\xAE`), and applies NFKC normalization before path
+  component analysis. New deps: `percent-encoding`, `unicode-normalization`.
+  Closes #3, #4, #5.
+
 ---
 
 ## [1.1.0] - 2026-04-12

@@ -1,7 +1,9 @@
+use percent_encoding::percent_decode_str;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::net::IpAddr;
 use std::path::Path;
+use unicode_normalization::UnicodeNormalization;
 
 /// A fine-grained permission token describing a specific capability an agent may hold.
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -185,13 +187,100 @@ pub fn is_private_ip(ip: &IpAddr) -> bool {
 // Path canonicalization helpers
 // ---------------------------------------------------------------------------
 
+/// Return `true` if the raw path string contains a NUL byte (`\0`).
+///
+/// Paths with NUL bytes are rejected outright — they can cause C-level string
+/// truncation which may bypass higher-level path checks (CWE-158).
+fn contains_nul_byte(path: &str) -> bool {
+    path.bytes().any(|b| b == 0)
+}
+
+/// Return `true` if the raw bytes contain an overlong UTF-8 encoding of `.`
+/// or `/`.  These are invalid UTF-8 sequences that some legacy decoders
+/// interpret as ordinary characters, enabling path traversal.
+///
+/// Common patterns:
+/// - `\xC0\xAE` — overlong encoding of `.` (U+002E)
+/// - `\xE0\x80\xAE` — 3-byte overlong encoding of `.`
+/// - `\xC0\xAF` — overlong encoding of `/` (U+002F)
+fn contains_overlong_utf8(raw: &[u8]) -> bool {
+    for i in 0..raw.len() {
+        if i + 1 < raw.len() {
+            // 2-byte overlong for ASCII range: C0 xx or C1 xx
+            if (raw[i] == 0xC0 || raw[i] == 0xC1) && (raw[i + 1] & 0xC0) == 0x80 {
+                return true;
+            }
+        }
+        if i + 2 < raw.len() {
+            // 3-byte overlong for BMP range: E0 80..9F xx
+            if raw[i] == 0xE0 && raw[i + 1] < 0xA0 && (raw[i + 2] & 0xC0) == 0x80 {
+                return true;
+            }
+        }
+        if i + 3 < raw.len() {
+            // 4-byte overlong: F0 80..8F xx xx
+            if raw[i] == 0xF0 && raw[i + 1] < 0x90 && (raw[i + 2] & 0xC0) == 0x80 {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Sanitize a path string through multiple defence layers before
+/// constructing a `Path`:
+///
+/// 1. Reject NUL bytes (CWE-158)
+/// 2. Percent-decode (CWE-22 — URL-encoded traversal)
+/// 3. Reject overlong UTF-8 (CWE-176)
+/// 4. Apply Unicode NFKC normalization (CWE-176 — compatibility decomposition)
+///
+/// Returns `None` if the path is rejected, or `Some(sanitized_string)` if safe.
+fn sanitize_path_string(path: &str) -> Option<String> {
+    // Layer 1: reject NUL bytes
+    if contains_nul_byte(path) {
+        return None;
+    }
+
+    // Layer 2: percent-decode (handles %2e%2e%2f → ../ etc.)
+    let decoded = percent_decode_str(path).collect::<Vec<u8>>();
+
+    // Layer 3: reject overlong UTF-8 sequences in the decoded bytes
+    if contains_overlong_utf8(&decoded) {
+        return None;
+    }
+
+    // Convert decoded bytes to UTF-8 (lossy — invalid sequences become U+FFFD)
+    let decoded_str = String::from_utf8_lossy(&decoded);
+
+    // Reject if the decoded string still contains NUL
+    if decoded_str.bytes().any(|b| b == 0) {
+        return None;
+    }
+
+    // Layer 4: Unicode NFKC normalization (decomposes fullwidth, ligatures, etc.)
+    let normalized: String = decoded_str.nfkc().collect();
+
+    Some(normalized)
+}
+
 /// Normalize a path by resolving `.` and `..` components logically (without
 /// touching the filesystem).  The result is an absolute-looking path with no
 /// `.` or `..` segments.
-fn normalize_path(path: &Path) -> std::path::PathBuf {
+///
+/// Before component analysis, the path string is sanitized through
+/// [`sanitize_path_string`] which handles percent-decoding, overlong UTF-8
+/// rejection, and NFKC normalization.
+fn normalize_path(path: &Path) -> Option<std::path::PathBuf> {
     use std::path::Component;
+
+    // Apply sanitization pipeline to the string representation
+    let path_str = path.to_string_lossy();
+    let sanitized = sanitize_path_string(&path_str)?;
+    let sanitized_path = Path::new(&sanitized);
+
     let mut components: Vec<std::ffi::OsString> = Vec::new();
-    for component in path.components() {
+    for component in sanitized_path.components() {
         match component {
             Component::CurDir => { /* skip "." */ }
             Component::ParentDir => {
@@ -210,13 +299,13 @@ fn normalize_path(path: &Path) -> std::path::PathBuf {
         }
     }
     if components.is_empty() {
-        return std::path::PathBuf::from("/");
+        return Some(std::path::PathBuf::from("/"));
     }
     let mut result = std::path::PathBuf::new();
     for c in components {
         result.push(c);
     }
-    result
+    Some(result)
 }
 
 /// Best-effort path canonicalization.
@@ -226,13 +315,13 @@ fn normalize_path(path: &Path) -> std::path::PathBuf {
 /// we canonicalize the nearest existing ancestor and append the remaining
 /// non-existent tail.  This prevents `..` from escaping an allowed directory
 /// even when the target file does not yet exist.
-fn canonicalize_best_effort(path: &Path) -> std::path::PathBuf {
-    // Step 1: logical normalization (resolve . and .. without filesystem)
-    let normalized = normalize_path(path);
+fn canonicalize_best_effort(path: &Path) -> Option<std::path::PathBuf> {
+    // Step 1: logical normalization (resolve . and .., sanitize encoding)
+    let normalized = normalize_path(path)?;
 
     // Step 2: try full filesystem canonicalization (also resolves symlinks)
     if let Ok(canon) = normalized.canonicalize() {
-        return canon;
+        return Some(canon);
     }
 
     // Step 3: walk up to the nearest existing ancestor
@@ -250,14 +339,14 @@ fn canonicalize_best_effort(path: &Path) -> std::path::PathBuf {
                     for component in tail_components.iter().rev() {
                         result.push(component);
                     }
-                    return result;
+                    return Some(result);
                 }
             }
             current = parent.to_path_buf();
         }
     }
 
-    normalized
+    Some(normalized)
 }
 
 /// Check whether `candidate` (canonicalized) lives under `allowed_prefix`
@@ -309,10 +398,14 @@ impl PermissionSet {
     ///
     /// The path is canonicalized to prevent traversal attacks (`..`, symlinks).
     pub fn check_file_read_path(&self, path: &Path) -> bool {
-        let canonical = canonicalize_best_effort(path);
+        let Some(canonical) = canonicalize_best_effort(path) else {
+            return false; // rejected by sanitization (NUL, overlong, etc.)
+        };
         self.capabilities.iter().any(|c| match c {
             Capability::FileRead { allowed_paths } => allowed_paths.iter().any(|p| {
-                let allowed_canon = canonicalize_best_effort(Path::new(p));
+                let Some(allowed_canon) = canonicalize_best_effort(Path::new(p)) else {
+                    return false;
+                };
                 path_is_under(&canonical, &allowed_canon)
             }),
             _ => false,
@@ -331,10 +424,14 @@ impl PermissionSet {
     ///
     /// The path is canonicalized to prevent traversal attacks.
     pub fn check_file_write_path(&self, path: &Path) -> bool {
-        let canonical = canonicalize_best_effort(path);
+        let Some(canonical) = canonicalize_best_effort(path) else {
+            return false;
+        };
         self.capabilities.iter().any(|c| match c {
             Capability::FileWrite { allowed_paths } => allowed_paths.iter().any(|p| {
-                let allowed_canon = canonicalize_best_effort(Path::new(p));
+                let Some(allowed_canon) = canonicalize_best_effort(Path::new(p)) else {
+                    return false;
+                };
                 path_is_under(&canonical, &allowed_canon)
             }),
             _ => false,
