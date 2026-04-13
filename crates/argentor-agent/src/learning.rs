@@ -15,6 +15,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
+use parking_lot::RwLock;
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -182,10 +184,9 @@ pub struct LearningReport {
 // LearningEngine
 // ---------------------------------------------------------------------------
 
-/// Engine that tracks tool execution outcomes and improves recommendations
-/// over time using exponential moving averages and keyword co-occurrence.
-pub struct LearningEngine {
-    config: LearningConfig,
+/// Mutable state for the learning engine.
+#[derive(Debug)]
+struct LearningState {
     tool_stats: HashMap<String, ToolLearningStats>,
     pattern_cache: Vec<LearnedPattern>,
     total_feedback: u64,
@@ -193,15 +194,25 @@ pub struct LearningEngine {
     recent_rates: HashMap<String, Vec<f32>>,
 }
 
+/// Engine that tracks tool execution outcomes and improves recommendations
+/// over time using exponential moving averages and keyword co-occurrence.
+#[derive(Clone)]
+pub struct LearningEngine {
+    config: LearningConfig,
+    state: Arc<RwLock<LearningState>>,
+}
+
 impl LearningEngine {
     /// Create a new learning engine with the given configuration.
     pub fn new(config: LearningConfig) -> Self {
         Self {
             config,
-            tool_stats: HashMap::new(),
-            pattern_cache: Vec::new(),
-            total_feedback: 0,
-            recent_rates: HashMap::new(),
+            state: Arc::new(RwLock::new(LearningState {
+                tool_stats: HashMap::new(),
+                pattern_cache: Vec::new(),
+                total_feedback: 0,
+                recent_rates: HashMap::new(),
+            })),
         }
     }
 
@@ -214,15 +225,17 @@ impl LearningEngine {
     ///
     /// Updates exponential moving averages for execution time and token usage,
     /// context-specific success rates, and the tool's performance trend.
-    pub fn record_feedback(&mut self, feedback: &LearningFeedback) {
+    pub fn record_feedback(&self, feedback: &LearningFeedback) {
         if !self.config.enabled {
             return;
         }
 
-        self.total_feedback += 1;
+        let mut state = self.state.write();
+
+        state.total_feedback += 1;
         let alpha = self.config.learning_rate as f64;
 
-        let stats = self
+        let stats = state
             .tool_stats
             .entry(feedback.tool_name.clone())
             .or_insert_with(|| ToolLearningStats::new(&feedback.tool_name));
@@ -266,7 +279,7 @@ impl LearningEngine {
 
         // Track recent rates for trend detection.
         let current_rate = stats.success_rate();
-        let rates = self
+        let rates = state
             .recent_rates
             .entry(feedback.tool_name.clone())
             .or_default();
@@ -304,6 +317,7 @@ impl LearningEngine {
         candidates: &[(&str, f32)],
         query_context: &str,
     ) -> Vec<ToolRecommendation> {
+        let state = self.state.read();
         let query_keywords = Self::extract_keywords(query_context);
         let mut recommendations: Vec<ToolRecommendation> = Vec::new();
 
@@ -312,7 +326,7 @@ impl LearningEngine {
             let mut reasons = Vec::new();
 
             // Adjustment from historical success rate.
-            if let Some(stats) = self.tool_stats.get(tool_name) {
+            if let Some(stats) = state.tool_stats.get(tool_name) {
                 if stats.total_uses as usize >= self.config.min_samples {
                     let rate = stats.success_rate();
                     // Boost high-performing tools, penalize low-performing ones.
@@ -351,7 +365,7 @@ impl LearningEngine {
             }
 
             // Adjustment from learned patterns.
-            for pattern in &self.pattern_cache {
+            for pattern in &state.pattern_cache {
                 let kw_overlap = query_keywords
                     .iter()
                     .filter(|k| pattern.query_keywords.contains(k))
@@ -406,18 +420,21 @@ impl LearningEngine {
     }
 
     /// Get statistics for a specific tool.
-    pub fn get_stats(&self, tool_name: &str) -> Option<&ToolLearningStats> {
-        self.tool_stats.get(tool_name)
+    pub fn get_stats(&self, tool_name: &str) -> Option<ToolLearningStats> {
+        let state = self.state.read();
+        state.tool_stats.get(tool_name).cloned()
     }
 
     /// Get statistics for all tracked tools.
-    pub fn all_stats(&self) -> &HashMap<String, ToolLearningStats> {
-        &self.tool_stats
+    pub fn all_stats(&self) -> HashMap<String, ToolLearningStats> {
+        let state = self.state.read();
+        state.tool_stats.clone()
     }
 
     /// Generate a summary report of the engine's state.
     pub fn get_report(&self) -> LearningReport {
-        let mut tools_by_rate: Vec<(String, f32)> = self
+        let state = self.state.read();
+        let mut tools_by_rate: Vec<(String, f32)> = state
             .tool_stats
             .values()
             .filter(|s| s.total_uses > 0)
@@ -445,12 +462,12 @@ impl LearningEngine {
         };
 
         // Overall trend summary.
-        let improving = self
+        let improving = state
             .tool_stats
             .values()
             .filter(|s| s.trend == Trend::Improving)
             .count();
-        let degrading = self
+        let degrading = state
             .tool_stats
             .values()
             .filter(|s| s.trend == Trend::Degrading)
@@ -464,9 +481,9 @@ impl LearningEngine {
         };
 
         LearningReport {
-            total_tools_tracked: self.tool_stats.len(),
-            total_feedback_processed: self.total_feedback,
-            patterns_learned: self.pattern_cache.len(),
+            total_tools_tracked: state.tool_stats.len(),
+            total_feedback_processed: state.total_feedback,
+            patterns_learned: state.pattern_cache.len(),
             top_performing_tools: top_performing,
             underperforming_tools: underperforming,
             recent_trend,
@@ -477,15 +494,17 @@ impl LearningEngine {
     ///
     /// Looks at context success rates across tools and identifies keywords
     /// that consistently correlate with success or failure for specific tools.
-    pub fn learn_patterns(&mut self) {
+    pub fn learn_patterns(&self) {
         if !self.config.enabled {
             return;
         }
 
+        let state = self.state.read();
+
         // Collect keyword → [(tool, context_rate)] data.
         let mut keyword_tool_rates: HashMap<String, Vec<(String, f32)>> = HashMap::new();
 
-        for stats in self.tool_stats.values() {
+        for stats in state.tool_stats.values() {
             if (stats.total_uses as usize) < self.config.min_samples {
                 continue;
             }
@@ -509,7 +528,7 @@ impl LearningEngine {
             let mut total_samples = 0_u32;
 
             for (tool_name, rate) in tool_rates {
-                if let Some(stats) = self.tool_stats.get(tool_name) {
+                if let Some(stats) = state.tool_stats.get(tool_name) {
                     total_samples += stats.total_uses as u32;
                 }
                 if *rate > 0.7 {
@@ -562,28 +581,31 @@ impl LearningEngine {
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
         new_patterns.truncate(self.config.max_patterns);
-        self.pattern_cache = new_patterns;
+        drop(state);
+        self.state.write().pattern_cache = new_patterns;
     }
 
     /// Serialize the engine state to JSON for persistence.
     pub fn serialize(&self) -> Result<String, String> {
+        let read_state = self.state.read();
         let state = LearningEngineState {
-            tool_stats: self.tool_stats.clone(),
-            pattern_cache: self.pattern_cache.clone(),
-            total_feedback: self.total_feedback,
-            recent_rates: self.recent_rates.clone(),
+            tool_stats: read_state.tool_stats.clone(),
+            pattern_cache: read_state.pattern_cache.clone(),
+            total_feedback: read_state.total_feedback,
+            recent_rates: read_state.recent_rates.clone(),
         };
         serde_json::to_string_pretty(&state).map_err(|e| format!("Serialization failed: {e}"))
     }
 
     /// Deserialize engine state from JSON.
-    pub fn deserialize(&mut self, json: &str) -> Result<(), String> {
+    pub fn deserialize(&self, json: &str) -> Result<(), String> {
         let state: LearningEngineState =
             serde_json::from_str(json).map_err(|e| format!("Deserialization failed: {e}"))?;
-        self.tool_stats = state.tool_stats;
-        self.pattern_cache = state.pattern_cache;
-        self.total_feedback = state.total_feedback;
-        self.recent_rates = state.recent_rates;
+        let mut write_state = self.state.write();
+        write_state.tool_stats = state.tool_stats;
+        write_state.pattern_cache = state.pattern_cache;
+        write_state.total_feedback = state.total_feedback;
+        write_state.recent_rates = state.recent_rates;
         Ok(())
     }
 
@@ -644,7 +666,8 @@ impl LearningEngine {
     /// Compute the performance trend for a tool from recent success rates.
     #[allow(dead_code)] // kept as public utility; inline version used in record_feedback
     fn compute_trend(&self, tool_name: &str) -> Trend {
-        let rates = match self.recent_rates.get(tool_name) {
+        let state = self.state.read();
+        let rates = match state.recent_rates.get(tool_name) {
             Some(r) if r.len() >= 3 => r,
             _ => return Trend::Stable,
         };
@@ -749,7 +772,7 @@ mod tests {
 
     #[test]
     fn test_record_single_success() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "read file", true));
 
         let stats = engine.get_stats("tool_a").unwrap();
@@ -761,7 +784,7 @@ mod tests {
 
     #[test]
     fn test_record_single_failure() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "read file", false));
 
         let stats = engine.get_stats("tool_a").unwrap();
@@ -773,7 +796,7 @@ mod tests {
 
     #[test]
     fn test_record_mixed_feedback() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "read file", true));
         engine.record_feedback(&make_feedback("tool_a", "write file", false));
         engine.record_feedback(&make_feedback("tool_a", "read data", true));
@@ -787,7 +810,7 @@ mod tests {
 
     #[test]
     fn test_multiple_tools_tracked() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "context", true));
         engine.record_feedback(&make_feedback("tool_b", "context", false));
 
@@ -803,7 +826,7 @@ mod tests {
             enabled: false,
             ..Default::default()
         };
-        let mut engine = LearningEngine::new(config);
+        let engine = LearningEngine::new(config);
         engine.record_feedback(&make_feedback("tool_a", "context", true));
         assert!(engine.get_stats("tool_a").is_none());
     }
@@ -812,7 +835,7 @@ mod tests {
 
     #[test]
     fn test_ema_execution_time() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback_full("tool_a", "ctx", true, 100, 50));
         let stats = engine.get_stats("tool_a").unwrap();
         assert!((stats.avg_execution_time_ms - 100.0).abs() < f64::EPSILON);
@@ -825,7 +848,7 @@ mod tests {
 
     #[test]
     fn test_ema_token_usage() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback_full("tool_a", "ctx", true, 100, 1000));
         assert!(
             (engine.get_stats("tool_a").unwrap().avg_tokens_used - 1000.0).abs() < f64::EPSILON
@@ -841,7 +864,7 @@ mod tests {
 
     #[test]
     fn test_context_success_rates_updated() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "read file contents", true));
         let stats = engine.get_stats("tool_a").unwrap();
         // Keywords: "read", "file", "contents"
@@ -852,7 +875,7 @@ mod tests {
 
     #[test]
     fn test_context_rate_increases_on_success() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         // Initial: 0.5 baseline
         engine.record_feedback(&make_feedback("tool_a", "read file", true));
         let rate1 = engine.get_stats("tool_a").unwrap().context_success_rates["read"];
@@ -866,7 +889,7 @@ mod tests {
 
     #[test]
     fn test_context_rate_decreases_on_failure() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "read file", false));
         let rate = engine.get_stats("tool_a").unwrap().context_success_rates["read"];
         // rate = 0.95 * 0.5 + 0.05 * 0.0 = 0.475
@@ -877,14 +900,14 @@ mod tests {
 
     #[test]
     fn test_trend_stable_initially() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "ctx", true));
         assert_eq!(engine.get_stats("tool_a").unwrap().trend, Trend::Stable);
     }
 
     #[test]
     fn test_trend_improving() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         // First few failures, then successes.
         for _ in 0..3 {
             engine.record_feedback(&make_feedback("tool_a", "ctx", false));
@@ -913,7 +936,7 @@ mod tests {
 
     #[test]
     fn test_recommend_with_data() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         // Record enough data for min_samples.
         for _ in 0..10 {
             engine.record_feedback(&make_feedback("tool_a", "read file", true));
@@ -944,7 +967,7 @@ mod tests {
 
     #[test]
     fn test_recommend_insufficient_samples() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         // Only 2 samples (below min_samples of 5).
         engine.record_feedback(&make_feedback("tool_a", "ctx", true));
         engine.record_feedback(&make_feedback("tool_a", "ctx", true));
@@ -963,7 +986,7 @@ mod tests {
 
     #[test]
     fn test_learn_patterns_basic() {
-        let mut engine = default_engine();
+        let engine = default_engine();
 
         // Build enough data for pattern learning.
         for _ in 0..10 {
@@ -985,7 +1008,7 @@ mod tests {
             max_patterns: 2,
             ..Default::default()
         };
-        let mut engine = LearningEngine::new(config);
+        let engine = LearningEngine::new(config);
 
         // Generate data across many keywords.
         for i in 0..20 {
@@ -1020,7 +1043,7 @@ mod tests {
             enabled: false,
             ..Default::default()
         };
-        let mut engine = LearningEngine::new(config);
+        let engine = LearningEngine::new(config);
         engine.learn_patterns();
         assert!(engine.pattern_cache.is_empty());
     }
@@ -1038,7 +1061,7 @@ mod tests {
 
     #[test]
     fn test_report_with_data() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         for _ in 0..5 {
             engine.record_feedback(&make_feedback("tool_a", "ctx", true));
         }
@@ -1068,12 +1091,12 @@ mod tests {
 
     #[test]
     fn test_serialize_deserialize_roundtrip() {
-        let mut engine = default_engine();
+        let engine = default_engine();
         engine.record_feedback(&make_feedback("tool_a", "read file", true));
         engine.record_feedback(&make_feedback("tool_b", "write file", false));
 
         let json = engine.serialize().unwrap();
-        let mut engine2 = default_engine();
+        let engine2 = default_engine();
         engine2.deserialize(&json).unwrap();
 
         assert_eq!(engine2.all_stats().len(), 2);
@@ -1149,7 +1172,7 @@ mod tests {
 
     #[test]
     fn test_recommend_with_pattern_boost() {
-        let mut engine = default_engine();
+        let engine = default_engine();
 
         // Manually add a pattern.
         engine.pattern_cache.push(LearnedPattern {
