@@ -467,8 +467,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let store: Arc<dyn VectorStore> = Arc::new(InMemoryVectorStore::new());
     let embedder = Arc::new(LocalEmbedding::default());
-    let mut registry = SkillRegistry::new();
-    register_builtins_with_memory(&mut registry, store, embedder);
+    let registry = SkillRegistry::new();
+    register_builtins_with_memory(&registry, store, embedder);
 
     let mut permissions = PermissionSet::new();
     permissions.grant(Capability::ShellExec {

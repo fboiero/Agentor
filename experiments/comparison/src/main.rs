@@ -59,16 +59,16 @@ async fn scenario_cold_start() -> Vec<Measurement> {
 
     // Warmup
     for _ in 0..WARMUP_ITERATIONS {
-        let mut registry = SkillRegistry::new();
-        argentor_builtins::register_builtins(&mut registry);
+        let registry = SkillRegistry::new();
+        argentor_builtins::register_builtins(&registry);
         std::hint::black_box(&registry);
     }
 
     // Measure
     for _ in 0..SAMPLE_ITERATIONS {
         let start = Instant::now();
-        let mut registry = SkillRegistry::new();
-        argentor_builtins::register_builtins(&mut registry);
+        let registry = SkillRegistry::new();
+        argentor_builtins::register_builtins(&registry);
         let elapsed = start.elapsed();
         std::hint::black_box(&registry);
         samples.push(elapsed);
@@ -83,8 +83,8 @@ async fn scenario_cold_start() -> Vec<Measurement> {
 // ─── Scenario 2: Skill Registry Operations ──────────────────────────────────
 async fn scenario_skill_registry() -> Vec<Measurement> {
     print_header("Scenario 2: Skill Registry Operations");
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
 
     let mut measurements = Vec::new();
 
@@ -122,8 +122,8 @@ async fn scenario_skill_registry() -> Vec<Measurement> {
 // ─── Scenario 3: Tool Dispatch ──────────────────────────────────────────────
 async fn scenario_tool_dispatch() -> Vec<Measurement> {
     print_header("Scenario 3: Tool Dispatch (Calculator skill execution)");
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
 
     let calc = registry.get("calculator").expect("calculator skill registered");
     let input = argentor_core::ToolCall {
@@ -258,8 +258,8 @@ async fn scenario_intelligence_overhead() -> Vec<Measurement> {
 // ─── Scenario 6: Throughput ─────────────────────────────────────────────────
 async fn scenario_throughput() -> Vec<Measurement> {
     print_header("Scenario 6: Throughput (concurrent skill executions)");
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
     let registry = Arc::new(registry);
 
     const TOTAL_OPS: usize = 10_000;
@@ -316,8 +316,8 @@ async fn scenario_memory_under_load() -> Vec<Measurement> {
     let baseline_kb = memory::current_rss_kb();
 
     // Create 100 sessions with full agent infrastructure
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
     let registry = Arc::new(registry);
     let _audit = Arc::new(AuditLog::new(std::path::PathBuf::from("/tmp/argentor-bench-audit")));
     let _permissions = PermissionSet::new();
@@ -358,8 +358,8 @@ async fn scenario_memory_under_load() -> Vec<Measurement> {
 async fn scenario_ecosystem_gaps() -> Vec<Measurement> {
     print_header("Scenario 10: Honest Gaps vs Competitors (where we LOSE)");
 
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
     let argentor_skills = registry.list_descriptors().len();
     let argentor_llm_providers = 19; // Up from 14: added Cohere, Bedrock, Replicate, Fireworks, HuggingFace
     let argentor_vector_stores = 5; // Up from 1: added Pinecone, Weaviate, Qdrant, pgvector
@@ -463,8 +463,8 @@ async fn scenario_mock_llm_loop() -> Vec<Measurement> {
         }
     }
 
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
     let registry = Arc::new(registry);
     let permissions = PermissionSet::new();
     let audit = Arc::new(AuditLog::new(std::path::PathBuf::from("/tmp/argentor-bench-audit")));
@@ -582,8 +582,8 @@ async fn scenario_multi_turn_loop() -> Vec<Measurement> {
         }
     }
 
-    let mut registry = SkillRegistry::new();
-    argentor_builtins::register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    argentor_builtins::register_builtins(&registry);
     let registry = Arc::new(registry);
     let permissions = PermissionSet::new();
     let audit = Arc::new(AuditLog::new(std::path::PathBuf::from(

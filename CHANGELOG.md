@@ -8,6 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **SkillRegistry interior mutability refactor**: `register()` and related methods
+  now accept `&self` via internal `parking_lot::RwLock`. Updated all call sites
+  across builtins, CLI, MCP manager, plugin loader, examples, and tests.
+  Closes #13.
+
 ---
 
 ## [1.1.0] - 2026-04-12

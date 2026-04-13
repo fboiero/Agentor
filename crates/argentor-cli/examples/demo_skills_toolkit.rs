@@ -199,8 +199,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_env_filter("warn").init();
 
     // ── Setup ──────────────────────────────────────────────────
-    let mut registry = SkillRegistry::new();
-    register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    register_builtins(&registry);
 
     let mut permissions = PermissionSet::new();
     permissions.grant(Capability::NetworkAccess {

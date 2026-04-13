@@ -945,8 +945,8 @@ mod tests {
 
     #[test]
     fn test_register_xcapitsff_skills_registers_all_five() {
-        let mut registry = SkillRegistry::new();
-        register_xcapitsff_skills(&mut registry, "http://test-backend:8000");
+        let registry = SkillRegistry::new();
+        register_xcapitsff_skills(&registry, "http://test-backend:8000");
         assert!(registry.get("xcapitsff_search").is_some());
         assert!(registry.get("xcapitsff_lead_info").is_some());
         assert!(registry.get("xcapitsff_ticket_info").is_some());

@@ -966,8 +966,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let audit_dir = temp_dir.join("audit");
 
     // ── Setup infrastructure ────────────────────────────────────
-    let mut registry = SkillRegistry::new();
-    register_builtins(&mut registry);
+    let registry = SkillRegistry::new();
+    register_builtins(&registry);
 
     let mut permissions = PermissionSet::new();
     permissions.grant(Capability::ShellExec {
