@@ -10,3 +10,16 @@ Cargo.lock
 sdks/python/argentor/__pycache__/
 sdks/typescript/node_modules/
 sdks/typescript/package-lock.json
+
+# Secrets — never commit
+.npmrc
+**/.npmrc
+.pypirc
+**/.pypirc
+.cargo/credentials.toml
+.cargo/credentials
+*.pem
+*.key
+!skills/**/*.key
+credentials.json
+secrets.json
