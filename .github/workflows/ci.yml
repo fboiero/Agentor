@@ -63,6 +63,72 @@ jobs:
         if: always()
         run: cargo test --workspace 2>&1 | grep "test result:" | awk '{sum += $4; fail += $6} END {print "Total:", sum, "passed,", fail, "failed"}'
 
+  test-count-regression:
+    name: Test count regression gate
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            skills/echo-skill/target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-test-
+      - name: Build echo-skill WASM
+        run: cargo build --target wasm32-wasip1 --release --manifest-path skills/echo-skill/Cargo.toml
+      - name: Count tests (current branch)
+        id: count
+        run: |
+          set +e
+          COUNT=$(cargo test --workspace --no-fail-fast 2>&1 | grep "test result:" | awk '{sum += $4} END {print sum}')
+          set -e
+          echo "count=${COUNT:-0}" >> "$GITHUB_OUTPUT"
+          echo "Current test count: ${COUNT:-0}"
+      - name: Load baseline
+        id: baseline
+        run: |
+          # Baseline lives in .github/test-count.baseline (plain integer)
+          # Tolerance: allow -0.5% regression (accounts for genuinely removed tests)
+          BASELINE=$(cat .github/test-count.baseline 2>/dev/null || echo "0")
+          TOLERANCE_PCT=5  # 0.5% expressed in tenths-of-percent for integer math
+          MIN_ALLOWED=$(( BASELINE - BASELINE * TOLERANCE_PCT / 1000 ))
+          echo "baseline=${BASELINE}" >> "$GITHUB_OUTPUT"
+          echo "min_allowed=${MIN_ALLOWED}" >> "$GITHUB_OUTPUT"
+          echo "Baseline: ${BASELINE}, min allowed (-0.5%): ${MIN_ALLOWED}"
+      - name: Enforce regression gate
+        run: |
+          CURRENT="${{ steps.count.outputs.count }}"
+          BASELINE="${{ steps.baseline.outputs.baseline }}"
+          MIN="${{ steps.baseline.outputs.min_allowed }}"
+          if [ "$BASELINE" -eq 0 ]; then
+            echo "::warning::No baseline found at .github/test-count.baseline — skipping gate"
+            echo "Creating suggested baseline: echo $CURRENT > .github/test-count.baseline"
+            exit 0
+          fi
+          if [ "$CURRENT" -lt "$MIN" ]; then
+            echo "::error::Test count regression detected!"
+            echo "  Baseline: $BASELINE"
+            echo "  Current:  $CURRENT"
+            echo "  Min allowed (-0.5% tolerance): $MIN"
+            echo ""
+            echo "If tests were intentionally removed, update .github/test-count.baseline"
+            echo "Otherwise, restore missing tests before merging."
+            exit 1
+          fi
+          if [ "$CURRENT" -gt "$BASELINE" ]; then
+            DELTA=$((CURRENT - BASELINE))
+            echo "::notice::Test count increased by $DELTA (${BASELINE} → ${CURRENT}). Consider updating baseline."
+          else
+            echo "Test count within tolerance: ${CURRENT} vs baseline ${BASELINE}"
+          fi
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
