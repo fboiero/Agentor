@@ -71,7 +71,7 @@ pub trait Plugin: Send + Sync {
     fn manifest(&self) -> &PluginManifest;
 
     /// Called when the plugin is loaded. Use this to register skills.
-    fn on_load(&self, _registry: &mut SkillRegistry) {}
+    fn on_load(&self, _registry: &SkillRegistry) {}
 
     /// Called when the plugin is unloaded. Use this for cleanup.
     fn on_unload(&self) {}
@@ -94,7 +94,7 @@ impl PluginRegistry {
     }
 
     /// Load a plugin: calls `on_load` to let it register skills, then stores it.
-    pub fn load(&mut self, plugin: Arc<dyn Plugin>, skill_registry: &mut SkillRegistry) {
+    pub fn load(&mut self, plugin: Arc<dyn Plugin>, skill_registry: &SkillRegistry) {
         plugin.on_load(skill_registry);
         self.plugins.push(plugin);
     }
@@ -169,7 +169,7 @@ mod tests {
             &self.manifest
         }
 
-        fn on_load(&self, _registry: &mut SkillRegistry) {
+        fn on_load(&self, _registry: &SkillRegistry) {
             self.load_called.store(true, Ordering::SeqCst);
         }
 
@@ -207,7 +207,7 @@ mod tests {
             &self.manifest
         }
 
-        fn on_load(&self, registry: &mut SkillRegistry) {
+        fn on_load(&self, registry: &SkillRegistry) {
             registry.register(Arc::new(PluginSkill {
                 descriptor: SkillDescriptor {
                     name: "plugin_skill".to_string(),

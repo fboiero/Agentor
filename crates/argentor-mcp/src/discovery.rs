@@ -99,7 +99,7 @@ mod tests {
     }
 
     fn make_registry() -> SkillRegistry {
-        let mut registry = SkillRegistry::new();
+        let registry = SkillRegistry::new();
         registry.register(Arc::new(DummySkill::new(
             "memory_store",
             "Store text in memory",

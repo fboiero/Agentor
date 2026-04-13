@@ -41,8 +41,8 @@ type OptionalProxy = Option<(Arc<argentor_mcp::McpProxy>, String)>;
 /// use std::sync::Arc;
 /// use std::path::PathBuf;
 ///
-/// let mut registry = SkillRegistry::new();
-/// register_builtins(&mut registry);
+/// let registry = SkillRegistry::new();
+/// register_builtins(&registry);
 /// let skills = Arc::new(registry);
 /// let permissions = PermissionSet::new();
 /// let audit = Arc::new(AuditLog::new(PathBuf::from("/tmp/audit")));
