@@ -104,7 +104,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Publish crates in dependency order
+        shell: bash
         run: |
+          set -o pipefail
           CRATES=(
             argentor-core
             argentor-security
@@ -166,7 +168,7 @@ jobs:
               echo "ERROR: $crate failed after $MAX_RETRIES retries!"
               exit 1
             fi
-            sleep 30  # Wait for crates.io index update
+            sleep 60  # Wait for crates.io index update (60s to respect rate limits)
           done
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

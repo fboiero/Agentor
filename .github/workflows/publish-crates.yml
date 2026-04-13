@@ -28,7 +28,9 @@ jobs:
         run: cargo build --target wasm32-wasip1 --release --manifest-path skills/echo-skill/Cargo.toml
 
       - name: Publish crates in dependency order
+        shell: bash
         run: |
+          set -o pipefail
           CRATES=(
             argentor-core
             argentor-security
@@ -114,7 +116,7 @@ jobs:
             fi
 
             echo ""
-            sleep 30  # Wait for crates.io index update
+            sleep 60  # Wait for crates.io index update (60s to respect rate limits)
           done
 
           echo "========================================="
