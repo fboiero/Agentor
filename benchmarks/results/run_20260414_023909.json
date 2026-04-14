@@ -1,0 +1,191 @@
+{
+  "timestamp": "2026-04-14T02:39:09.593961Z",
+  "runs": [
+    {
+      "task_id": "t1_pdf_summary",
+      "runner": "argentor v0.1.0 (intelligence=off)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 52,
+        "per_turn_ms": 52
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "bench-mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "coverage",
+            0.0
+          ],
+          [
+            "format",
+            0.0
+          ],
+          [
+            "accuracy",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t1_pdf_summary",
+      "runner": "mock v0.1 (50ms latency)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 52,
+        "per_turn_ms": 52
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "coverage",
+            0.0
+          ],
+          [
+            "format",
+            0.0
+          ],
+          [
+            "accuracy",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t2_simple_qa",
+      "runner": "argentor v0.1.0 (intelligence=off)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 52,
+        "per_turn_ms": 52
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "bench-mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "correctness",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t2_simple_qa",
+      "runner": "mock v0.1 (50ms latency)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 51,
+        "per_turn_ms": 51
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "correctness",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t3_tool_selection",
+      "runner": "argentor v0.1.0 (intelligence=off)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 52,
+        "per_turn_ms": 52
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "bench-mock"
+      },
+      "quality": {
+        "aggregate_score": 1.875,
+        "per_criterion": [
+          [
+            "tool_correct",
+            1.875
+          ],
+          [
+            "answer_correct",
+            1.875
+          ]
+        ],
+        "ground_truth_overlap": 1.875,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t3_tool_selection",
+      "runner": "mock v0.1 (50ms latency)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 52,
+        "per_turn_ms": 52
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "mock"
+      },
+      "quality": {
+        "aggregate_score": 1.5,
+        "per_criterion": [
+          [
+            "tool_correct",
+            1.5
+          ],
+          [
+            "answer_correct",
+            1.5
+          ]
+        ],
+        "ground_truth_overlap": 1.5,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    }
+  ]
+}

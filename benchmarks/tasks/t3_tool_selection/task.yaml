@@ -1,0 +1,23 @@
+id: t3_tool_selection
+name: Tool Selection Accuracy
+description: Agent must pick the right tool from a list when the query is ambiguous.
+kind: tool_use
+prompt: |
+  I need to know the current time in UTC and also compute 100 / 7 rounded to 2 decimals.
+  Use the appropriate tools.
+input: ""
+ground_truth: |
+  Current UTC time. 100 / 7 = 14.29
+rubric:
+  criteria:
+    - name: tool_correct
+      description: Chose the right tools (datetime + calculator)
+      weight: 2.0
+    - name: answer_correct
+      description: The division result is 14.29 (or 14.2857 rounded to 2 decimals)
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 5
+allowed_tools:
+  - datetime_tool
+  - calculator

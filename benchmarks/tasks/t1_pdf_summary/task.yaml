@@ -1,0 +1,28 @@
+id: t1_pdf_summary
+name: Document Summarization
+description: Summarize a multi-paragraph document into 3 bullet points.
+kind: summarization
+prompt: |
+  Summarize the following text into exactly 3 concise bullet points covering
+  the main ideas. Each bullet must be under 20 words.
+
+  Text to summarize:
+  {{input}}
+input:
+  file: sample.txt
+ground_truth: |
+  WASM sandboxing. Capability-based permissions. Audit logging.
+rubric:
+  criteria:
+    - name: coverage
+      description: Covers the 3 main security mechanisms mentioned in the text.
+      weight: 2.0
+    - name: format
+      description: Exactly 3 bullets, each under 20 words.
+      weight: 1.0
+    - name: accuracy
+      description: No fabricated claims — all bullets grounded in the source text.
+      weight: 2.0
+  pass_threshold: 6.0
+max_turns: 1
+allowed_tools: []

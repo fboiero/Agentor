@@ -1,0 +1,5 @@
+Argentor is an AI agent framework built from scratch in Rust with security as a primitive, not an afterthought. Every skill plugin runs inside a WebAssembly sandbox, isolated from the host system and from other plugins, using capability-based permissions that must be explicitly granted before any sensitive operation like filesystem access or network I/O can occur.
+
+The audit logging subsystem records every tool call and every LLM interaction to an append-only JSONL store, giving operators a cryptographically verifiable trail of what the agent did and when. Combined with the encrypted credential vault (AES-256-GCM with PBKDF2 key derivation), this means sensitive tokens never touch the agent's working memory in plaintext, and every action taken on behalf of a user is traceable.
+
+Compliance modules for GDPR, ISO 27001, and ISO 42001 are built in, not bolted on. The framework ships with pre-built report generators, consent tracking, data-subject-rights workflows, and per-region data residency controls — the primitives regulated industries need to deploy AI agents without a six-month legal review.

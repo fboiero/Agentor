@@ -1,0 +1,186 @@
+//! Native Argentor runner — executes tasks via `AgentRunner`.
+
+use super::{Runner, RunnerKind};
+use crate::task::{Task, TaskResult};
+use argentor_agent::backends::LlmBackend;
+use argentor_agent::llm::LlmResponse;
+use argentor_agent::stream::StreamEvent;
+use argentor_agent::AgentRunner;
+use argentor_core::{ArgentorResult, Message};
+use argentor_security::{AuditLog, PermissionSet};
+use argentor_session::Session;
+use argentor_skills::{SkillDescriptor, SkillRegistry};
+use async_trait::async_trait;
+use chrono::Utc;
+use std::path::Path;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
+
+/// Mock LLM backend that produces canned responses — used for benchmarks when
+/// no real API key is provided. Simulates 50ms latency.
+struct BenchMockBackend {
+    simulated_latency_ms: u64,
+    /// Shared across benchmark harness and backend so the harness can read the
+    /// final count after `.run()` completes.
+    call_count: Arc<AtomicU32>,
+}
+
+#[async_trait]
+impl LlmBackend for BenchMockBackend {
+    async fn chat(
+        &self,
+        _system_prompt: Option<&str>,
+        messages: &[Message],
+        _tools: &[SkillDescriptor],
+    ) -> ArgentorResult<LlmResponse> {
+        tokio::time::sleep(Duration::from_millis(self.simulated_latency_ms)).await;
+        self.call_count.fetch_add(1, Ordering::SeqCst);
+        let last_user = messages
+            .iter()
+            .filter(|m| matches!(m.role, argentor_core::Role::User))
+            .last()
+            .map(|m| m.content.as_str())
+            .unwrap_or("");
+        Ok(LlmResponse::Done(format!(
+            "[argentor-mock] processed: {}",
+            &last_user.chars().take(80).collect::<String>()
+        )))
+    }
+
+    async fn chat_stream(
+        &self,
+        _: Option<&str>,
+        _: &[Message],
+        _: &[SkillDescriptor],
+    ) -> ArgentorResult<(mpsc::Receiver<StreamEvent>, JoinHandle<ArgentorResult<LlmResponse>>)> {
+        let (_tx, rx) = mpsc::channel(1);
+        let handle = tokio::spawn(async { Ok(LlmResponse::Done("stub".to_string())) });
+        Ok((rx, handle))
+    }
+
+    fn provider_name(&self) -> &str {
+        "argentor-bench-mock"
+    }
+}
+
+pub struct ArgentorRunner {
+    use_intelligence: bool,
+    simulated_latency_ms: u64,
+}
+
+impl ArgentorRunner {
+    pub fn new() -> Self {
+        Self {
+            use_intelligence: false,
+            simulated_latency_ms: 50,
+        }
+    }
+
+    pub fn with_intelligence(mut self) -> Self {
+        self.use_intelligence = true;
+        self
+    }
+
+    pub fn with_latency(mut self, ms: u64) -> Self {
+        self.simulated_latency_ms = ms;
+        self
+    }
+}
+
+impl Default for ArgentorRunner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl Runner for ArgentorRunner {
+    fn kind(&self) -> RunnerKind {
+        RunnerKind::Argentor
+    }
+
+    fn name(&self) -> String {
+        format!(
+            "argentor v{} ({})",
+            env!("CARGO_PKG_VERSION"),
+            if self.use_intelligence {
+                "intelligence=on"
+            } else {
+                "intelligence=off"
+            }
+        )
+    }
+
+    async fn run(&self, task: &Task, _task_dir: &Path) -> anyhow::Result<TaskResult> {
+        let started_at = Utc::now();
+
+        // Wire up registry with all builtins
+        let mut registry = SkillRegistry::new();
+        argentor_builtins::register_builtins(&mut registry);
+        let skills = Arc::new(registry);
+        let permissions = PermissionSet::new();
+        let tmp = std::env::temp_dir().join(format!("argentor-bench-{}", task.id));
+        let audit = Arc::new(AuditLog::new(tmp));
+
+        // Shared counter so we can read how many LLM calls the runner made
+        let call_count = Arc::new(AtomicU32::new(0));
+        let backend = BenchMockBackend {
+            simulated_latency_ms: self.simulated_latency_ms,
+            call_count: call_count.clone(),
+        };
+
+        let runner = AgentRunner::from_backend(
+            Box::new(backend),
+            skills,
+            permissions,
+            audit,
+            task.max_turns,
+        );
+
+        let runner = if self.use_intelligence {
+            runner.with_intelligence()
+        } else {
+            runner
+        };
+
+        let mut session = Session::new();
+        let run_result = runner.run(&mut session, &task.prompt).await;
+
+        let ended_at = Utc::now();
+        let llm_calls = call_count.load(Ordering::SeqCst);
+
+        match run_result {
+            Ok(output) => Ok(TaskResult {
+                task_id: task.id.clone(),
+                runner: self.name(),
+                started_at,
+                ended_at,
+                output: output.clone(),
+                llm_calls: llm_calls.max(1),
+                input_tokens: (task.prompt.len() / 4) as u64,
+                output_tokens: (output.len() / 4) as u64,
+                tool_calls: 0, // TODO: derive from debug recorder
+                succeeded: true,
+                error: None,
+                model: "bench-mock".into(),
+            }),
+            Err(e) => Ok(TaskResult {
+                task_id: task.id.clone(),
+                runner: self.name(),
+                started_at,
+                ended_at,
+                output: String::new(),
+                llm_calls: llm_calls.max(0),
+                input_tokens: 0,
+                output_tokens: 0,
+                tool_calls: 0,
+                succeeded: false,
+                error: Some(e.to_string()),
+                model: "bench-mock".into(),
+            }),
+        }
+    }
+}

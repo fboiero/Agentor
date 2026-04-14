@@ -1,0 +1,17 @@
+id: t2_simple_qa
+name: Simple Q&A (arithmetic)
+description: Single-turn Q&A to validate the harness end-to-end quickly.
+kind: qa
+prompt: |
+  What is 147 + 253? Respond with just the number.
+input: ""
+ground_truth: |
+  400
+rubric:
+  criteria:
+    - name: correctness
+      description: The answer is the number 400.
+      weight: 1.0
+  pass_threshold: 5.0
+max_turns: 1
+allowed_tools: []
