@@ -10,6 +10,12 @@ Cargo.lock
 sdks/python/argentor/__pycache__/
 sdks/typescript/node_modules/
 sdks/typescript/package-lock.json
+**/__pycache__/
+*.pyc
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/*.egg-info/
 
 # Secrets — never commit
 .npmrc
