@@ -6,12 +6,14 @@
 
 pub mod cost;
 pub mod quality;
+pub mod stats;
 
 use crate::task::{Task, TaskResult};
 use serde::{Deserialize, Serialize};
 
 pub use cost::CostMetric;
 pub use quality::QualityMetric;
+pub use stats::{PairedTTest, Stats};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LatencyMetric {

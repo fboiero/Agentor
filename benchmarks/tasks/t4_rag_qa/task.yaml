@@ -1,0 +1,35 @@
+id: t4_rag_qa
+name: RAG Question Answering
+description: Answer a specific question using provided reference documents. Tests retrieval + grounded generation.
+kind: rag
+prompt: |
+  You have access to the following reference documents. Answer the question
+  citing only information present in the documents. If the answer is not in
+  the documents, say "Not found in sources."
+
+  Documents:
+  {{input}}
+
+  Question: What is the AES-GCM key derivation function used by Argentor's
+  credential vault, and what is the iteration count target per OWASP 2025?
+input:
+  file: documents.md
+ground_truth: |
+  PBKDF2-HMAC-SHA256. OWASP 2025 recommends 600,000 iterations for PBKDF2 with SHA-256.
+rubric:
+  criteria:
+    - name: correct_kdf
+      description: Identifies PBKDF2-HMAC-SHA256 as the KDF
+      weight: 2.0
+    - name: correct_iterations
+      description: Cites 600K iterations per OWASP 2025
+      weight: 2.0
+    - name: grounded
+      description: Answer is grounded in the source documents, no fabrication
+      weight: 2.0
+    - name: format
+      description: Answers concisely without unnecessary preamble
+      weight: 1.0
+  pass_threshold: 6.5
+max_turns: 2
+allowed_tools: []

@@ -1,0 +1,37 @@
+id: t5_multi_step
+name: Multi-Step Tool Use
+description: Requires chaining multiple tools and reasoning across their outputs.
+kind: tool_use
+prompt: |
+  Perform these steps in order:
+  1. Compute the hash SHA-256 of the string "argentor-v1.1"
+  2. Take the first 8 characters of that hash (hex)
+  3. Get the current UTC date
+  4. Compute 1000 / 7 rounded to 3 decimals
+  5. Return a summary with all four results labeled.
+
+  Use the appropriate built-in tools for each step.
+input: ""
+ground_truth: |
+  SHA-256 prefix of "argentor-v1.1" is a 64-char hex string; first 8 chars.
+  Current UTC date. 1000/7 = 142.857
+rubric:
+  criteria:
+    - name: all_four_results
+      description: Response includes all four requested values, labeled
+      weight: 2.0
+    - name: correct_tools
+      description: Invoked hash_tool, datetime_tool, and calculator (or equivalents)
+      weight: 2.0
+    - name: math_correct
+      description: Division result is 142.857 (to 3 decimals)
+      weight: 1.0
+    - name: coherent
+      description: Steps are executed in order with no contradictions
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 8
+allowed_tools:
+  - hash_tool
+  - datetime_tool
+  - calculator
