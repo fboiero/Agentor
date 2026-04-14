@@ -1,0 +1,191 @@
+{
+  "timestamp": "2026-04-14T02:57:03.133044Z",
+  "runs": [
+    {
+      "task_id": "t1_pdf_summary",
+      "runner": "argentor v0.1.0 (intelligence=off)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 53,
+        "per_turn_ms": 53
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "bench-mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "coverage",
+            0.0
+          ],
+          [
+            "format",
+            0.0
+          ],
+          [
+            "accuracy",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t1_pdf_summary",
+      "runner": "langchain v0.3 (mock-llm)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 74,
+        "per_turn_ms": 74
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "langchain-mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "coverage",
+            0.0
+          ],
+          [
+            "format",
+            0.0
+          ],
+          [
+            "accuracy",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t2_simple_qa",
+      "runner": "argentor v0.1.0 (intelligence=off)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 52,
+        "per_turn_ms": 52
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "bench-mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "correctness",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t2_simple_qa",
+      "runner": "langchain v0.3 (mock-llm)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 72,
+        "per_turn_ms": 72
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "langchain-mock"
+      },
+      "quality": {
+        "aggregate_score": 0.0,
+        "per_criterion": [
+          [
+            "correctness",
+            0.0
+          ]
+        ],
+        "ground_truth_overlap": 0.0,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t3_tool_selection",
+      "runner": "argentor v0.1.0 (intelligence=off)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 51,
+        "per_turn_ms": 51
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "bench-mock"
+      },
+      "quality": {
+        "aggregate_score": 1.875,
+        "per_criterion": [
+          [
+            "tool_correct",
+            1.875
+          ],
+          [
+            "answer_correct",
+            1.875
+          ]
+        ],
+        "ground_truth_overlap": 1.875,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    },
+    {
+      "task_id": "t3_tool_selection",
+      "runner": "langchain v0.3 (mock-llm)",
+      "succeeded": true,
+      "latency": {
+        "wall_ms": 69,
+        "per_turn_ms": 69
+      },
+      "cost": {
+        "input_usd": 0.0,
+        "output_usd": 0.0,
+        "total_usd": 0.0,
+        "model": "langchain-mock"
+      },
+      "quality": {
+        "aggregate_score": 1.875,
+        "per_criterion": [
+          [
+            "tool_correct",
+            1.875
+          ],
+          [
+            "answer_correct",
+            1.875
+          ]
+        ],
+        "ground_truth_overlap": 1.875,
+        "method": "heuristic"
+      },
+      "passed_rubric": false
+    }
+  ]
+}

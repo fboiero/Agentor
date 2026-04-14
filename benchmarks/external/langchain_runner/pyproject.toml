@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "argentor-lc-runner"
+version = "0.1.0"
+description = "LangChain runner for Argentor benchmark harness"
+authors = [{name = "Argentor Contributors"}]
+license = "AGPL-3.0-only"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+real = [
+    "langchain>=0.3",
+    "langchain-core>=0.3",
+    "langchain-anthropic>=0.2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.1",
+]
+
+[project.scripts]
+argentor-lc-runner = "argentor_lc_runner.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/argentor_lc_runner"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100

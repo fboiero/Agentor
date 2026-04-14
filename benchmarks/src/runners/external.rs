@@ -14,19 +14,20 @@ use super::{Runner, RunnerKind};
 use crate::task::{Task, TaskResult};
 use async_trait::async_trait;
 use chrono::Utc;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Stdio;
 use tokio::process::Command;
 
 pub struct ExternalRunner {
-    command: PathBuf,
+    /// Command name (looked up in PATH) or absolute path.
+    command: String,
     args: Vec<String>,
     kind: RunnerKind,
     name: String,
 }
 
 impl ExternalRunner {
-    pub fn new(command: impl Into<PathBuf>, kind: RunnerKind, name: impl Into<String>) -> Self {
+    pub fn new(command: impl Into<String>, kind: RunnerKind, name: impl Into<String>) -> Self {
         Self {
             command: command.into(),
             args: Vec::new(),

@@ -15,7 +15,7 @@
 use anyhow::Context;
 use argentor_benchmarks::metrics;
 use argentor_benchmarks::report::RunReport;
-use argentor_benchmarks::runners::{ArgentorRunner, MockRunner, Runner, RunnerKind};
+use argentor_benchmarks::runners::{ArgentorRunner, ExternalRunner, MockRunner, Runner, RunnerKind};
 use argentor_benchmarks::task::Task;
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
@@ -54,13 +54,16 @@ enum Command {
 #[derive(Clone, Copy, ValueEnum)]
 enum RunnerArg {
     Argentor,
+    Langchain,
     Mock,
 }
 
 impl RunnerArg {
+    #[allow(dead_code)]
     fn kind(&self) -> RunnerKind {
         match self {
             RunnerArg::Argentor => RunnerKind::Argentor,
+            RunnerArg::Langchain => RunnerKind::Langchain,
             RunnerArg::Mock => RunnerKind::Mock,
         }
     }
@@ -74,6 +77,17 @@ impl RunnerArg {
                 } else {
                     Box::new(r)
                 }
+            }
+            RunnerArg::Langchain => {
+                // Honor $ARGENTOR_LC_RUNNER env var first; fallback to PATH lookup
+                // (pip install -e "benchmarks/external/langchain_runner[dev]")
+                let cmd = std::env::var("ARGENTOR_LC_RUNNER")
+                    .unwrap_or_else(|_| "argentor-lc-runner".to_string());
+                Box::new(ExternalRunner::new(
+                    cmd,
+                    RunnerKind::Langchain,
+                    "langchain v0.3 (mock-llm)",
+                ))
             }
             RunnerArg::Mock => Box::new(MockRunner::new()),
         }
