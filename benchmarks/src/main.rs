@@ -58,6 +58,9 @@ enum Command {
 enum RunnerArg {
     Argentor,
     Langchain,
+    Crewai,
+    PydanticAi,
+    ClaudeAgentSdk,
     Mock,
 }
 
@@ -67,6 +70,9 @@ impl RunnerArg {
         match self {
             RunnerArg::Argentor => RunnerKind::Argentor,
             RunnerArg::Langchain => RunnerKind::Langchain,
+            RunnerArg::Crewai => RunnerKind::Crewai,
+            RunnerArg::PydanticAi => RunnerKind::PydanticAi,
+            RunnerArg::ClaudeAgentSdk => RunnerKind::ClaudeAgentSdk,
             RunnerArg::Mock => RunnerKind::Mock,
         }
     }
@@ -88,6 +94,33 @@ impl RunnerArg {
                     cmd,
                     RunnerKind::Langchain,
                     "langchain v0.3 (mock-llm)",
+                ))
+            }
+            RunnerArg::Crewai => {
+                let cmd = std::env::var("ARGENTOR_CREWAI_RUNNER")
+                    .unwrap_or_else(|_| "argentor-crewai-runner".to_string());
+                Box::new(ExternalRunner::new(
+                    cmd,
+                    RunnerKind::Crewai,
+                    "crewai v0.100 (mock-llm)",
+                ))
+            }
+            RunnerArg::PydanticAi => {
+                let cmd = std::env::var("ARGENTOR_PYDANTIC_AI_RUNNER")
+                    .unwrap_or_else(|_| "argentor-pydantic-ai-runner".to_string());
+                Box::new(ExternalRunner::new(
+                    cmd,
+                    RunnerKind::PydanticAi,
+                    "pydantic-ai v0.5 (mock-llm)",
+                ))
+            }
+            RunnerArg::ClaudeAgentSdk => {
+                let cmd = std::env::var("ARGENTOR_CLAUDE_AGENT_SDK_RUNNER")
+                    .unwrap_or_else(|_| "argentor-claude-agent-sdk-runner".to_string());
+                Box::new(ExternalRunner::new(
+                    cmd,
+                    RunnerKind::ClaudeAgentSdk,
+                    "claude-agent-sdk v0.2 (mock-llm)",
                 ))
             }
             RunnerArg::Mock => Box::new(MockRunner::new()),

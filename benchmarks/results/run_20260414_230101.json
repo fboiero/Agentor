@@ -1,0 +1,1165 @@
+{
+  "latency_samples_ms": {
+    "t1_pdf_summary :: argentor v0.1.0 (intelligence=off)": [
+      52.0,
+      52.0,
+      51.0,
+      52.0,
+      51.0,
+      52.0,
+      52.0,
+      52.0,
+      53.0,
+      51.0
+    ],
+    "t1_pdf_summary :: claude-agent-sdk v0.2 (mock-llm)": [
+      68.0,
+      70.0,
+      67.0,
+      64.0,
+      68.0,
+      67.0,
+      70.0,
+      70.0,
+      68.0,
+      70.0
+    ],
+    "t1_pdf_summary :: crewai v0.100 (mock-llm)": [
+      106.0,
+      105.0,
+      110.0,
+      110.0,
+      106.0,
+      105.0,
+      105.0,
+      110.0,
+      107.0,
+      105.0
+    ],
+    "t1_pdf_summary :: langchain v0.3 (mock-llm)": [
+      70.0,
+      74.0,
+      72.0,
+      69.0,
+      67.0,
+      74.0,
+      74.0,
+      72.0,
+      73.0,
+      70.0
+    ],
+    "t1_pdf_summary :: pydantic-ai v0.5 (mock-llm)": [
+      61.0,
+      64.0,
+      64.0,
+      61.0,
+      64.0,
+      63.0,
+      63.0,
+      64.0,
+      64.0,
+      65.0
+    ],
+    "t2_simple_qa :: argentor v0.1.0 (intelligence=off)": [
+      52.0,
+      52.0,
+      51.0,
+      52.0,
+      51.0,
+      52.0,
+      52.0,
+      52.0,
+      52.0,
+      51.0
+    ],
+    "t2_simple_qa :: claude-agent-sdk v0.2 (mock-llm)": [
+      70.0,
+      70.0,
+      65.0,
+      66.0,
+      68.0,
+      70.0,
+      68.0,
+      62.0,
+      67.0,
+      66.0
+    ],
+    "t2_simple_qa :: crewai v0.100 (mock-llm)": [
+      105.0,
+      105.0,
+      110.0,
+      110.0,
+      108.0,
+      105.0,
+      103.0,
+      109.0,
+      105.0,
+      102.0
+    ],
+    "t2_simple_qa :: langchain v0.3 (mock-llm)": [
+      73.0,
+      73.0,
+      71.0,
+      73.0,
+      73.0,
+      69.0,
+      72.0,
+      71.0,
+      67.0,
+      70.0
+    ],
+    "t2_simple_qa :: pydantic-ai v0.5 (mock-llm)": [
+      63.0,
+      64.0,
+      63.0,
+      60.0,
+      62.0,
+      63.0,
+      60.0,
+      60.0,
+      63.0,
+      60.0
+    ],
+    "t3_tool_selection :: argentor v0.1.0 (intelligence=off)": [
+      52.0,
+      52.0,
+      51.0,
+      52.0,
+      52.0,
+      50.0,
+      51.0,
+      52.0,
+      52.0,
+      52.0
+    ],
+    "t3_tool_selection :: claude-agent-sdk v0.2 (mock-llm)": [
+      68.0,
+      62.0,
+      62.0,
+      68.0,
+      67.0,
+      65.0,
+      70.0,
+      66.0,
+      65.0,
+      63.0
+    ],
+    "t3_tool_selection :: crewai v0.100 (mock-llm)": [
+      105.0,
+      101.0,
+      110.0,
+      101.0,
+      108.0,
+      110.0,
+      106.0,
+      107.0,
+      106.0,
+      107.0
+    ],
+    "t3_tool_selection :: langchain v0.3 (mock-llm)": [
+      69.0,
+      68.0,
+      73.0,
+      70.0,
+      73.0,
+      70.0,
+      72.0,
+      73.0,
+      68.0,
+      71.0
+    ],
+    "t3_tool_selection :: pydantic-ai v0.5 (mock-llm)": [
+      65.0,
+      64.0,
+      63.0,
+      64.0,
+      62.0,
+      60.0,
+      62.0,
+      64.0,
+      61.0,
+      64.0
+    ],
+    "t4_rag_qa :: argentor v0.1.0 (intelligence=off)": [
+      52.0,
+      51.0,
+      52.0,
+      52.0,
+      52.0,
+      51.0,
+      52.0,
+      51.0,
+      52.0,
+      52.0
+    ],
+    "t4_rag_qa :: claude-agent-sdk v0.2 (mock-llm)": [
+      65.0,
+      62.0,
+      70.0,
+      70.0,
+      68.0,
+      68.0,
+      67.0,
+      70.0,
+      66.0,
+      70.0
+    ],
+    "t4_rag_qa :: crewai v0.100 (mock-llm)": [
+      105.0,
+      105.0,
+      109.0,
+      110.0,
+      107.0,
+      108.0,
+      110.0,
+      107.0,
+      110.0,
+      107.0
+    ],
+    "t4_rag_qa :: langchain v0.3 (mock-llm)": [
+      69.0,
+      72.0,
+      71.0,
+      74.0,
+      74.0,
+      74.0,
+      73.0,
+      73.0,
+      73.0,
+      67.0
+    ],
+    "t4_rag_qa :: pydantic-ai v0.5 (mock-llm)": [
+      63.0,
+      63.0,
+      62.0,
+      62.0,
+      65.0,
+      61.0,
+      63.0,
+      65.0,
+      65.0,
+      60.0
+    ],
+    "t5_multi_step :: argentor v0.1.0 (intelligence=off)": [
+      51.0,
+      52.0,
+      52.0,
+      52.0,
+      52.0,
+      52.0,
+      52.0,
+      52.0,
+      52.0,
+      51.0
+    ],
+    "t5_multi_step :: claude-agent-sdk v0.2 (mock-llm)": [
+      69.0,
+      70.0,
+      68.0,
+      66.0,
+      69.0,
+      70.0,
+      67.0,
+      69.0,
+      70.0,
+      70.0
+    ],
+    "t5_multi_step :: crewai v0.100 (mock-llm)": [
+      106.0,
+      102.0,
+      106.0,
+      108.0,
+      105.0,
+      106.0,
+      103.0,
+      109.0,
+      110.0,
+      107.0
+    ],
+    "t5_multi_step :: langchain v0.3 (mock-llm)": [
+      69.0,
+      73.0,
+      69.0,
+      73.0,
+      73.0,
+      73.0,
+      70.0,
+      73.0,
+      71.0,
+      71.0
+    ],
+    "t5_multi_step :: pydantic-ai v0.5 (mock-llm)": [
+      63.0,
+      61.0,
+      64.0,
+      60.0,
+      64.0,
+      59.0,
+      63.0,
+      64.0,
+      63.0,
+      64.0
+    ]
+  },
+  "samples_per_combo": 10,
+  "summary": {
+    "runs": [
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "bench-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 52,
+          "wall_ms": 52
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "coverage",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ],
+            [
+              "accuracy",
+              0.0
+            ]
+          ]
+        },
+        "runner": "argentor v0.1.0 (intelligence=off)",
+        "succeeded": true,
+        "task_id": "t1_pdf_summary"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "langchain-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 70,
+          "wall_ms": 70
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "coverage",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ],
+            [
+              "accuracy",
+              0.0
+            ]
+          ]
+        },
+        "runner": "langchain v0.3 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t1_pdf_summary"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "crewai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 106,
+          "wall_ms": 106
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "coverage",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ],
+            [
+              "accuracy",
+              0.0
+            ]
+          ]
+        },
+        "runner": "crewai v0.100 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t1_pdf_summary"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "pydantic-ai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 61,
+          "wall_ms": 61
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "coverage",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ],
+            [
+              "accuracy",
+              0.0
+            ]
+          ]
+        },
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t1_pdf_summary"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "claude-agent-sdk-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 68,
+          "wall_ms": 68
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "coverage",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ],
+            [
+              "accuracy",
+              0.0
+            ]
+          ]
+        },
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t1_pdf_summary"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "bench-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 52,
+          "wall_ms": 52
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correctness",
+              0.0
+            ]
+          ]
+        },
+        "runner": "argentor v0.1.0 (intelligence=off)",
+        "succeeded": true,
+        "task_id": "t2_simple_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "langchain-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 73,
+          "wall_ms": 73
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correctness",
+              0.0
+            ]
+          ]
+        },
+        "runner": "langchain v0.3 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t2_simple_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "crewai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 105,
+          "wall_ms": 105
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correctness",
+              0.0
+            ]
+          ]
+        },
+        "runner": "crewai v0.100 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t2_simple_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "pydantic-ai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 63,
+          "wall_ms": 63
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correctness",
+              0.0
+            ]
+          ]
+        },
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t2_simple_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "claude-agent-sdk-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 70,
+          "wall_ms": 70
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correctness",
+              0.0
+            ]
+          ]
+        },
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t2_simple_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "bench-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 52,
+          "wall_ms": 52
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 1.875,
+          "ground_truth_overlap": 1.875,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "tool_correct",
+              1.875
+            ],
+            [
+              "answer_correct",
+              1.875
+            ]
+          ]
+        },
+        "runner": "argentor v0.1.0 (intelligence=off)",
+        "succeeded": true,
+        "task_id": "t3_tool_selection"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "langchain-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 69,
+          "wall_ms": 69
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 1.875,
+          "ground_truth_overlap": 1.875,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "tool_correct",
+              1.875
+            ],
+            [
+              "answer_correct",
+              1.875
+            ]
+          ]
+        },
+        "runner": "langchain v0.3 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t3_tool_selection"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "crewai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 105,
+          "wall_ms": 105
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 1.875,
+          "ground_truth_overlap": 1.875,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "tool_correct",
+              1.875
+            ],
+            [
+              "answer_correct",
+              1.875
+            ]
+          ]
+        },
+        "runner": "crewai v0.100 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t3_tool_selection"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "pydantic-ai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 65,
+          "wall_ms": 65
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 1.875,
+          "ground_truth_overlap": 1.875,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "tool_correct",
+              1.875
+            ],
+            [
+              "answer_correct",
+              1.875
+            ]
+          ]
+        },
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t3_tool_selection"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "claude-agent-sdk-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 68,
+          "wall_ms": 68
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 1.875,
+          "ground_truth_overlap": 1.875,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "tool_correct",
+              1.875
+            ],
+            [
+              "answer_correct",
+              1.875
+            ]
+          ]
+        },
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t3_tool_selection"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "bench-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 52,
+          "wall_ms": 52
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correct_kdf",
+              0.0
+            ],
+            [
+              "correct_iterations",
+              0.0
+            ],
+            [
+              "grounded",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ]
+          ]
+        },
+        "runner": "argentor v0.1.0 (intelligence=off)",
+        "succeeded": true,
+        "task_id": "t4_rag_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "langchain-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 69,
+          "wall_ms": 69
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correct_kdf",
+              0.0
+            ],
+            [
+              "correct_iterations",
+              0.0
+            ],
+            [
+              "grounded",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ]
+          ]
+        },
+        "runner": "langchain v0.3 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t4_rag_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "crewai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 105,
+          "wall_ms": 105
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correct_kdf",
+              0.0
+            ],
+            [
+              "correct_iterations",
+              0.0
+            ],
+            [
+              "grounded",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ]
+          ]
+        },
+        "runner": "crewai v0.100 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t4_rag_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "pydantic-ai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 63,
+          "wall_ms": 63
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correct_kdf",
+              0.0
+            ],
+            [
+              "correct_iterations",
+              0.0
+            ],
+            [
+              "grounded",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ]
+          ]
+        },
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t4_rag_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "claude-agent-sdk-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 65,
+          "wall_ms": 65
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.0,
+          "ground_truth_overlap": 0.0,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "correct_kdf",
+              0.0
+            ],
+            [
+              "correct_iterations",
+              0.0
+            ],
+            [
+              "grounded",
+              0.0
+            ],
+            [
+              "format",
+              0.0
+            ]
+          ]
+        },
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t4_rag_qa"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "bench-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 51,
+          "wall_ms": 51
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.416666716337204,
+          "ground_truth_overlap": 0.4166666865348816,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "all_four_results",
+              0.4166666865348816
+            ],
+            [
+              "correct_tools",
+              0.4166666865348816
+            ],
+            [
+              "math_correct",
+              0.4166666865348816
+            ],
+            [
+              "coherent",
+              0.4166666865348816
+            ]
+          ]
+        },
+        "runner": "argentor v0.1.0 (intelligence=off)",
+        "succeeded": true,
+        "task_id": "t5_multi_step"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "langchain-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 69,
+          "wall_ms": 69
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.416666716337204,
+          "ground_truth_overlap": 0.4166666865348816,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "all_four_results",
+              0.4166666865348816
+            ],
+            [
+              "correct_tools",
+              0.4166666865348816
+            ],
+            [
+              "math_correct",
+              0.4166666865348816
+            ],
+            [
+              "coherent",
+              0.4166666865348816
+            ]
+          ]
+        },
+        "runner": "langchain v0.3 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t5_multi_step"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "crewai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 106,
+          "wall_ms": 106
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.416666716337204,
+          "ground_truth_overlap": 0.4166666865348816,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "all_four_results",
+              0.4166666865348816
+            ],
+            [
+              "correct_tools",
+              0.4166666865348816
+            ],
+            [
+              "math_correct",
+              0.4166666865348816
+            ],
+            [
+              "coherent",
+              0.4166666865348816
+            ]
+          ]
+        },
+        "runner": "crewai v0.100 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t5_multi_step"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "pydantic-ai-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 63,
+          "wall_ms": 63
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.416666716337204,
+          "ground_truth_overlap": 0.4166666865348816,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "all_four_results",
+              0.4166666865348816
+            ],
+            [
+              "correct_tools",
+              0.4166666865348816
+            ],
+            [
+              "math_correct",
+              0.4166666865348816
+            ],
+            [
+              "coherent",
+              0.4166666865348816
+            ]
+          ]
+        },
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t5_multi_step"
+      },
+      {
+        "cost": {
+          "input_usd": 0.0,
+          "model": "claude-agent-sdk-mock",
+          "output_usd": 0.0,
+          "total_usd": 0.0
+        },
+        "latency": {
+          "per_turn_ms": 69,
+          "wall_ms": 69
+        },
+        "passed_rubric": false,
+        "quality": {
+          "aggregate_score": 0.416666716337204,
+          "ground_truth_overlap": 0.4166666865348816,
+          "method": "heuristic",
+          "per_criterion": [
+            [
+              "all_four_results",
+              0.4166666865348816
+            ],
+            [
+              "correct_tools",
+              0.4166666865348816
+            ],
+            [
+              "math_correct",
+              0.4166666865348816
+            ],
+            [
+              "coherent",
+              0.4166666865348816
+            ]
+          ]
+        },
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "succeeded": true,
+        "task_id": "t5_multi_step"
+      }
+    ],
+    "timestamp": "2026-04-14T23:01:01.791931Z"
+  }
+}

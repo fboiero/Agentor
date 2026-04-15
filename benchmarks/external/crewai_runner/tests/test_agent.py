@@ -1,0 +1,140 @@
+"""Tests for the CrewAI runner agent."""
+from __future__ import annotations
+
+import json
+import tempfile
+from pathlib import Path
+
+import pytest
+
+from argentor_crewai_runner.agent import CrewAiAgent
+from argentor_crewai_runner.mock_llm import MockLlm
+from argentor_crewai_runner.models import Rubric, RubricCriterion, Task
+
+
+def sample_task(**overrides) -> Task:
+    defaults = {
+        "id": "t_test",
+        "name": "Test Task",
+        "description": "",
+        "kind": "qa",
+        "prompt": "What is 2+2?",
+        "input": "",
+        "ground_truth": "4",
+        "rubric": Rubric(
+            criteria=[RubricCriterion(name="correct", description="x", weight=1.0)],
+            pass_threshold=5.0,
+        ),
+        "max_turns": 1,
+        "allowed_tools": [],
+    }
+    defaults.update(overrides)
+    return Task(**defaults)
+
+
+def test_mock_llm_echoes_with_latency():
+    llm = MockLlm(latency_ms=5)
+    response = llm.invoke("hello world")
+    assert "hello world" in response
+    assert "[crewai-mock]" in response
+    assert llm.call_count == 1
+
+
+def test_mock_llm_token_estimators():
+    llm = MockLlm(latency_ms=1)
+    assert llm.estimate_input_tokens("abcdefgh") == 2
+    assert llm.estimate_output_tokens("abcd") == 1
+    assert llm.estimate_input_tokens("") == 0
+
+
+def test_agent_construction_defaults_to_mock_llm():
+    agent = CrewAiAgent()
+    assert isinstance(agent.llm, MockLlm)
+
+
+def test_agent_runs_successfully():
+    agent = CrewAiAgent(llm=MockLlm(latency_ms=1))
+    task = sample_task()
+    with tempfile.TemporaryDirectory() as td:
+        result = agent.run(task, td)
+    assert result.succeeded
+    assert result.task_id == "t_test"
+    assert result.llm_calls == 1
+    assert result.runner == "crewai v0.100 (mock-llm)"
+    assert result.model == "crewai-mock"
+
+
+def test_agent_reports_tokens():
+    agent = CrewAiAgent(llm=MockLlm(latency_ms=1))
+    task = sample_task(prompt="a longer prompt that should produce more tokens")
+    with tempfile.TemporaryDirectory() as td:
+        result = agent.run(task, td)
+    assert result.input_tokens > 0
+    assert result.output_tokens > 0
+
+
+def test_agent_handles_file_input():
+    with tempfile.TemporaryDirectory() as td:
+        sample_path = Path(td, "doc.txt")
+        sample_path.write_text("the content of the document")
+        task = sample_task(
+            prompt="Summarize: {{input}}",
+            input={"file": "doc.txt"},
+        )
+        agent = CrewAiAgent(llm=MockLlm(latency_ms=1))
+        result = agent.run(task, td)
+    assert result.succeeded
+    # Prompt substitution should have happened → output contains the mock prefix
+    assert "[crewai-mock]" in result.output
+
+
+def test_agent_handles_missing_file():
+    with tempfile.TemporaryDirectory() as td:
+        task = sample_task(
+            prompt="Summarize: {{input}}",
+            input={"file": "nonexistent.txt"},
+        )
+        agent = CrewAiAgent(llm=MockLlm(latency_ms=1))
+        result = agent.run(task, td)
+    assert not result.succeeded
+    assert "input load failed" in (result.error or "")
+
+
+def test_framework_overhead_applied():
+    """Agent should take at LEAST framework_overhead + llm_latency."""
+    agent = CrewAiAgent(llm=MockLlm(latency_ms=10))
+    task = sample_task()
+    with tempfile.TemporaryDirectory() as td:
+        result = agent.run(task, td)
+    delta_ms = (result.ended_at - result.started_at).total_seconds() * 1000
+    # FRAMEWORK_OVERHEAD (50) + mock latency (10) = ~60ms minimum
+    assert delta_ms >= 55, f"expected >= 55ms, got {delta_ms:.1f}"
+
+
+def test_framework_overhead_constant():
+    """Ensure the documented constant remains 50ms (Speakeasy 2026 mid-point)."""
+    assert CrewAiAgent.FRAMEWORK_OVERHEAD_MS == 50
+
+
+def test_result_serializes_to_json():
+    agent = CrewAiAgent(llm=MockLlm(latency_ms=1))
+    task = sample_task()
+    with tempfile.TemporaryDirectory() as td:
+        result = agent.run(task, td)
+    js = result.model_dump_json()
+    back = json.loads(js)
+    assert back["task_id"] == "t_test"
+    assert back["succeeded"] is True
+    assert "started_at" in back
+    assert "ended_at" in back
+    assert back["runner"].startswith("crewai")
+
+
+def test_task_input_inline_string():
+    task = sample_task(input="inline value")
+    assert task.load_input("/tmp") == "inline value"
+
+
+def test_task_input_empty_string_default():
+    task = sample_task(input="")
+    assert task.load_input("/tmp") == ""
