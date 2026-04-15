@@ -56,6 +56,64 @@ fn pricing(model: &str) -> (f64, f64) {
     }
 }
 
+/// Project a per-task cost to a daily spend given requests/day.
+pub fn project_daily(cost_per_task: f64, requests_per_day: u64) -> f64 {
+    cost_per_task * requests_per_day as f64
+}
+
+/// Project a per-task cost to a monthly spend (30 days/month convention).
+pub fn project_monthly(cost_per_task: f64, requests_per_day: u64) -> f64 {
+    project_daily(cost_per_task, requests_per_day) * 30.0
+}
+
+/// Project a per-task cost to an annual spend (365 days).
+pub fn project_annual(cost_per_task: f64, requests_per_day: u64) -> f64 {
+    project_daily(cost_per_task, requests_per_day) * 365.0
+}
+
+/// Predefined workload scales (requests per day).
+#[derive(Debug, Clone, Copy)]
+pub enum Scale {
+    /// Hobby / small product — 1K req/day.
+    Small,
+    /// Mid-size SaaS — 100K req/day.
+    Mid,
+    /// Large product — 1M req/day.
+    Large,
+    /// Enterprise — 100M req/day.
+    Enterprise,
+}
+
+impl Scale {
+    pub fn requests_per_day(self) -> u64 {
+        match self {
+            Scale::Small => 1_000,
+            Scale::Mid => 100_000,
+            Scale::Large => 1_000_000,
+            Scale::Enterprise => 100_000_000,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Scale::Small => "small (1K/day)",
+            Scale::Mid => "mid (100K/day)",
+            Scale::Large => "large (1M/day)",
+            Scale::Enterprise => "enterprise (100M/day)",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "small" => Some(Scale::Small),
+            "mid" => Some(Scale::Mid),
+            "large" => Some(Scale::Large),
+            "enterprise" => Some(Scale::Enterprise),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -100,5 +158,41 @@ mod tests {
         let a = compute("claude-sonnet-4-20250514", 1_000_000, 1_000_000);
         let b = compute("claude-sonnet-4", 1_000_000, 1_000_000);
         assert_eq!(a.total_usd, b.total_usd);
+    }
+
+    #[test]
+    fn daily_projection_scales_linearly() {
+        assert_eq!(project_daily(0.001, 100_000), 100.0);
+    }
+
+    #[test]
+    fn monthly_is_30x_daily() {
+        let d = project_daily(0.001, 100_000);
+        let m = project_monthly(0.001, 100_000);
+        assert!((m - d * 30.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn annual_is_365x_daily() {
+        let d = project_daily(0.001, 100_000);
+        let a = project_annual(0.001, 100_000);
+        assert!((a - d * 365.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn scale_parse_round_trip() {
+        assert!(matches!(Scale::parse("small"), Some(Scale::Small)));
+        assert!(matches!(Scale::parse("MID"), Some(Scale::Mid)));
+        assert!(matches!(Scale::parse("large"), Some(Scale::Large)));
+        assert!(matches!(Scale::parse("Enterprise"), Some(Scale::Enterprise)));
+        assert!(Scale::parse("foo").is_none());
+    }
+
+    #[test]
+    fn scale_rpd_correct() {
+        assert_eq!(Scale::Small.requests_per_day(), 1_000);
+        assert_eq!(Scale::Mid.requests_per_day(), 100_000);
+        assert_eq!(Scale::Large.requests_per_day(), 1_000_000);
+        assert_eq!(Scale::Enterprise.requests_per_day(), 100_000_000);
     }
 }

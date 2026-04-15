@@ -1,0 +1,25 @@
+id: cost_tool_02_20tools
+name: Cost — 20 tools available
+description: |
+  Mid-size tool registry. Naïve frameworks ship ~1000 tok of manifest every
+  call. Argentor filters to top 5 by relevance — saves ~750 tok/turn.
+kind: cost
+prompt: |
+  Look up the CEO of Anthropic, find their most recent interview, and
+  summarize the three takeaways. Pick the right tools from the registry.
+input: ""
+ground_truth: null
+simulated_turns: 1
+tool_count: 20
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Task completes without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: Tool filtering reduces manifest tokens meaningfully.
+      weight: 2.0
+  pass_threshold: 6.0
+max_turns: 1
+allowed_tools: []

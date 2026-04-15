@@ -4,6 +4,7 @@
 //! - Latency (wall clock)
 //! - Quality (LLM-as-judge, stubbed for now)
 
+pub mod block_rate;
 pub mod cost;
 pub mod quality;
 pub mod stats;
@@ -11,6 +12,7 @@ pub mod stats;
 use crate::task::{Task, TaskResult};
 use serde::{Deserialize, Serialize};
 
+pub use block_rate::{compute_block_rate, BlockRateMetric};
 pub use cost::CostMetric;
 pub use quality::QualityMetric;
 pub use stats::{PairedTTest, Stats};
@@ -85,6 +87,10 @@ mod tests {
             },
             max_turns: 1,
             allowed_tools: vec![],
+            expected_blocked: None,
+            simulated_turns: 1,
+            tool_count: 0,
+            context_size_bytes: 0,
         }
     }
 
@@ -104,6 +110,11 @@ mod tests {
             succeeded: true,
             error: None,
             model: "mock".into(),
+            was_blocked: false,
+            block_reason: None,
+            prompt_tokens_sent: 0,
+            tool_description_tokens: 0,
+            context_history_tokens: 0,
         };
         let m = compute(&task, &result);
         assert!(m.succeeded);

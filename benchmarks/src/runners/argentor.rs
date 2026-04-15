@@ -1,8 +1,10 @@
 //! Native Argentor runner — executes tasks via `AgentRunner`.
 
 use super::{Runner, RunnerKind};
-use crate::task::{Task, TaskResult};
+use crate::cost_sim::{self, CostWorkload, Framework};
+use crate::task::{Task, TaskKind, TaskResult};
 use argentor_agent::backends::LlmBackend;
+use argentor_agent::guardrails::GuardrailEngine;
 use argentor_agent::llm::LlmResponse;
 use argentor_agent::stream::StreamEvent;
 use argentor_agent::AgentRunner;
@@ -117,6 +119,82 @@ impl Runner for ArgentorRunner {
     async fn run(&self, task: &Task, _task_dir: &Path) -> anyhow::Result<TaskResult> {
         let started_at = Utc::now();
 
+        // Cost benchmark path: short-circuit to the cost simulator so token
+        // accounting is deterministic (no real LLM, no random variance).
+        if task.kind == TaskKind::Cost {
+            let framework = if self.use_intelligence {
+                Framework::ArgentorIntelligent
+            } else {
+                Framework::ArgentorBase
+            };
+            let wl = CostWorkload {
+                framework,
+                prompt: task.prompt.clone(),
+                turns: task.simulated_turns.max(1),
+                tool_count: task.tool_count,
+                context_bytes: task.context_size_bytes,
+            };
+            let b = cost_sim::simulate(&wl);
+            let ended_at = Utc::now();
+            return Ok(TaskResult {
+                task_id: task.id.clone(),
+                runner: self.name(),
+                started_at,
+                ended_at,
+                output: format!(
+                    "[argentor-cost-sim] turns={} tools={} ctx_bytes={}",
+                    wl.turns, wl.tool_count, wl.context_bytes
+                ),
+                llm_calls: b.llm_calls,
+                input_tokens: b.prompt_tokens_sent,
+                output_tokens: b.output_tokens,
+                tool_calls: 0,
+                succeeded: true,
+                error: None,
+                model: "claude-sonnet-4".into(),
+                was_blocked: false,
+                block_reason: None,
+                prompt_tokens_sent: b.prompt_tokens_sent,
+                tool_description_tokens: b.tool_description_tokens,
+                context_history_tokens: b.context_history_tokens,
+            });
+        }
+
+        // Input guardrails: run the default GuardrailEngine against the prompt
+        // before invoking the LLM. If a Block-severity violation is detected we
+        // short-circuit and return a blocked result. This is the "out-of-the-box"
+        // security posture that the Security benchmark track measures.
+        let engine = GuardrailEngine::new();
+        let guard = engine.check_input(&task.prompt);
+        if !guard.passed {
+            // Summarize the first blocking violation as the block reason.
+            let reason = guard
+                .violations
+                .iter()
+                .find(|v| matches!(v.severity, argentor_agent::guardrails::RuleSeverity::Block))
+                .map(|v| format!("{}: {}", v.rule_name, v.message))
+                .unwrap_or_else(|| "input blocked by guardrails".into());
+            return Ok(TaskResult {
+                task_id: task.id.clone(),
+                runner: self.name(),
+                started_at,
+                ended_at: Utc::now(),
+                output: String::new(),
+                llm_calls: 0,
+                input_tokens: 0,
+                output_tokens: 0,
+                tool_calls: 0,
+                succeeded: true,
+                error: None,
+                model: "bench-mock".into(),
+                was_blocked: true,
+                block_reason: Some(reason),
+                prompt_tokens_sent: 0,
+                tool_description_tokens: 0,
+                context_history_tokens: 0,
+            });
+        }
+
         // Wire up registry with all builtins
         let mut registry = SkillRegistry::new();
         argentor_builtins::register_builtins(&mut registry);
@@ -166,6 +244,11 @@ impl Runner for ArgentorRunner {
                 succeeded: true,
                 error: None,
                 model: "bench-mock".into(),
+                was_blocked: false,
+                block_reason: None,
+                prompt_tokens_sent: 0,
+                tool_description_tokens: 0,
+                context_history_tokens: 0,
             }),
             Err(e) => Ok(TaskResult {
                 task_id: task.id.clone(),
@@ -180,6 +263,11 @@ impl Runner for ArgentorRunner {
                 succeeded: false,
                 error: Some(e.to_string()),
                 model: "bench-mock".into(),
+                was_blocked: false,
+                block_reason: None,
+                prompt_tokens_sent: 0,
+                tool_description_tokens: 0,
+                context_history_tokens: 0,
             }),
         }
     }

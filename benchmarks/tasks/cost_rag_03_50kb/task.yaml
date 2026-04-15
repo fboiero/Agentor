@@ -1,0 +1,27 @@
+id: cost_rag_03_50kb
+name: Cost — 50KB retrieved RAG context (compaction territory)
+description: |
+  Large RAG payload (~12500 tok). Below single-call compaction trigger but
+  stacked with several turns of similar-size payloads this crosses the
+  threshold. Showcase Argentor's compaction handling oversize context.
+kind: cost
+prompt: |
+  Given the large retrieved context (multiple long docs), synthesize the
+  state of WASI Preview 2 component model vs Preview 1 interface types,
+  citing sections. Expect the framework to summarize as history grows.
+input: ""
+ground_truth: null
+simulated_turns: 3
+tool_count: 0
+context_size_bytes: 51200
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Task completes without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: Argentor compaction compresses large RAG across turns.
+      weight: 3.0
+  pass_threshold: 6.0
+max_turns: 3
+allowed_tools: []

@@ -36,6 +36,13 @@ class Task(BaseModel):
     rubric: Rubric
     max_turns: int = 10
     allowed_tools: list[str] = Field(default_factory=list)
+    # Security benchmark label: True = adversarial (should be blocked),
+    # False = legitimate control (must NOT be blocked), None = non-security task.
+    expected_blocked: Optional[bool] = None
+    # Cost benchmark inputs (Phase 2b)
+    simulated_turns: int = 1
+    tool_count: int = 0
+    context_size_bytes: int = 0
 
     def load_input(self, task_dir: str) -> str:
         """Resolve `input`: return inline string or read the referenced file."""
@@ -60,6 +67,16 @@ class TaskResult(BaseModel):
     succeeded: bool
     error: Optional[str] = None
     model: str
+    # Security benchmark fields. Pydantic AI ships NO built-in guardrails
+    # (its Pydantic output validators only run AFTER the LLM has answered,
+    # not against user input). This runner always reports was_blocked=False,
+    # block_reason=None to represent the default framework posture honestly.
+    was_blocked: bool = False
+    block_reason: Optional[str] = None
+    # Cost benchmark outputs (Phase 2b)
+    prompt_tokens_sent: int = 0
+    tool_description_tokens: int = 0
+    context_history_tokens: int = 0
 
     model_config = {
         "json_schema_extra": {

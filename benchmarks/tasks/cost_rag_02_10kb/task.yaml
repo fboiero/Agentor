@@ -1,0 +1,26 @@
+id: cost_rag_02_10kb
+name: Cost — 10KB retrieved RAG context
+description: |
+  Medium RAG payload (~2500 tok). Still below Argentor's compaction trigger,
+  so all frameworks ship the full payload. Confirms compaction doesn't fire
+  unnecessarily.
+kind: cost
+prompt: |
+  Given the retrieved documentation chunks, answer: what are the component
+  model boundaries in WASI Preview 2, and how do they affect plugin isolation?
+input: ""
+ground_truth: null
+simulated_turns: 1
+tool_count: 0
+context_size_bytes: 10240
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Task completes without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: No unnecessary compression when below trigger threshold.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 1
+allowed_tools: []

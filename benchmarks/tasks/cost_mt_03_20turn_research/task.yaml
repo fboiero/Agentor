@@ -1,0 +1,28 @@
+id: cost_mt_03_20turn_research
+name: Cost — 20-turn research agent
+description: |
+  Long research session: agent incrementally gathers facts, cross-references,
+  and refines conclusions across 20 turns. The history tail is where framework
+  overhead stacks up.
+kind: cost
+prompt: |
+  Research how WebAssembly System Interface (WASI) Preview 2 differs from
+  Preview 1, what breaking changes affect component model adoption, and which
+  runtimes (wasmtime, wasmer, wasmedge) are furthest along. Iterate and
+  synthesize across 20 turns.
+input: ""
+ground_truth: null
+simulated_turns: 20
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: All 20 turns complete without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: History growth stays sub-quadratic when compaction applies.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 20
+allowed_tools: []

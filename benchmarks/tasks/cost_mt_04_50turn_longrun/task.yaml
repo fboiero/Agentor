@@ -1,0 +1,28 @@
+id: cost_mt_04_50turn_longrun
+name: Cost — 50-turn long-running session (compaction territory)
+description: |
+  Long-running agent session — 50 turns of iterative work. This is where
+  Argentor's context_compaction decisively beats naïve frameworks that ship
+  full history every turn (quadratic growth).
+kind: cost
+prompt: |
+  You are an engineering co-pilot working a full afternoon on refactoring a
+  legacy codebase. Over 50 turns you will read files, suggest changes, run
+  tests, and iterate. Expect the conversation history to balloon — the
+  framework must manage it.
+input: ""
+ground_truth: null
+simulated_turns: 50
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: All 50 turns complete without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: Context compaction keeps history cost sub-quadratic.
+      weight: 2.0
+  pass_threshold: 6.0
+max_turns: 50
+allowed_tools: []

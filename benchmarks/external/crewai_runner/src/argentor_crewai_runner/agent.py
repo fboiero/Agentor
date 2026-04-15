@@ -16,6 +16,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from .cost_sim import simulate as simulate_cost
 from .mock_llm import MockLlm
 from .models import Task, TaskResult
 
@@ -34,6 +35,35 @@ class CrewAiAgent:
 
     def run(self, task: Task, task_dir: str) -> TaskResult:
         started = datetime.now(timezone.utc)
+
+        # Cost track: short-circuit to the simulator.
+        if task.kind == "cost":
+            b = simulate_cost(
+                framework="crewai",
+                prompt=task.prompt,
+                turns=max(task.simulated_turns, 1),
+                tool_count=task.tool_count,
+                context_bytes=task.context_size_bytes,
+            )
+            return TaskResult(
+                task_id=task.id,
+                runner="crewai v0.100 (mock-llm)",
+                started_at=started,
+                ended_at=datetime.now(timezone.utc),
+                output=f"[crewai-cost-sim] turns={b.llm_calls}",
+                llm_calls=b.llm_calls,
+                input_tokens=b.prompt_tokens_sent,
+                output_tokens=b.output_tokens,
+                tool_calls=0,
+                succeeded=True,
+                error=None,
+                model="claude-sonnet-4",
+                was_blocked=False,
+                block_reason=None,
+                prompt_tokens_sent=b.prompt_tokens_sent,
+                tool_description_tokens=b.tool_description_tokens,
+                context_history_tokens=b.context_history_tokens,
+            )
 
         # Emulate CrewAI Crew.kickoff(): role/goal string assembly, task
         # orchestration plumbing, and agent executor bootstrap. On a real

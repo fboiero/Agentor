@@ -1,0 +1,27 @@
+id: cost_mt_02_10turn_coding
+name: Cost — 10-turn coding assistance
+description: |
+  Mid-length coding session where the user iteratively refines a Rust function.
+  Each turn references prior code. Frameworks that re-ship all history grow
+  quadratically in token cost.
+kind: cost
+prompt: |
+  Help me write a Rust function that parses a semver string into (major,
+  minor, patch, prerelease). Handle invalid input gracefully. We'll iterate
+  on edge cases and tests across multiple turns.
+input: ""
+ground_truth: null
+simulated_turns: 10
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: All 10 turns complete without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: History-carrying cost stays reasonable vs naïve baseline.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 10
+allowed_tools: []

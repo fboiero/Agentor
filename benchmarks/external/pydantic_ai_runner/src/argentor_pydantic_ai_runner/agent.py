@@ -18,6 +18,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from .cost_sim import simulate as simulate_cost
 from .mock_llm import MockLlm
 from .models import Task, TaskResult
 
@@ -35,6 +36,35 @@ class PydanticAiAgent:
 
     def run(self, task: Task, task_dir: str) -> TaskResult:
         started = datetime.now(timezone.utc)
+
+        # Cost track: short-circuit to the simulator.
+        if task.kind == "cost":
+            b = simulate_cost(
+                framework="pydantic-ai",
+                prompt=task.prompt,
+                turns=max(task.simulated_turns, 1),
+                tool_count=task.tool_count,
+                context_bytes=task.context_size_bytes,
+            )
+            return TaskResult(
+                task_id=task.id,
+                runner="pydantic-ai v0.5 (mock-llm)",
+                started_at=started,
+                ended_at=datetime.now(timezone.utc),
+                output=f"[pydantic-ai-cost-sim] turns={b.llm_calls}",
+                llm_calls=b.llm_calls,
+                input_tokens=b.prompt_tokens_sent,
+                output_tokens=b.output_tokens,
+                tool_calls=0,
+                succeeded=True,
+                error=None,
+                model="claude-sonnet-4",
+                was_blocked=False,
+                block_reason=None,
+                prompt_tokens_sent=b.prompt_tokens_sent,
+                tool_description_tokens=b.tool_description_tokens,
+                context_history_tokens=b.context_history_tokens,
+            )
 
         # Emulate Pydantic AI agent construction: minimal Python dataclass
         # validation + model provider lookup + tool schema generation. The

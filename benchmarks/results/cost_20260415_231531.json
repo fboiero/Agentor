@@ -1,0 +1,1008 @@
+{
+  "pricing_model": "claude-sonnet-4",
+  "requests_per_day": 100000,
+  "results_by_combo": {
+    "cost_mt_01_5turn_support :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 1150,
+        "ended_at": "2026-04-15T23:15:28.227677Z",
+        "error": null,
+        "input_tokens": 1725,
+        "llm_calls": 5,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=5 tools=0 ctx_bytes=0",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 1725,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:28.227663Z",
+        "succeeded": true,
+        "task_id": "cost_mt_01_5turn_support",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_01_5turn_support :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 1150,
+        "ended_at": "2026-04-15T23:15:28.576904Z",
+        "error": null,
+        "input_tokens": 2225,
+        "llm_calls": 5,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=5",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 2225,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.576765Z",
+        "succeeded": true,
+        "task_id": "cost_mt_01_5turn_support",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_01_5turn_support :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 1150,
+        "ended_at": "2026-04-15T23:15:28.422155Z",
+        "error": null,
+        "input_tokens": 3975,
+        "llm_calls": 5,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=5",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 3975,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.422002Z",
+        "succeeded": true,
+        "task_id": "cost_mt_01_5turn_support",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_01_5turn_support :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 1150,
+        "ended_at": "2026-04-15T23:15:28.340093Z",
+        "error": null,
+        "input_tokens": 2475,
+        "llm_calls": 5,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=5",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 2475,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.339967Z",
+        "succeeded": true,
+        "task_id": "cost_mt_01_5turn_support",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_01_5turn_support :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 1150,
+        "ended_at": "2026-04-15T23:15:28.499859Z",
+        "error": null,
+        "input_tokens": 1975,
+        "llm_calls": 5,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=5",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 1975,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.499738Z",
+        "succeeded": true,
+        "task_id": "cost_mt_01_5turn_support",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_02_10turn_coding :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 4410,
+        "ended_at": "2026-04-15T23:15:28.587537Z",
+        "error": null,
+        "input_tokens": 5390,
+        "llm_calls": 10,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=10 tools=0 ctx_bytes=0",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 5390,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:28.587536Z",
+        "succeeded": true,
+        "task_id": "cost_mt_02_10turn_coding",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_02_10turn_coding :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 4410,
+        "ended_at": "2026-04-15T23:15:28.877745Z",
+        "error": null,
+        "input_tokens": 6390,
+        "llm_calls": 10,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=10",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 6390,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.877624Z",
+        "succeeded": true,
+        "task_id": "cost_mt_02_10turn_coding",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_02_10turn_coding :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 4410,
+        "ended_at": "2026-04-15T23:15:28.728493Z",
+        "error": null,
+        "input_tokens": 9890,
+        "llm_calls": 10,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=10",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 9890,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.728373Z",
+        "succeeded": true,
+        "task_id": "cost_mt_02_10turn_coding",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_02_10turn_coding :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 4410,
+        "ended_at": "2026-04-15T23:15:28.652877Z",
+        "error": null,
+        "input_tokens": 6890,
+        "llm_calls": 10,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=10",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 6890,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.652761Z",
+        "succeeded": true,
+        "task_id": "cost_mt_02_10turn_coding",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_02_10turn_coding :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 4410,
+        "ended_at": "2026-04-15T23:15:28.802884Z",
+        "error": null,
+        "input_tokens": 5890,
+        "llm_calls": 10,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=10",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 5890,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.802736Z",
+        "succeeded": true,
+        "task_id": "cost_mt_02_10turn_coding",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_03_20turn_research :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 21280,
+        "ended_at": "2026-04-15T23:15:28.888913Z",
+        "error": null,
+        "input_tokens": 23520,
+        "llm_calls": 20,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=20 tools=0 ctx_bytes=0",
+        "output_tokens": 1000,
+        "prompt_tokens_sent": 23520,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:28.888913Z",
+        "succeeded": true,
+        "task_id": "cost_mt_03_20turn_research",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_03_20turn_research :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 21280,
+        "ended_at": "2026-04-15T23:15:29.174730Z",
+        "error": null,
+        "input_tokens": 25520,
+        "llm_calls": 20,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=20",
+        "output_tokens": 1000,
+        "prompt_tokens_sent": 25520,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.174605Z",
+        "succeeded": true,
+        "task_id": "cost_mt_03_20turn_research",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_03_20turn_research :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 21280,
+        "ended_at": "2026-04-15T23:15:29.027022Z",
+        "error": null,
+        "input_tokens": 32520,
+        "llm_calls": 20,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=20",
+        "output_tokens": 1000,
+        "prompt_tokens_sent": 32520,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.026899Z",
+        "succeeded": true,
+        "task_id": "cost_mt_03_20turn_research",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_03_20turn_research :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 21280,
+        "ended_at": "2026-04-15T23:15:28.953662Z",
+        "error": null,
+        "input_tokens": 26520,
+        "llm_calls": 20,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=20",
+        "output_tokens": 1000,
+        "prompt_tokens_sent": 26520,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:28.953542Z",
+        "succeeded": true,
+        "task_id": "cost_mt_03_20turn_research",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_03_20turn_research :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 21280,
+        "ended_at": "2026-04-15T23:15:29.100380Z",
+        "error": null,
+        "input_tokens": 24520,
+        "llm_calls": 20,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=20",
+        "output_tokens": 1000,
+        "prompt_tokens_sent": 24520,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.100274Z",
+        "succeeded": true,
+        "task_id": "cost_mt_03_20turn_research",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_04_50turn_longrun :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 135975,
+        "ended_at": "2026-04-15T23:15:29.186465Z",
+        "error": null,
+        "input_tokens": 141525,
+        "llm_calls": 50,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=50 tools=0 ctx_bytes=0",
+        "output_tokens": 2500,
+        "prompt_tokens_sent": 141525,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:29.186464Z",
+        "succeeded": true,
+        "task_id": "cost_mt_04_50turn_longrun",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_04_50turn_longrun :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 135975,
+        "ended_at": "2026-04-15T23:15:29.488252Z",
+        "error": null,
+        "input_tokens": 146525,
+        "llm_calls": 50,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=50",
+        "output_tokens": 2500,
+        "prompt_tokens_sent": 146525,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.488113Z",
+        "succeeded": true,
+        "task_id": "cost_mt_04_50turn_longrun",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_04_50turn_longrun :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 135975,
+        "ended_at": "2026-04-15T23:15:29.326407Z",
+        "error": null,
+        "input_tokens": 164025,
+        "llm_calls": 50,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=50",
+        "output_tokens": 2500,
+        "prompt_tokens_sent": 164025,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.326265Z",
+        "succeeded": true,
+        "task_id": "cost_mt_04_50turn_longrun",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_04_50turn_longrun :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 135975,
+        "ended_at": "2026-04-15T23:15:29.250140Z",
+        "error": null,
+        "input_tokens": 149025,
+        "llm_calls": 50,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=50",
+        "output_tokens": 2500,
+        "prompt_tokens_sent": 149025,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.250028Z",
+        "succeeded": true,
+        "task_id": "cost_mt_04_50turn_longrun",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_mt_04_50turn_longrun :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 135975,
+        "ended_at": "2026-04-15T23:15:29.404548Z",
+        "error": null,
+        "input_tokens": 144025,
+        "llm_calls": 50,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=50",
+        "output_tokens": 2500,
+        "prompt_tokens_sent": 144025,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.404419Z",
+        "succeeded": true,
+        "task_id": "cost_mt_04_50turn_longrun",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_01_1kb :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.499120Z",
+        "error": null,
+        "input_tokens": 327,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=1 tools=0 ctx_bytes=1024",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 327,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:29.499114Z",
+        "succeeded": true,
+        "task_id": "cost_rag_01_1kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_01_1kb :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.817145Z",
+        "error": null,
+        "input_tokens": 427,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 427,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.817013Z",
+        "succeeded": true,
+        "task_id": "cost_rag_01_1kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_01_1kb :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.651575Z",
+        "error": null,
+        "input_tokens": 777,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 777,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.651442Z",
+        "succeeded": true,
+        "task_id": "cost_rag_01_1kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_01_1kb :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.570144Z",
+        "error": null,
+        "input_tokens": 477,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 477,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.570017Z",
+        "succeeded": true,
+        "task_id": "cost_rag_01_1kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_01_1kb :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.735514Z",
+        "error": null,
+        "input_tokens": 377,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 377,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.735368Z",
+        "succeeded": true,
+        "task_id": "cost_rag_01_1kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_02_10kb :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.828664Z",
+        "error": null,
+        "input_tokens": 2648,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=1 tools=0 ctx_bytes=10240",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2648,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:29.828663Z",
+        "succeeded": true,
+        "task_id": "cost_rag_02_10kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_02_10kb :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.155220Z",
+        "error": null,
+        "input_tokens": 2748,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2748,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.155090Z",
+        "succeeded": true,
+        "task_id": "cost_rag_02_10kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_02_10kb :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.984864Z",
+        "error": null,
+        "input_tokens": 3098,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 3098,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.984737Z",
+        "succeeded": true,
+        "task_id": "cost_rag_02_10kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_02_10kb :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:29.902175Z",
+        "error": null,
+        "input_tokens": 2798,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2798,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:29.902043Z",
+        "succeeded": true,
+        "task_id": "cost_rag_02_10kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_02_10kb :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.069633Z",
+        "error": null,
+        "input_tokens": 2698,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2698,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.069503Z",
+        "succeeded": true,
+        "task_id": "cost_rag_02_10kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_03_50kb :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 309,
+        "ended_at": "2026-04-15T23:15:30.167825Z",
+        "error": null,
+        "input_tokens": 39018,
+        "llm_calls": 3,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=3 tools=0 ctx_bytes=51200",
+        "output_tokens": 150,
+        "prompt_tokens_sent": 39018,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:30.167825Z",
+        "succeeded": true,
+        "task_id": "cost_rag_03_50kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_03_50kb :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 309,
+        "ended_at": "2026-04-15T23:15:30.502270Z",
+        "error": null,
+        "input_tokens": 39318,
+        "llm_calls": 3,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=3",
+        "output_tokens": 150,
+        "prompt_tokens_sent": 39318,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.502148Z",
+        "succeeded": true,
+        "task_id": "cost_rag_03_50kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_03_50kb :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 309,
+        "ended_at": "2026-04-15T23:15:30.331430Z",
+        "error": null,
+        "input_tokens": 40368,
+        "llm_calls": 3,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=3",
+        "output_tokens": 150,
+        "prompt_tokens_sent": 40368,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.331299Z",
+        "succeeded": true,
+        "task_id": "cost_rag_03_50kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_03_50kb :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 309,
+        "ended_at": "2026-04-15T23:15:30.240999Z",
+        "error": null,
+        "input_tokens": 39468,
+        "llm_calls": 3,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=3",
+        "output_tokens": 150,
+        "prompt_tokens_sent": 39468,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.240876Z",
+        "succeeded": true,
+        "task_id": "cost_rag_03_50kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_rag_03_50kb :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 309,
+        "ended_at": "2026-04-15T23:15:30.418993Z",
+        "error": null,
+        "input_tokens": 39168,
+        "llm_calls": 3,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=3",
+        "output_tokens": 150,
+        "prompt_tokens_sent": 39168,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.418863Z",
+        "succeeded": true,
+        "task_id": "cost_rag_03_50kb",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_01_5tools :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.516039Z",
+        "error": null,
+        "input_tokens": 329,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=1 tools=5 ctx_bytes=0",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 329,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:30.516039Z",
+        "succeeded": true,
+        "task_id": "cost_tool_01_5tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_01_5tools :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.842496Z",
+        "error": null,
+        "input_tokens": 429,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 429,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.842363Z",
+        "succeeded": true,
+        "task_id": "cost_tool_01_5tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_01_5tools :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.671622Z",
+        "error": null,
+        "input_tokens": 779,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 779,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.671489Z",
+        "succeeded": true,
+        "task_id": "cost_tool_01_5tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_01_5tools :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.590090Z",
+        "error": null,
+        "input_tokens": 479,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 479,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.589949Z",
+        "succeeded": true,
+        "task_id": "cost_tool_01_5tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_01_5tools :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.758512Z",
+        "error": null,
+        "input_tokens": 379,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 379,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.758384Z",
+        "succeeded": true,
+        "task_id": "cost_tool_01_5tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_02_20tools :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.855120Z",
+        "error": null,
+        "input_tokens": 335,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=1 tools=20 ctx_bytes=0",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 335,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:30.855119Z",
+        "succeeded": true,
+        "task_id": "cost_tool_02_20tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_02_20tools :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.177162Z",
+        "error": null,
+        "input_tokens": 1185,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 1185,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.177022Z",
+        "succeeded": true,
+        "task_id": "cost_tool_02_20tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 1000,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_02_20tools :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.007767Z",
+        "error": null,
+        "input_tokens": 1535,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 1535,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.007643Z",
+        "succeeded": true,
+        "task_id": "cost_tool_02_20tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 1000,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_02_20tools :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:30.923765Z",
+        "error": null,
+        "input_tokens": 1235,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 1235,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:30.923641Z",
+        "succeeded": true,
+        "task_id": "cost_tool_02_20tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 1000,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_02_20tools :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.093844Z",
+        "error": null,
+        "input_tokens": 1135,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 1135,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.093732Z",
+        "succeeded": true,
+        "task_id": "cost_tool_02_20tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 1000,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_03_50tools :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.189922Z",
+        "error": null,
+        "input_tokens": 350,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[argentor-cost-sim] turns=1 tools=50 ctx_bytes=0",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 350,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-15T23:15:31.189922Z",
+        "succeeded": true,
+        "task_id": "cost_tool_03_50tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 250,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_03_50tools :: claude-agent-sdk v0.2 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.517094Z",
+        "error": null,
+        "input_tokens": 2700,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[claude-agent-sdk-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2700,
+        "runner": "claude-agent-sdk v0.2 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.516969Z",
+        "succeeded": true,
+        "task_id": "cost_tool_03_50tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 2500,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_03_50tools :: crewai v0.100 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.343025Z",
+        "error": null,
+        "input_tokens": 3050,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[crewai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 3050,
+        "runner": "crewai v0.100 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.342903Z",
+        "succeeded": true,
+        "task_id": "cost_tool_03_50tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 2500,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_03_50tools :: langchain v0.3 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.261344Z",
+        "error": null,
+        "input_tokens": 2750,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[langchain-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2750,
+        "runner": "langchain v0.3 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.261232Z",
+        "succeeded": true,
+        "task_id": "cost_tool_03_50tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 2500,
+        "was_blocked": false
+      }
+    ],
+    "cost_tool_03_50tools :: pydantic-ai v0.5 (mock-llm)": [
+      {
+        "context_history_tokens": 0,
+        "ended_at": "2026-04-15T23:15:31.427745Z",
+        "error": null,
+        "input_tokens": 2650,
+        "llm_calls": 1,
+        "model": "claude-sonnet-4",
+        "output": "[pydantic-ai-cost-sim] turns=1",
+        "output_tokens": 50,
+        "prompt_tokens_sent": 2650,
+        "runner": "pydantic-ai v0.5 (mock-llm)",
+        "started_at": "2026-04-15T23:15:31.427616Z",
+        "succeeded": true,
+        "task_id": "cost_tool_03_50tools",
+        "tool_calls": 0,
+        "tool_description_tokens": 2500,
+        "was_blocked": false
+      }
+    ]
+  },
+  "scale": "mid (100K/day)",
+  "timestamp": "2026-04-15T23:15:31.529098+00:00"
+}

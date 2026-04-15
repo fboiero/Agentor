@@ -1,0 +1,27 @@
+id: cost_tool_03_50tools
+name: Cost — 50 tools available (tool_discovery shines)
+description: |
+  Large tool registry simulating an enterprise agent with 50 integrations.
+  Naïve frameworks ship ~2500 tok of manifest every call. Argentor's
+  tool_discovery filters to top 5 — saves ~2250 tok/turn, every turn.
+kind: cost
+prompt: |
+  Find the top 3 bugs filed against the Kubernetes networking stack this
+  quarter, attribute each to the maintainer, and draft outreach emails.
+  Choose the right tools from a large integration registry.
+input: ""
+ground_truth: null
+simulated_turns: 1
+tool_count: 50
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Task completes without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: Tool filtering saves >2000 tokens per turn vs naïve baseline.
+      weight: 3.0
+  pass_threshold: 6.0
+max_turns: 1
+allowed_tools: []

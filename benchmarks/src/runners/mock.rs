@@ -81,6 +81,11 @@ impl Runner for MockRunner {
             succeeded: true,
             error: None,
             model: "mock".into(),
+            was_blocked: false,
+            block_reason: None,
+            prompt_tokens_sent: 0,
+            tool_description_tokens: 0,
+            context_history_tokens: 0,
         })
     }
 }
@@ -110,6 +115,10 @@ mod tests {
             },
             max_turns: 1,
             allowed_tools: vec![],
+            expected_blocked: None,
+            simulated_turns: 1,
+            tool_count: 0,
+            context_size_bytes: 0,
         }
     }
 

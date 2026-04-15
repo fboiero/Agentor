@@ -1,0 +1,24 @@
+id: cost_rag_01_1kb
+name: Cost — 1KB retrieved RAG context
+description: |
+  Small RAG payload. Every framework ships ~250 tokens of retrieved context
+  each call. Baseline — compaction does not fire (below trigger).
+kind: cost
+prompt: |
+  Given the retrieved context, answer: what is the memory model of WASI Preview 2?
+input: ""
+ground_truth: null
+simulated_turns: 1
+tool_count: 0
+context_size_bytes: 1024
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Task completes without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: RAG payload passes through without overhead.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 1
+allowed_tools: []

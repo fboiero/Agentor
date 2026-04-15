@@ -1,0 +1,26 @@
+id: cost_tool_01_5tools
+name: Cost — 5 tools available
+description: |
+  Small tool registry. Frameworks ship the full tool manifest on every call;
+  Argentor's tool_discovery would not meaningfully reduce this (already small).
+  Baseline case — margin should be near zero from tool filtering alone.
+kind: cost
+prompt: |
+  I need to look up today's weather in Buenos Aires and convert 50 USD to ARS.
+  Use whatever tools are appropriate.
+input: ""
+ground_truth: null
+simulated_turns: 1
+tool_count: 5
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Task completes without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: Tool manifest tokens scale with tool_count (no filtering wins).
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 1
+allowed_tools: []

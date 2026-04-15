@@ -87,6 +87,11 @@ impl Runner for ExternalRunner {
                 succeeded: false,
                 error: Some(String::from_utf8_lossy(&output.stderr).to_string()),
                 model: "external".into(),
+                was_blocked: false,
+                block_reason: None,
+                prompt_tokens_sent: 0,
+                tool_description_tokens: 0,
+                context_history_tokens: 0,
             });
         }
 

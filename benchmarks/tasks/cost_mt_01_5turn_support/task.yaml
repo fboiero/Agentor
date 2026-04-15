@@ -1,0 +1,28 @@
+id: cost_mt_01_5turn_support
+name: Cost — 5-turn customer support conversation
+description: |
+  Multi-turn cost probe. Simulates a short customer-support dialogue where the
+  agent answers a billing question across 5 turns. Cost difference between
+  frameworks comes from cumulative history sent back every turn.
+kind: cost
+prompt: |
+  You are a customer support agent. The customer asks: "My invoice last month
+  was $42 but I only used 3 hours of service. Why was I charged for the full
+  plan?" Walk them through the answer with empathy, verify account, cite
+  policy, and offer a refund pathway.
+input: ""
+ground_truth: null
+simulated_turns: 5
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: correct_completion
+      description: Dialogue completes successfully without errors.
+      weight: 1.0
+    - name: cost_efficient
+      description: Prompt tokens sent per turn stay below naïve-framework baseline.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 5
+allowed_tools: []
