@@ -53,6 +53,26 @@ pub struct Task {
     /// prompt by the retriever. Default 0.
     #[serde(default)]
     pub context_size_bytes: u64,
+
+    // ── Long-horizon fields ────────────────────────────────────────────────
+    /// For long-horizon tasks: minimum turns required to complete the task.
+    /// Runners that finish in fewer turns are rewarded; more turns penalised.
+    /// Default 1 for non-long-horizon tasks (field is ignored).
+    #[serde(default = "default_required_turns")]
+    pub required_turns: u32,
+
+    /// For long-horizon tasks: minimum number of tool calls expected.
+    /// Used to detect under-use of available tools (goal-drift indicator).
+    /// Default 0.
+    #[serde(default)]
+    pub min_tool_calls: u32,
+
+    /// For long-horizon tasks: ordered list of state checkpoints the agent
+    /// should demonstrate passing through. Each string is a key phrase that
+    /// should appear in the agent's output at the appropriate stage.
+    /// Used to compute `memory_recall_rate`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory_checkpoints: Option<Vec<String>>,
 }
 
 fn default_max_turns() -> u32 {
@@ -60,6 +80,10 @@ fn default_max_turns() -> u32 {
 }
 
 fn default_simulated_turns() -> u32 {
+    1
+}
+
+fn default_required_turns() -> u32 {
     1
 }
 
@@ -83,6 +107,10 @@ pub enum TaskKind {
     Security,
     /// Cost benchmark — measures prompt tokens sent to the LLM per turn.
     Cost,
+    /// Long-horizon benchmark — multi-step, stateful, tool-chaining tasks.
+    /// Measures turns-to-completion, token accumulation, goal drift, and
+    /// memory recall accuracy across extended sessions (10+ turns).
+    LongHorizon,
 }
 
 /// Input data for a task — either inline text or a file reference.
@@ -200,7 +228,9 @@ impl Task {
     }
 
     /// Discover all tasks under a directory (looks for `task.yaml` files).
-    pub fn discover(tasks_dir: impl AsRef<Path>) -> anyhow::Result<Vec<(Self, std::path::PathBuf)>> {
+    pub fn discover(
+        tasks_dir: impl AsRef<Path>,
+    ) -> anyhow::Result<Vec<(Self, std::path::PathBuf)>> {
         let tasks_dir = tasks_dir.as_ref();
         let mut tasks = Vec::new();
         for entry in fs::read_dir(tasks_dir)? {
@@ -244,6 +274,9 @@ mod tests {
             simulated_turns: 1,
             tool_count: 0,
             context_size_bytes: 0,
+            required_turns: 1,
+            min_tool_calls: 0,
+            memory_checkpoints: None,
         };
         let yaml = serde_yaml::to_string(&task).unwrap();
         let back: Task = serde_yaml::from_str(&yaml).unwrap();
@@ -276,6 +309,9 @@ mod tests {
             simulated_turns: 1,
             tool_count: 0,
             context_size_bytes: 0,
+            required_turns: 1,
+            min_tool_calls: 0,
+            memory_checkpoints: None,
         };
         let yaml = serde_yaml::to_string(&task).unwrap();
         let back: Task = serde_yaml::from_str(&yaml).unwrap();
@@ -297,5 +333,48 @@ mod tests {
     #[test]
     fn default_pass_threshold_is_6() {
         assert_eq!(default_pass_threshold(), 6.0);
+    }
+
+    #[test]
+    fn long_horizon_task_roundtrip() {
+        let task = Task {
+            id: "lh_test_01".into(),
+            name: "LH Test".into(),
+            description: "Long-horizon test".into(),
+            kind: TaskKind::LongHorizon,
+            prompt: "Fix the bug across multiple turns.".into(),
+            input: TaskInput::Inline("".into()),
+            ground_truth: Some("Bug is in line 42.".into()),
+            rubric: Rubric {
+                criteria: vec![RubricCriterion {
+                    name: "memory_recall".into(),
+                    description: "Agent remembers checkpoints.".into(),
+                    weight: 1.0,
+                }],
+                pass_threshold: 6.0,
+            },
+            max_turns: 10,
+            allowed_tools: vec!["read_file".into(), "write_file".into()],
+            expected_blocked: None,
+            simulated_turns: 5,
+            tool_count: 2,
+            context_size_bytes: 0,
+            required_turns: 5,
+            min_tool_calls: 4,
+            memory_checkpoints: Some(vec!["fix_applied".into(), "tests_passing".into()]),
+        };
+        let yaml = serde_yaml::to_string(&task).unwrap();
+        let back: Task = serde_yaml::from_str(&yaml).unwrap();
+        assert_eq!(back.kind, TaskKind::LongHorizon);
+        assert_eq!(back.required_turns, 5);
+        assert_eq!(back.min_tool_calls, 4);
+        let cps = back.memory_checkpoints.as_deref().unwrap();
+        assert_eq!(cps.len(), 2);
+        assert_eq!(cps[0], "fix_applied");
+    }
+
+    #[test]
+    fn default_required_turns_is_1() {
+        assert_eq!(default_required_turns(), 1);
     }
 }

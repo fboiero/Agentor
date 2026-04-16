@@ -1,0 +1,51 @@
+id: lh_research_03_performance_profiling
+name: Multi-step Research — Database Query Performance
+description: |
+  Diagnose a slow API endpoint by profiling database queries. Agent must:
+  read slow query log → identify N+1 pattern → check ORM config → propose
+  index → estimate speedup → write recommendation. Measures tool call
+  sequencing and whether the agent correctly chains findings.
+kind: long_horizon
+prompt: |
+  Our /api/v2/users endpoint takes 4s at P95 with 1000 users in the DB.
+  Use: read_slow_query_log, explain_query, read_orm_config, check_indexes,
+  estimate_speedup, write_report tools to diagnose and recommend a fix.
+  The N+1 hypothesis needs to be confirmed or ruled out before indexing.
+input: ""
+ground_truth: |
+  Root cause: ORM issues 1 query per user for their permissions (N+1).
+  Adding select_related/eager-load reduces to 2 queries total.
+  Secondary: missing index on users.created_at used in ORDER BY.
+  Combined fix: eager-load + index → estimated P95 improvement ~40×.
+required_turns: 7
+min_tool_calls: 6
+memory_checkpoints:
+  - "slow_query_patterns_read"
+  - "n_plus_one_hypothesis_formed"
+  - "orm_config_checked"
+  - "n_plus_one_confirmed"
+  - "index_opportunity_found"
+  - "speedup_estimated"
+simulated_turns: 7
+tool_count: 6
+context_size_bytes: 8192
+rubric:
+  criteria:
+    - name: n_plus_one_confirmed
+      description: Agent confirms N+1 via explain_query before recommending fix.
+      weight: 3.0
+    - name: both_issues_found
+      description: Agent finds both the N+1 and the missing index.
+      weight: 2.0
+    - name: speedup_quantified
+      description: Agent provides a numeric speedup estimate.
+      weight: 2.0
+    - name: goal_focus
+      description: Agent stays on performance; doesn't pivot to unrelated code quality.
+      weight: 1.0
+    - name: memory_continuity
+      description: Agent references slow_query_patterns from turn 1 in the final report.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 10
+allowed_tools: ["read_slow_query_log", "explain_query", "read_orm_config", "check_indexes", "estimate_speedup", "write_report"]

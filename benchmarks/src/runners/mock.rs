@@ -119,6 +119,9 @@ mod tests {
             simulated_turns: 1,
             tool_count: 0,
             context_size_bytes: 0,
+            required_turns: 1,
+            min_tool_calls: 0,
+            memory_checkpoints: None,
         }
     }
 

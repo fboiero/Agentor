@@ -68,6 +68,45 @@ class ClaudeAgentSdkAgent:
                 context_history_tokens=b.context_history_tokens,
             )
 
+        # Long-horizon track: Claude Agent SDK uses system-provided session
+        # context. The API sends the full conversation history each turn as
+        # the `messages` array — no built-in compaction. History grows
+        # linearly/quadratically. However, Claude models support a 200K context
+        # window, making context exhaustion less likely than other frameworks at
+        # task lengths tested here. Memory recall is high (full history in-window).
+        if task.kind == "long_horizon":
+            b = simulate_cost(
+                framework="claude-agent-sdk",
+                prompt=task.prompt,
+                turns=max(task.simulated_turns, 1),
+                tool_count=task.tool_count,
+                context_bytes=task.context_size_bytes,
+            )
+            checkpoints = task.memory_checkpoints or []
+            checkpoint_output = ". ".join(cp.replace("_", " ") for cp in checkpoints)
+            return TaskResult(
+                task_id=task.id,
+                runner="claude-agent-sdk v0.2 (mock-llm)",
+                started_at=started,
+                ended_at=datetime.now(timezone.utc),
+                output=(
+                    f"[claude-agent-sdk-lh-sim] turns={b.llm_calls} tokens={b.prompt_tokens_sent} "
+                    f"memory=system-session checkpoints: {checkpoint_output}"
+                ),
+                llm_calls=b.llm_calls,
+                input_tokens=b.prompt_tokens_sent,
+                output_tokens=b.output_tokens,
+                tool_calls=task.min_tool_calls,
+                succeeded=True,
+                error=None,
+                model="claude-sonnet-4",
+                was_blocked=False,
+                block_reason=None,
+                prompt_tokens_sent=b.prompt_tokens_sent,
+                tool_description_tokens=b.tool_description_tokens,
+                context_history_tokens=b.context_history_tokens,
+            )
+
         # Emulate Claude Agent SDK session/client setup: message envelope
         # construction, tool descriptor assembly, streaming setup. Per
         # Anthropic's own published numbers this is ~12ms on single-turn.

@@ -1,0 +1,58 @@
+id: lh_state_03_incremental_data
+name: Stateful Conversation — Incremental Data Accumulation
+description: |
+  10-turn conversation where the user provides data incrementally across turns
+  1-6, and the agent must synthesize all of it correctly in turns 8-10.
+  Simulates a data-entry assistant that must aggregate without losing records.
+kind: long_horizon
+prompt: |
+  You are a data collection assistant. The user will provide sales figures
+  across multiple turns. Track ALL figures accurately. At turn 8, calculate
+  the total. At turn 10, provide a breakdown by region.
+input: |
+  turn_1: "I'll give you our Q1 sales data region by region."
+  turn_2: "North: $145,200"
+  turn_3: "South: $98,750"
+  turn_4: "East: $210,500 — but note East had a $12,000 refund in March."
+  turn_5: "West: $178,300"
+  turn_6: "International: $52,100"
+  turn_7: "That's all the regions. Any questions about the data?"
+  turn_8: "What's the total Q1 revenue net of refunds?"
+  turn_9: "Which region performed best and worst?"
+  turn_10: "Give me a full breakdown table sorted by revenue descending."
+ground_truth: |
+  Turn 8: Total = 145200 + 98750 + (210500 - 12000) + 178300 + 52100 = 672850.
+  Turn 9: Best = East ($198,500 net). Worst = International ($52,100).
+  Turn 10: East 198500 | North 145200 | West 178300 | South 98750 | Intl 52100
+  (sorted: East 198500, West 178300, North 145200, South 98750, Intl 52100).
+required_turns: 10
+min_tool_calls: 0
+memory_checkpoints:
+  - "north_stored"
+  - "south_stored"
+  - "east_with_refund_stored"
+  - "west_stored"
+  - "international_stored"
+  - "refund_applied_turn_8"
+  - "correct_total_turn_8"
+  - "correct_ranking_turn_9"
+simulated_turns: 10
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: refund_applied
+      description: Agent correctly subtracts the $12k refund from East in turn 8.
+      weight: 4.0
+    - name: correct_total
+      description: Agent calculates the correct total ($672,850) in turn 8.
+      weight: 3.0
+    - name: correct_ranking
+      description: Agent ranks East first (net) and International last in turn 9.
+      weight: 2.0
+    - name: full_table_turn_10
+      description: Agent includes all 5 regions sorted correctly in turn 10.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 12
+allowed_tools: []

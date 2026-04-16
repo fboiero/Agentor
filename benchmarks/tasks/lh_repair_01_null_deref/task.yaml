@@ -1,0 +1,48 @@
+id: lh_repair_01_null_deref
+name: Code Repair — Null Dereference
+description: |
+  Fix a null-pointer dereference bug across 3 source files. The agent must
+  read files, identify the root cause, propose and apply a fix, then run
+  the test to verify. Simulates a SWE-bench-style repair loop.
+kind: long_horizon
+prompt: |
+  You are a senior engineer debugging a crash in production.
+  The crash is: "NullPointerException in UserService.getProfile() at line 42".
+  You have access to: read_file, write_file, run_tests tools.
+  Files: user_service.py, user_repository.py, user_model.py.
+  Fix the bug and confirm the test passes. Think step by step across multiple turns.
+input: ""
+ground_truth: |
+  Root cause: user_repository.find_by_id() returns None when user not found,
+  but user_service.get_profile() dereferences result without null check.
+  Fix: add None guard before attribute access.
+required_turns: 5
+min_tool_calls: 4
+memory_checkpoints:
+  - "identified_root_cause"
+  - "fix_proposed"
+  - "fix_applied"
+  - "tests_passing"
+simulated_turns: 5
+tool_count: 3
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: root_cause_identified
+      description: Agent correctly traces crash to null dereference path.
+      weight: 2.0
+    - name: fix_applied
+      description: Agent applies a null guard fix without breaking the happy path.
+      weight: 3.0
+    - name: tests_confirmed
+      description: Agent explicitly verifies the fix by running tests.
+      weight: 2.0
+    - name: turns_efficient
+      description: Agent completes within required_turns (5).
+      weight: 1.0
+    - name: memory_continuity
+      description: Agent recalls context from earlier turns in later reasoning.
+      weight: 2.0
+  pass_threshold: 6.0
+max_turns: 8
+allowed_tools: ["read_file", "write_file", "run_tests"]

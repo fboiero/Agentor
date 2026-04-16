@@ -1,0 +1,49 @@
+id: lh_repair_03_race_condition
+name: Code Repair — Race Condition in Cache
+description: |
+  Fix a race condition in a concurrent in-memory cache where simultaneous
+  reads and writes produce stale reads. Agent must trace through concurrency
+  primitives, identify the missing synchronization point, and verify fix.
+kind: long_horizon
+prompt: |
+  Our cache has intermittent stale-read bugs under load tests. The CI log shows:
+  "AssertionError: expected 'updated_value', got 'old_value'" in test_concurrent_writes.
+  Files: cache.py, cache_test.py, lock_utils.py.
+  Use read_file, run_tests, write_file. You'll need multiple turns to trace the
+  lock acquisition order and identify the window where stale reads occur.
+input: ""
+ground_truth: |
+  Root cause: cache.get() reads data without acquiring the read lock, while
+  cache.set() acquires the write lock. A concurrent set() during get() yields
+  a stale value. Fix: wrap cache.get() body with the read lock context manager.
+required_turns: 6
+min_tool_calls: 6
+memory_checkpoints:
+  - "stale_read_window_identified"
+  - "lock_hierarchy_mapped"
+  - "fix_proposed"
+  - "fix_applied"
+  - "concurrent_test_passing"
+simulated_turns: 6
+tool_count: 3
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: concurrency_root_cause
+      description: Agent correctly identifies the unsynchronized read path.
+      weight: 3.0
+    - name: minimal_lock_fix
+      description: Agent adds read lock without converting to single-threaded.
+      weight: 2.0
+    - name: test_confirmation
+      description: Agent runs the concurrent test and reports pass.
+      weight: 2.0
+    - name: memory_continuity
+      description: Agent refers back to lock_hierarchy_mapped checkpoint in final fix.
+      weight: 1.0
+    - name: turns_efficient
+      description: Completes within 6 turns.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 9
+allowed_tools: ["read_file", "write_file", "run_tests"]

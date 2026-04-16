@@ -1,0 +1,59 @@
+id: lh_state_02_project_context
+name: Stateful Conversation — Project Context Retention
+description: |
+  12-turn conversation where technical project facts established in turns 2-4
+  must be recalled accurately in turns 9-12. Simulates a coding assistant
+  that must track project stack and constraints across a long session.
+kind: long_horizon
+prompt: |
+  You are a coding assistant. The user establishes project context early.
+  You must retain ALL technical facts and apply them in later answers.
+  Do not contradict earlier context. Do not ask for re-clarification.
+input: |
+  turn_1: "I need help with my project."
+  turn_2: "We're using Rust 1.80, Tokio 1.x, and Axum 0.7."
+  turn_3: "We must stay on stable Rust only — no nightly features."
+  turn_4: "Our DB is PostgreSQL 15 via sqlx with the runtime-tokio-rustls feature."
+  turn_5: "Can you explain async/await in Rust?"
+  turn_6: "What is the difference between Arc and Rc?"
+  turn_7: "How does Tokio's task spawning work?"
+  turn_8: "We just decided to add Redis for session storage."
+  turn_9: "What version of Rust do we need for the async_closure feature?"
+  turn_10: "Can we use the async-std runtime instead of Tokio for a module?"
+  turn_11: "Write me a basic Axum handler for user creation."
+  turn_12: "Review the handler for compatibility with our stack."
+ground_truth: |
+  Turn 9: Agent must say "stable Rust doesn't support async_closure yet" (from turn 3 constraint).
+  Turn 10: Agent must warn about mixing async-std and Tokio runtimes given our Tokio choice.
+  Turn 11: Handler must use Axum 0.7 patterns (not 0.6 or 0.8).
+  Turn 12: Agent must check against Rust stable, Tokio 1.x, Axum 0.7, sqlx PostgreSQL 15.
+required_turns: 12
+min_tool_calls: 0
+memory_checkpoints:
+  - "rust_version_stored"
+  - "nightly_ban_stored"
+  - "db_stack_stored"
+  - "redis_addition_noted"
+  - "constraint_applied_turn_9"
+  - "runtime_warning_turn_10"
+  - "full_stack_applied_turn_12"
+simulated_turns: 12
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: nightly_ban_recalled
+      description: Agent correctly cites the stable-only constraint for turn 9.
+      weight: 3.0
+    - name: runtime_conflict_warned
+      description: Agent warns about async-std/Tokio mixing in turn 10.
+      weight: 3.0
+    - name: handler_version_correct
+      description: Agent uses Axum 0.7 API patterns in turn 11.
+      weight: 2.0
+    - name: full_stack_review_turn_12
+      description: Agent checks all 5 stack components in turn 12.
+      weight: 2.0
+  pass_threshold: 6.0
+max_turns: 14
+allowed_tools: []

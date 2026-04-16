@@ -72,10 +72,8 @@ fn word_overlap(a: &str, b: &str) -> f32 {
         .split_whitespace()
         .filter(|w| w.len() > 2) // skip stop words heuristically
         .collect();
-    let b_words: std::collections::HashSet<&str> = b_lower
-        .split_whitespace()
-        .filter(|w| w.len() > 2)
-        .collect();
+    let b_words: std::collections::HashSet<&str> =
+        b_lower.split_whitespace().filter(|w| w.len() > 2).collect();
     if a_words.is_empty() || b_words.is_empty() {
         return 0.0;
     }
@@ -115,6 +113,9 @@ mod tests {
             simulated_turns: 1,
             tool_count: 0,
             context_size_bytes: 0,
+            required_turns: 1,
+            min_tool_calls: 0,
+            memory_checkpoints: None,
         }
     }
 

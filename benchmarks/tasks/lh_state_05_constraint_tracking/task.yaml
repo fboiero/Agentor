@@ -1,0 +1,63 @@
+id: lh_state_05_constraint_tracking
+name: Stateful Conversation — Constraint Tracking and Conflict Detection
+description: |
+  10-turn conversation where the user introduces constraints incrementally
+  (turns 1-5) and then asks the agent to detect conflicts and enforce them
+  in turns 6-10. Tests whether the agent can maintain a constraint graph
+  across a long session and identify violations.
+kind: long_horizon
+prompt: |
+  You are a requirements tracking assistant. The user will add constraints
+  one by one. Track ALL constraints and detect conflicts. Enforce them when
+  the user proposes solutions in later turns.
+input: |
+  turn_1: "Constraint C1: The system must respond in under 200ms at P99."
+  turn_2: "Constraint C2: All data must be encrypted at rest using AES-256."
+  turn_3: "Constraint C3: We cannot use any third-party cloud services — on-prem only."
+  turn_4: "Constraint C4: The team has only 2 engineers available."
+  turn_5: "Constraint C5: We must ship in 6 weeks."
+  turn_6: "We want to use AWS RDS for the database."
+  turn_7: "We want to implement a custom encryption layer on top of RDS."
+  turn_8: "We're thinking of adding a Redis cache to hit the 200ms target."
+  turn_9: "Actually, can we use ElastiCache instead of a self-hosted Redis?"
+  turn_10: "List all constraints and flag which proposed solutions violate them."
+ground_truth: |
+  Turn 6: Violates C3 (AWS is a cloud service).
+  Turn 7: C2 can be satisfied on-prem, but violates C4/C5 (custom crypto in 6 weeks with 2 engineers is high risk).
+  Turn 8: Redis self-hosted is compatible with C1, C2, C3.
+  Turn 9: ElastiCache violates C3 (AWS service).
+  Turn 10: Full constraint list with violations: C3 violated by turns 6 and 9. C4/C5 risk flagged for turn 7.
+required_turns: 10
+min_tool_calls: 0
+memory_checkpoints:
+  - "c1_latency_stored"
+  - "c2_encryption_stored"
+  - "c3_on_prem_stored"
+  - "c4_team_size_stored"
+  - "c5_timeline_stored"
+  - "c3_violation_detected_turn_6"
+  - "c3_violation_detected_turn_9"
+  - "all_constraints_recalled_turn_10"
+simulated_turns: 10
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: c3_violation_turn_6
+      description: Agent flags AWS RDS as violating C3 in turn 6.
+      weight: 3.0
+    - name: c3_violation_turn_9
+      description: Agent flags ElastiCache as violating C3 in turn 9.
+      weight: 2.0
+    - name: c4_c5_risk_turn_7
+      description: Agent flags capacity/timeline risk for custom encryption.
+      weight: 2.0
+    - name: full_constraint_recall_turn_10
+      description: Agent lists all 5 constraints with correct violation mapping.
+      weight: 2.0
+    - name: no_contradiction
+      description: Agent doesn't approve solutions that contradict stated constraints.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 12
+allowed_tools: []

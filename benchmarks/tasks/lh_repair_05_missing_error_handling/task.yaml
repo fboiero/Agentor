@@ -1,0 +1,51 @@
+id: lh_repair_05_missing_error_handling
+name: Code Repair — Missing Error Handling in File I/O
+description: |
+  Fix missing error handling in a file processing pipeline that silently drops
+  records when the input file has encoding issues. Agent must trace the I/O
+  path, add proper error handling, and verify that malformed records are
+  reported rather than silently discarded.
+kind: long_horizon
+prompt: |
+  Our data import pipeline drops ~3% of records silently. The logs show no errors
+  but the record count is consistently wrong. Files: importer.py, parser.py,
+  record_store.py, import_test.py.
+  Use read_file, write_file, run_tests. Trace the full I/O pipeline to find
+  where encoding exceptions are swallowed.
+input: ""
+ground_truth: |
+  Root cause: parser.py has a bare `except: pass` around the decode() call,
+  silently dropping records with non-UTF-8 bytes. Fix: replace with
+  `except UnicodeDecodeError as e: logger.warning(...)` and re-raise or
+  track the error so callers know which records failed.
+required_turns: 5
+min_tool_calls: 5
+memory_checkpoints:
+  - "silent_drop_location_found"
+  - "bare_except_identified"
+  - "logging_strategy_decided"
+  - "fix_applied"
+  - "malformed_test_passing"
+simulated_turns: 5
+tool_count: 3
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: silent_failure_traced
+      description: Agent finds the bare except block that swallows the error.
+      weight: 3.0
+    - name: logging_added
+      description: Agent adds visibility (log/raise) rather than just removing the except.
+      weight: 2.0
+    - name: test_with_malformed_input
+      description: Agent creates or runs a test with malformed encoding.
+      weight: 2.0
+    - name: memory_continuity
+      description: References the record count discrepancy from the prompt in final summary.
+      weight: 1.0
+    - name: turns_efficient
+      description: Completes within 5 turns.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 8
+allowed_tools: ["read_file", "write_file", "run_tests"]

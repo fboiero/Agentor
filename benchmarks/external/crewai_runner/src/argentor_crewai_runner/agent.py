@@ -65,6 +65,45 @@ class CrewAiAgent:
                 context_history_tokens=b.context_history_tokens,
             )
 
+        # Long-horizon track: CrewAI has built-in crew memory (short-term,
+        # long-term, entity memory via mem0). For multi-agent tasks this
+        # provides recall — but it also adds the role/goal/backstory preamble
+        # (500 tok) on EVERY turn, even for single-agent crews. Full history
+        # shipped; no compaction. Memory recall: modelled as high (checkpoints
+        # included in output) because crew memory persists across tasks.
+        if task.kind == "long_horizon":
+            b = simulate_cost(
+                framework="crewai",
+                prompt=task.prompt,
+                turns=max(task.simulated_turns, 1),
+                tool_count=task.tool_count,
+                context_bytes=task.context_size_bytes,
+            )
+            checkpoints = task.memory_checkpoints or []
+            checkpoint_output = ". ".join(cp.replace("_", " ") for cp in checkpoints)
+            return TaskResult(
+                task_id=task.id,
+                runner="crewai v0.100 (mock-llm)",
+                started_at=started,
+                ended_at=datetime.now(timezone.utc),
+                output=(
+                    f"[crewai-lh-sim] turns={b.llm_calls} tokens={b.prompt_tokens_sent} "
+                    f"memory=CrewMemory checkpoints: {checkpoint_output}"
+                ),
+                llm_calls=b.llm_calls,
+                input_tokens=b.prompt_tokens_sent,
+                output_tokens=b.output_tokens,
+                tool_calls=task.min_tool_calls,
+                succeeded=True,
+                error=None,
+                model="claude-sonnet-4",
+                was_blocked=False,
+                block_reason=None,
+                prompt_tokens_sent=b.prompt_tokens_sent,
+                tool_description_tokens=b.tool_description_tokens,
+                context_history_tokens=b.context_history_tokens,
+            )
+
         # Emulate CrewAI Crew.kickoff(): role/goal string assembly, task
         # orchestration plumbing, and agent executor bootstrap. On a real
         # single-agent crew this consistently lands in the 40-60ms range

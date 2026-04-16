@@ -1,0 +1,47 @@
+id: lh_repair_04_type_mismatch
+name: Code Repair — Type Mismatch in API Serialization
+description: |
+  Fix a type mismatch where an API endpoint returns a string representation of
+  an integer ID when the client expects an integer, causing downstream JSON
+  parsing to fail silently. Agent must trace from client to server across 4 files.
+kind: long_horizon
+prompt: |
+  Our integration tests are failing with: "TypeError: '>' not supported between
+  instances of 'str' and 'int'" after the v2 API migration.
+  Files: api_handler.py, serializer.py, client.py, integration_test.py.
+  Trace through the serialization pipeline. Use read_file, write_file, run_tests.
+input: ""
+ground_truth: |
+  Root cause: serializer.py wraps integer IDs in str() for backwards compat
+  but the v2 API contract specifies int. Client.py compares the id directly
+  as integer. Fix: remove str() wrapping in serializer for the id field.
+required_turns: 5
+min_tool_calls: 6
+memory_checkpoints:
+  - "api_contract_reviewed"
+  - "serializer_type_identified"
+  - "client_expectation_confirmed"
+  - "fix_applied"
+simulated_turns: 5
+tool_count: 3
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: pipeline_traced
+      description: Agent reads all 4 files before proposing a fix.
+      weight: 2.0
+    - name: root_cause_correct
+      description: Agent identifies the str() wrapping as the issue.
+      weight: 3.0
+    - name: fix_targeted
+      description: Agent changes only the serializer, not the client.
+      weight: 2.0
+    - name: memory_continuity
+      description: Agent references the v2 contract when explaining the fix.
+      weight: 1.0
+    - name: turns_efficient
+      description: Completes within 5 turns.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 8
+allowed_tools: ["read_file", "write_file", "run_tests"]

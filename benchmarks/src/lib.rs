@@ -26,6 +26,8 @@ pub mod runners;
 pub mod task;
 
 pub use cost_sim::{simulate as simulate_cost, CostBreakdown, CostWorkload, Framework};
-pub use metrics::{CostMetric, LatencyMetric, QualityMetric, TaskMetrics};
+pub use metrics::{
+    CostMetric, LatencyMetric, LongHorizonMetrics, LongHorizonSummary, QualityMetric, TaskMetrics,
+};
 pub use runners::{Runner, RunnerKind};
-pub use task::{Task, TaskInput, TaskKind, TaskResult, Rubric};
+pub use task::{Rubric, Task, TaskInput, TaskKind, TaskResult};

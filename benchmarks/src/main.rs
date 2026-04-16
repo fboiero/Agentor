@@ -12,9 +12,12 @@
 
 use anyhow::Context;
 use argentor_benchmarks::metrics::cost::{self as cost_metric, Scale};
+use argentor_benchmarks::metrics::long_horizon::{self as lh_metric, LongHorizonSummary};
 use argentor_benchmarks::metrics::{self, compute_block_rate, BlockRateMetric, PairedTTest, Stats};
 use argentor_benchmarks::report::RunReport;
-use argentor_benchmarks::runners::{ArgentorRunner, ExternalRunner, MockRunner, Runner, RunnerKind};
+use argentor_benchmarks::runners::{
+    ArgentorRunner, ExternalRunner, MockRunner, Runner, RunnerKind,
+};
 use argentor_benchmarks::task::{Task, TaskKind, TaskResult};
 use clap::{Parser, Subcommand, ValueEnum};
 use std::collections::HashMap;
@@ -56,7 +59,11 @@ enum Command {
     /// Run security-track only: discover tasks with `kind: security` and
     /// compute block-rate / precision / recall / F1 per runner.
     Security {
-        #[arg(long, value_delimiter = ',', default_value = "argentor,langchain,crewai,pydantic-ai,claude-agent-sdk")]
+        #[arg(
+            long,
+            value_delimiter = ',',
+            default_value = "argentor,langchain,crewai,pydantic-ai,claude-agent-sdk"
+        )]
         runners: Vec<RunnerArg>,
         /// Number of samples per (task, runner) pair.
         #[arg(long, default_value_t = 1)]
@@ -65,7 +72,11 @@ enum Command {
     /// Run cost-track only: discover `kind: cost` tasks and compute
     /// prompt-tokens-sent + dollar-cost per runner + scale projections.
     Cost {
-        #[arg(long, value_delimiter = ',', default_value = "argentor,langchain,crewai,pydantic-ai,claude-agent-sdk")]
+        #[arg(
+            long,
+            value_delimiter = ',',
+            default_value = "argentor,langchain,crewai,pydantic-ai,claude-agent-sdk"
+        )]
         runners: Vec<RunnerArg>,
         /// Number of samples per (task, runner) pair. Cost simulation is
         /// deterministic so 1 is plenty — higher values validate consistency.
@@ -77,6 +88,21 @@ enum Command {
         /// Pricing model (used for $/task, $/day, $/month, $/year).
         #[arg(long, default_value = "claude-sonnet-4")]
         pricing_model: String,
+    },
+    /// Run long-horizon-track only: discover `kind: long_horizon` tasks and
+    /// measure turns-to-completion, token accumulation, goal drift, and
+    /// memory recall rate per runner.
+    LongHorizon {
+        #[arg(
+            long,
+            value_delimiter = ',',
+            default_value = "argentor,langchain,crewai,pydantic-ai,claude-agent-sdk"
+        )]
+        runners: Vec<RunnerArg>,
+        /// Number of samples per (task, runner) pair. 1 is sufficient for the
+        /// deterministic simulation path.
+        #[arg(long, default_value_t = 1)]
+        samples: usize,
     },
 }
 
@@ -182,8 +208,8 @@ async fn main() -> anyhow::Result<()> {
             intelligence,
         } => {
             let task_yaml = cli.tasks_dir.join(&task).join("task.yaml");
-            let (t, dir) = Task::load_yaml(&task_yaml)
-                .with_context(|| format!("loading {:?}", task_yaml))?;
+            let (t, dir) =
+                Task::load_yaml(&task_yaml).with_context(|| format!("loading {:?}", task_yaml))?;
             let r = runner.build(intelligence);
             println!("Running {} on {}", t.id, r.name());
             let result = r.run(&t, &dir).await?;
@@ -236,12 +262,8 @@ async fn main() -> anyhow::Result<()> {
 
             if samples > 1 {
                 println!("\n## Latency stats (N={samples})\n");
-                println!(
-                    "| Task | Runner | Mean | Median | Stddev | Min | Max | P95 | P99 |"
-                );
-                println!(
-                    "|------|--------|------|--------|--------|-----|-----|-----|-----|"
-                );
+                println!("| Task | Runner | Mean | Median | Stddev | Min | Max | P95 | P99 |");
+                println!("|------|--------|------|--------|--------|-----|-----|-----|-----|");
                 let mut keys: Vec<_> = latency_by_combo.keys().collect();
                 keys.sort();
                 for (task_id, runner_name) in keys {
@@ -340,6 +362,9 @@ async fn main() -> anyhow::Result<()> {
         } => {
             run_cost(&cli.tasks_dir, &runners, samples, &scale, &pricing_model).await?;
         }
+        Command::LongHorizon { runners, samples } => {
+            run_long_horizon(&cli.tasks_dir, &runners, samples).await?;
+        }
     }
 
     Ok(())
@@ -352,8 +377,8 @@ async fn run_security(
     runners: &[RunnerArg],
     samples: usize,
 ) -> anyhow::Result<()> {
-    let all_tasks = Task::discover(tasks_dir)
-        .with_context(|| format!("discovering tasks in {tasks_dir:?}"))?;
+    let all_tasks =
+        Task::discover(tasks_dir).with_context(|| format!("discovering tasks in {tasks_dir:?}"))?;
     let security_tasks: Vec<_> = all_tasks
         .into_iter()
         .filter(|(t, _)| t.kind == TaskKind::Security)
@@ -409,8 +434,12 @@ async fn run_security(
 
     // Print the overall per-runner table.
     println!("\n## Security block-rate results\n");
-    println!("| Runner | Tasks | TP | TN | FP | FN | Block rate | Precision | Recall | F1 | Accuracy |");
-    println!("|--------|-------|----|----|----|----|-----------|-----------|--------|----|----------|");
+    println!(
+        "| Runner | Tasks | TP | TN | FP | FN | Block rate | Precision | Recall | F1 | Accuracy |"
+    );
+    println!(
+        "|--------|-------|----|----|----|----|-----------|-----------|--------|----|----------|"
+    );
 
     let mut runner_names: Vec<_> = results_by_runner.keys().cloned().collect();
     runner_names.sort();
@@ -573,11 +602,12 @@ async fn run_cost(
     scale_str: &str,
     pricing_model: &str,
 ) -> anyhow::Result<()> {
-    let scale = Scale::parse(scale_str)
-        .with_context(|| format!("invalid scale '{scale_str}' (expected small|mid|large|enterprise)"))?;
+    let scale = Scale::parse(scale_str).with_context(|| {
+        format!("invalid scale '{scale_str}' (expected small|mid|large|enterprise)")
+    })?;
 
-    let all_tasks = Task::discover(tasks_dir)
-        .with_context(|| format!("discovering tasks in {tasks_dir:?}"))?;
+    let all_tasks =
+        Task::discover(tasks_dir).with_context(|| format!("discovering tasks in {tasks_dir:?}"))?;
     let cost_tasks: Vec<_> = all_tasks
         .into_iter()
         .filter(|(t, _)| t.kind == TaskKind::Cost)
@@ -645,7 +675,8 @@ async fn run_cost(
 
     for (task, _) in &sorted_tasks {
         for runner_name in &runner_display {
-            let Some(results) = results_by_combo.get(&(task.id.clone(), runner_name.clone())) else {
+            let Some(results) = results_by_combo.get(&(task.id.clone(), runner_name.clone()))
+            else {
                 continue;
             };
             if results.is_empty() {
@@ -653,15 +684,19 @@ async fn run_cost(
             }
             let n = results.len() as f64;
             let mean_tokens = results.iter().map(|r| r.prompt_tokens_sent).sum::<u64>() as f64 / n;
-            let mean_tool = results.iter().map(|r| r.tool_description_tokens).sum::<u64>() as f64 / n;
-            let mean_hist = results.iter().map(|r| r.context_history_tokens).sum::<u64>() as f64 / n;
+            let mean_tool = results
+                .iter()
+                .map(|r| r.tool_description_tokens)
+                .sum::<u64>() as f64
+                / n;
+            let mean_hist = results
+                .iter()
+                .map(|r| r.context_history_tokens)
+                .sum::<u64>() as f64
+                / n;
             let mean_output = results.iter().map(|r| r.output_tokens).sum::<u64>() as f64 / n;
 
-            let cost = cost_metric::compute(
-                pricing_model,
-                mean_tokens as u64,
-                mean_output as u64,
-            );
+            let cost = cost_metric::compute(pricing_model, mean_tokens as u64, mean_output as u64);
 
             println!(
                 "| `{}` | {} | {} | {} | {:.1} | {:.0} | {:.0} | {:.0} | ${:.6} |",
@@ -676,12 +711,15 @@ async fn run_cost(
                 cost.total_usd,
             );
 
-            *total_tokens_per_runner.entry(runner_name.clone()).or_insert(0) +=
-                mean_tokens as u64;
-            *total_output_per_runner.entry(runner_name.clone()).or_insert(0) +=
-                mean_output as u64;
-            *total_dollars_per_runner.entry(runner_name.clone()).or_insert(0.0) +=
-                cost.total_usd;
+            *total_tokens_per_runner
+                .entry(runner_name.clone())
+                .or_insert(0) += mean_tokens as u64;
+            *total_output_per_runner
+                .entry(runner_name.clone())
+                .or_insert(0) += mean_output as u64;
+            *total_dollars_per_runner
+                .entry(runner_name.clone())
+                .or_insert(0.0) += cost.total_usd;
         }
     }
 
@@ -689,13 +727,13 @@ async fn run_cost(
     let task_count = sorted_tasks.len() as f64;
     let rpd = scale.requests_per_day();
 
-    println!("\n## Scale projection — {} ({} req/day)\n", scale.label(), rpd);
     println!(
-        "| Runner | tokens/task (mean) | $/task | $/day | $/month | $/year |"
+        "\n## Scale projection — {} ({} req/day)\n",
+        scale.label(),
+        rpd
     );
-    println!(
-        "|--------|-------------------|--------|-------|---------|--------|"
-    );
+    println!("| Runner | tokens/task (mean) | $/task | $/day | $/month | $/year |");
+    println!("|--------|-------------------|--------|-------|---------|--------|");
 
     // Sort runners so Argentor shows first.
     let mut runners_sorted = runner_display.clone();
@@ -735,21 +773,21 @@ async fn run_cost(
             if runner_name.starts_with("argentor") {
                 continue;
             }
-            let comp_tok = *total_tokens_per_runner.get(runner_name).unwrap_or(&0) as f64
-                / task_count;
+            let comp_tok =
+                *total_tokens_per_runner.get(runner_name).unwrap_or(&0) as f64 / task_count;
             let savings = comp_tok - ag_tok;
-            let ratio = if ag_tok > 0.0 {
-                comp_tok / ag_tok
-            } else {
-                0.0
-            };
+            let ratio = if ag_tok > 0.0 { comp_tok / ag_tok } else { 0.0 };
             println!(
                 "| {} | {:.0} | {:.0} | {:.0} ({:.1}%) | {:.2}× |",
                 runner_name,
                 comp_tok,
                 ag_tok,
                 savings,
-                if comp_tok > 0.0 { savings / comp_tok * 100.0 } else { 0.0 },
+                if comp_tok > 0.0 {
+                    savings / comp_tok * 100.0
+                } else {
+                    0.0
+                },
                 ratio,
             );
         }
@@ -783,6 +821,267 @@ async fn run_cost(
         "results_by_combo": flat,
     });
     std::fs::write(&out, serde_json::to_string_pretty(&payload)?)?;
+    println!("\nResults written to {}", out.display());
+
+    Ok(())
+}
+
+/// Long-horizon track runner. Discovers `kind: long_horizon` tasks, runs each
+/// runner, then prints a comparison table of token accumulation, memory recall,
+/// and goal drift — the key metrics for long-horizon agent quality.
+async fn run_long_horizon(
+    tasks_dir: &std::path::Path,
+    runners: &[RunnerArg],
+    samples: usize,
+) -> anyhow::Result<()> {
+    let all_tasks =
+        Task::discover(tasks_dir).with_context(|| format!("discovering tasks in {tasks_dir:?}"))?;
+    let lh_tasks: Vec<_> = all_tasks
+        .into_iter()
+        .filter(|(t, _)| t.kind == TaskKind::LongHorizon)
+        .collect();
+
+    if lh_tasks.is_empty() {
+        anyhow::bail!(
+            "no long-horizon tasks found in {:?} (looking for kind: long_horizon)",
+            tasks_dir
+        );
+    }
+
+    println!(
+        "Running {} long-horizon tasks × {} runners × {} samples = {} total runs",
+        lh_tasks.len(),
+        runners.len(),
+        samples,
+        lh_tasks.len() * runners.len() * samples
+    );
+
+    // Collect per-(task, runner) results across all samples.
+    let mut results_by_combo: HashMap<(String, String), Vec<TaskResult>> = HashMap::new();
+    let mut runner_display: Vec<String> = Vec::new();
+
+    for (task, dir) in &lh_tasks {
+        for r_arg in runners {
+            let runner_box = r_arg.build(r_arg.is_argentor());
+            let runner_name = runner_box.name();
+            if !runner_display.contains(&runner_name) {
+                runner_display.push(runner_name.clone());
+            }
+            println!("▶ {}  [{}] × {}", task.id, runner_name, samples);
+            for _ in 0..samples {
+                let r = r_arg.build(r_arg.is_argentor());
+                let result = r.run(task, dir).await?;
+                results_by_combo
+                    .entry((task.id.clone(), runner_name.clone()))
+                    .or_default()
+                    .push(result);
+            }
+        }
+    }
+
+    // Compute per-task long-horizon metrics (averaged across samples).
+    // We use the first sample's result for the metric computation since the
+    // simulation is deterministic; for multiple samples we average tokens.
+    let mut metrics_by_runner: HashMap<String, Vec<lh_metric::LongHorizonMetrics>> = HashMap::new();
+
+    println!("\n## Per-task long-horizon results\n");
+    println!(
+        "| Task | Runner | Turns | Tokens | Tok@T10 | Recall | Drift | Checkpoints | Success |"
+    );
+    println!(
+        "|------|--------|-------|--------|---------|--------|-------|-------------|---------|"
+    );
+
+    let mut sorted_tasks: Vec<_> = lh_tasks.iter().collect();
+    sorted_tasks.sort_by(|a, b| a.0.id.cmp(&b.0.id));
+
+    for (task, _) in &sorted_tasks {
+        for runner_name in &runner_display {
+            let Some(results) = results_by_combo.get(&(task.id.clone(), runner_name.clone()))
+            else {
+                continue;
+            };
+            if results.is_empty() {
+                continue;
+            }
+            // Use first sample result for qualitative metrics; average tokens.
+            let mut m = lh_metric::compute(task, &results[0]);
+            if results.len() > 1 {
+                let mean_tokens = results.iter().map(|r| r.prompt_tokens_sent).sum::<u64>()
+                    / results.len() as u64;
+                m.tokens_accumulated = mean_tokens;
+                m.tokens_at_turn_10 = if m.turns_used >= 10 {
+                    mean_tokens
+                } else if m.turns_used == 0 {
+                    0
+                } else {
+                    mean_tokens / m.turns_used as u64 * 10
+                };
+            }
+
+            let total_checkpoints = task
+                .memory_checkpoints
+                .as_deref()
+                .map(|v| v.len())
+                .unwrap_or(0);
+
+            println!(
+                "| `{}` | {} | {} | {} | {} | {:.0}% | {:.1} | {}/{} | {} |",
+                task.id,
+                runner_name,
+                m.turns_used,
+                m.tokens_accumulated,
+                m.tokens_at_turn_10,
+                m.memory_recall_rate * 100.0,
+                m.goal_drift_score,
+                m.checkpoints_hit,
+                total_checkpoints,
+                if m.success { "✓" } else { "✗" },
+            );
+
+            metrics_by_runner
+                .entry(runner_name.clone())
+                .or_default()
+                .push(m);
+        }
+    }
+
+    // Summary table: per-runner aggregate.
+    println!("\n## Summary — tokens at turn 10 (canonical cross-framework comparison)\n");
+    println!(
+        "| Runner | Tasks | Succeeded | Mean turns | Tok@T10 (mean) | Recall (mean) | Drift (mean) | Compaction savings |"
+    );
+    println!(
+        "|--------|-------|-----------|------------|---------------|---------------|--------------|-------------------|"
+    );
+
+    // Sort: Argentor first, then alphabetical.
+    let mut runners_sorted = runner_display.clone();
+    runners_sorted.sort_by(|a, b| {
+        let a_ag = a.starts_with("argentor");
+        let b_ag = b.starts_with("argentor");
+        b_ag.cmp(&a_ag).then(a.cmp(b))
+    });
+
+    let mut summaries: Vec<LongHorizonSummary> = Vec::new();
+    for runner_name in &runners_sorted {
+        let empty = Vec::new();
+        let ms = metrics_by_runner.get(runner_name).unwrap_or(&empty);
+        let s = LongHorizonSummary::aggregate(runner_name, ms);
+        println!(
+            "| {} | {} | {} | {:.1} | {:.0} | {:.0}% | {:.1} | {:+.1}% |",
+            runner_name,
+            s.tasks_run,
+            s.tasks_succeeded,
+            s.mean_turns,
+            s.mean_tokens_at_turn_10,
+            s.mean_memory_recall_rate * 100.0,
+            s.mean_goal_drift_score,
+            s.mean_compaction_savings_pct,
+        );
+        summaries.push(s);
+    }
+
+    // Argentor vs competitors: token savings at turn 10.
+    let argentor_tok: Option<f64> = summaries
+        .iter()
+        .find(|s| s.runner.starts_with("argentor"))
+        .map(|s| s.mean_tokens_at_turn_10);
+
+    if let Some(ag_tok) = argentor_tok {
+        println!("\n## Argentor savings vs competitors (tokens at turn 10)\n");
+        println!("| Competitor | Tok@T10 | Argentor Tok@T10 | Savings | Ratio |");
+        println!("|------------|---------|-----------------|---------|-------|");
+        for s in &summaries {
+            if s.runner.starts_with("argentor") {
+                continue;
+            }
+            let comp_tok = s.mean_tokens_at_turn_10;
+            let savings = comp_tok - ag_tok;
+            let ratio = if ag_tok > 0.0 { comp_tok / ag_tok } else { 0.0 };
+            println!(
+                "| {} | {:.0} | {:.0} | {:.0} ({:.1}%) | {:.2}× |",
+                s.runner,
+                comp_tok,
+                ag_tok,
+                savings,
+                if comp_tok > 0.0 {
+                    savings / comp_tok * 100.0
+                } else {
+                    0.0
+                },
+                ratio,
+            );
+        }
+    }
+
+    // Family breakdown: repair / research / state.
+    println!("\n## By task family\n");
+    println!("| Family | Runner | Tok@T10 (mean) | Recall (mean) |");
+    println!("|--------|--------|---------------|---------------|");
+    for family in ["lh_repair", "lh_research", "lh_state"] {
+        for runner_name in &runners_sorted {
+            let empty = Vec::new();
+            let ms = metrics_by_runner.get(runner_name).unwrap_or(&empty);
+            let family_ms: Vec<_> = ms
+                .iter()
+                .filter(|m| m.task_id.starts_with(family))
+                .collect();
+            if family_ms.is_empty() {
+                continue;
+            }
+            let n = family_ms.len() as f64;
+            let mean_tok = family_ms
+                .iter()
+                .map(|m| m.tokens_at_turn_10 as f64)
+                .sum::<f64>()
+                / n;
+            let mean_recall = family_ms
+                .iter()
+                .map(|m| m.memory_recall_rate as f64)
+                .sum::<f64>()
+                / n;
+            let family_label = match family {
+                "lh_repair" => "code_repair",
+                "lh_research" => "multi_step_research",
+                "lh_state" => "stateful_conversation",
+                _ => family,
+            };
+            println!(
+                "| {} | {} | {:.0} | {:.0}% |",
+                family_label,
+                runner_name,
+                mean_tok,
+                mean_recall * 100.0,
+            );
+        }
+    }
+
+    // Persist JSON results.
+    let ts_lh = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let out = tasks_dir
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .join("results")
+        .join(format!("long_horizon_{ts_lh}.json"));
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    let flat_lh: serde_json::Map<String, serde_json::Value> = results_by_combo
+        .iter()
+        .map(|((task_id, runner_name), results)| {
+            (
+                format!("{task_id} :: {runner_name}"),
+                serde_json::to_value(results).unwrap_or(serde_json::Value::Null),
+            )
+        })
+        .collect();
+    let payload_lh = serde_json::json!({
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "results_by_combo": flat_lh,
+        "summaries": summaries,
+    });
+    std::fs::write(&out, serde_json::to_string_pretty(&payload_lh)?)?;
     println!("\nResults written to {}", out.display());
 
     Ok(())

@@ -1,0 +1,51 @@
+id: lh_research_02_library_comparison
+name: Multi-step Research — Library Selection for Async HTTP
+description: |
+  Research and recommend an async HTTP library for a Rust project. Agent must
+  search crates, compare performance data, check license compatibility, review
+  API ergonomics, and produce a decision matrix. Goal: minimum 5 distinct tool
+  calls across search → benchmark → license → API → summary.
+kind: long_horizon
+prompt: |
+  We need to pick an async HTTP client library for our Rust project (AGPL-3.0).
+  Candidates: reqwest, hyper, surf, isahc. Evaluate: performance benchmarks,
+  license compatibility, API ergonomics, maintenance activity.
+  Tools: search_crates, fetch_benchmarks, check_license, read_api_docs, write_report.
+  Produce a recommendation with a comparison matrix.
+input: ""
+ground_truth: |
+  Recommended answer: reqwest (MIT/Apache-2.0, compatible with AGPL) leads on
+  ergonomics and community. hyper is lower-level but faster. surf and isahc
+  have lower maintenance. Decision: reqwest for most use cases, hyper if
+  extreme throughput is required.
+required_turns: 6
+min_tool_calls: 5
+memory_checkpoints:
+  - "candidates_listed"
+  - "benchmarks_retrieved"
+  - "licenses_verified"
+  - "api_ergonomics_compared"
+  - "recommendation_written"
+simulated_turns: 6
+tool_count: 5
+context_size_bytes: 4096
+rubric:
+  criteria:
+    - name: all_candidates_evaluated
+      description: Agent evaluates all 4 candidates before recommending.
+      weight: 2.0
+    - name: license_check_done
+      description: Agent explicitly verifies AGPL compatibility.
+      weight: 3.0
+    - name: comparison_matrix
+      description: Agent produces a table or matrix covering all criteria.
+      weight: 2.0
+    - name: goal_focus
+      description: Agent doesn't drift into unrelated library recommendations.
+      weight: 1.0
+    - name: turns_efficient
+      description: Completes within 6 turns.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 9
+allowed_tools: ["search_crates", "fetch_benchmarks", "check_license", "read_api_docs", "write_report"]

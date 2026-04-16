@@ -1,0 +1,317 @@
+{
+  "results_by_combo": {
+    "lh_repair_01_null_deref :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 1350,
+        "ended_at": "2026-04-16T00:02:45.850998Z",
+        "error": null,
+        "input_tokens": 2775,
+        "llm_calls": 5,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=5 tokens=2775 intelligence=true checkpoints: identified root cause. fix proposed. fix applied. tests passing",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 2775,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:45.599237Z",
+        "succeeded": true,
+        "task_id": "lh_repair_01_null_deref",
+        "tool_calls": 4,
+        "tool_description_tokens": 750,
+        "was_blocked": false
+      }
+    ],
+    "lh_repair_02_off_by_one :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 1290,
+        "ended_at": "2026-04-16T00:02:46.102234Z",
+        "error": null,
+        "input_tokens": 2685,
+        "llm_calls": 5,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=5 tokens=2685 intelligence=true checkpoints: test failure observed. loop boundary identified. fix applied. edge cases verified",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 2685,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:45.851057Z",
+        "succeeded": true,
+        "task_id": "lh_repair_02_off_by_one",
+        "tool_calls": 5,
+        "tool_description_tokens": 750,
+        "was_blocked": false
+      }
+    ],
+    "lh_repair_03_race_condition :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 2115,
+        "ended_at": "2026-04-16T00:02:46.404341Z",
+        "error": null,
+        "input_tokens": 3861,
+        "llm_calls": 6,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=6 tokens=3861 intelligence=true checkpoints: stale read window identified. lock hierarchy mapped. fix proposed. fix applied. concurrent test passing",
+        "output_tokens": 300,
+        "prompt_tokens_sent": 3861,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:46.102278Z",
+        "succeeded": true,
+        "task_id": "lh_repair_03_race_condition",
+        "tool_calls": 6,
+        "tool_description_tokens": 900,
+        "was_blocked": false
+      }
+    ],
+    "lh_repair_04_type_mismatch :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 1220,
+        "ended_at": "2026-04-16T00:02:46.656773Z",
+        "error": null,
+        "input_tokens": 2580,
+        "llm_calls": 5,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=5 tokens=2580 intelligence=true checkpoints: api contract reviewed. serializer type identified. client expectation confirmed. fix applied",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 2580,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:46.404406Z",
+        "succeeded": true,
+        "task_id": "lh_repair_04_type_mismatch",
+        "tool_calls": 6,
+        "tool_description_tokens": 750,
+        "was_blocked": false
+      }
+    ],
+    "lh_repair_05_missing_error_handling :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 1260,
+        "ended_at": "2026-04-16T00:02:46.908942Z",
+        "error": null,
+        "input_tokens": 2640,
+        "llm_calls": 5,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=5 tokens=2640 intelligence=true checkpoints: silent drop location found. bare except identified. logging strategy decided. fix applied. malformed test passing",
+        "output_tokens": 250,
+        "prompt_tokens_sent": 2640,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:46.656871Z",
+        "succeeded": true,
+        "task_id": "lh_repair_05_missing_error_handling",
+        "tool_calls": 5,
+        "tool_description_tokens": 750,
+        "was_blocked": false
+      }
+    ],
+    "lh_research_01_security_cve :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 2709,
+        "ended_at": "2026-04-16T00:02:47.260940Z",
+        "error": null,
+        "input_tokens": 5362,
+        "llm_calls": 7,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=7 tokens=5362 intelligence=true checkpoints: cve details retrieved. direct deps checked. version compared. transitive deps checked. exposure confirmed. remediation identified",
+        "output_tokens": 350,
+        "prompt_tokens_sent": 5362,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:46.909019Z",
+        "succeeded": true,
+        "task_id": "lh_research_01_security_cve",
+        "tool_calls": 6,
+        "tool_description_tokens": 1750,
+        "was_blocked": false
+      }
+    ],
+    "lh_research_02_library_comparison :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 2070,
+        "ended_at": "2026-04-16T00:02:47.563035Z",
+        "error": null,
+        "input_tokens": 4398,
+        "llm_calls": 6,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=6 tokens=4398 intelligence=true checkpoints: candidates listed. benchmarks retrieved. licenses verified. api ergonomics compared. recommendation written",
+        "output_tokens": 300,
+        "prompt_tokens_sent": 4398,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:47.260972Z",
+        "succeeded": true,
+        "task_id": "lh_research_02_library_comparison",
+        "tool_calls": 5,
+        "tool_description_tokens": 1500,
+        "was_blocked": false
+      }
+    ],
+    "lh_research_03_performance_profiling :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 2541,
+        "ended_at": "2026-04-16T00:02:47.914251Z",
+        "error": null,
+        "input_tokens": 5138,
+        "llm_calls": 7,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=7 tokens=5138 intelligence=true checkpoints: slow query patterns read. n plus one hypothesis formed. orm config checked. n plus one confirmed. index opportunity found. speedup estimated",
+        "output_tokens": 350,
+        "prompt_tokens_sent": 5138,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:47.563116Z",
+        "succeeded": true,
+        "task_id": "lh_research_03_performance_profiling",
+        "tool_calls": 6,
+        "tool_description_tokens": 1750,
+        "was_blocked": false
+      }
+    ],
+    "lh_research_04_api_integration :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 2055,
+        "ended_at": "2026-04-16T00:02:48.215254Z",
+        "error": null,
+        "input_tokens": 4377,
+        "llm_calls": 6,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=6 tokens=4377 intelligence=true checkpoints: api docs read. rate limits known. auth requirements known. webhook security known. idempotency spec written. integration spec complete",
+        "output_tokens": 300,
+        "prompt_tokens_sent": 4377,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:47.914312Z",
+        "succeeded": true,
+        "task_id": "lh_research_04_api_integration",
+        "tool_calls": 6,
+        "tool_description_tokens": 1500,
+        "was_blocked": false
+      }
+    ],
+    "lh_research_05_architecture_review :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 4368,
+        "ended_at": "2026-04-16T00:02:48.617348Z",
+        "error": null,
+        "input_tokens": 7616,
+        "llm_calls": 8,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=8 tokens=7616 intelligence=true checkpoints: current architecture mapped. coupling analysis done. shared data identified. network overhead estimated. deployment plan reviewed. consistency model assessed. recommendation formed",
+        "output_tokens": 400,
+        "prompt_tokens_sent": 7616,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:48.215290Z",
+        "succeeded": true,
+        "task_id": "lh_research_05_architecture_review",
+        "tool_calls": 7,
+        "tool_description_tokens": 2000,
+        "was_blocked": false
+      }
+    ],
+    "lh_state_01_user_preferences :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 7065,
+        "ended_at": "2026-04-16T00:02:49.119518Z",
+        "error": null,
+        "input_tokens": 8635,
+        "llm_calls": 10,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=10 tokens=8635 intelligence=true checkpoints: preference dark mode stored. preference indent stored. preference timezone stored. preferences applied turn 8. preferences applied turn 9. full profile recalled turn 10",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 8635,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:48.617410Z",
+        "succeeded": true,
+        "task_id": "lh_state_01_user_preferences",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "lh_state_02_project_context :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 6798,
+        "ended_at": "2026-04-16T00:02:49.721319Z",
+        "error": null,
+        "input_tokens": 8034,
+        "llm_calls": 12,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=12 tokens=8034 intelligence=true checkpoints: rust version stored. nightly ban stored. db stack stored. redis addition noted. constraint applied turn 9. runtime warning turn 10. full stack applied turn 12",
+        "output_tokens": 600,
+        "prompt_tokens_sent": 8034,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:49.119583Z",
+        "succeeded": true,
+        "task_id": "lh_state_02_project_context",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "lh_state_03_incremental_data :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 4545,
+        "ended_at": "2026-04-16T00:02:50.224634Z",
+        "error": null,
+        "input_tokens": 5555,
+        "llm_calls": 10,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=10 tokens=5555 intelligence=true checkpoints: north stored. south stored. east with refund stored. west stored. international stored. refund applied turn 8. correct total turn 8. correct ranking turn 9",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 5555,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:49.721389Z",
+        "succeeded": true,
+        "task_id": "lh_state_03_incremental_data",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "lh_state_04_cross_domain_facts :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 5720,
+        "ended_at": "2026-04-16T00:02:50.776851Z",
+        "error": null,
+        "input_tokens": 6864,
+        "llm_calls": 11,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=11 tokens=6864 intelligence=true checkpoints: mtls policy stored. api key ban stored. cert rotation policy stored. k8s version stored. rolling update policy stored. auth method recalled turn 8. update strategy recalled turn 9. cert rotation recalled turn 10. full policy recalled turn 11",
+        "output_tokens": 550,
+        "prompt_tokens_sent": 6864,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:50.225778Z",
+        "succeeded": true,
+        "task_id": "lh_state_04_cross_domain_facts",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ],
+    "lh_state_05_constraint_tracking :: argentor v0.1.0 (intelligence=on)": [
+      {
+        "context_history_tokens": 4410,
+        "ended_at": "2026-04-16T00:02:51.277865Z",
+        "error": null,
+        "input_tokens": 5390,
+        "llm_calls": 10,
+        "model": "argentor-lh-mock",
+        "output": "[argentor-lh-sim] turns=10 tokens=5390 intelligence=true checkpoints: c1 latency stored. c2 encryption stored. c3 on prem stored. c4 team size stored. c5 timeline stored. c3 violation detected turn 6. c3 violation detected turn 9. all constraints recalled turn 10",
+        "output_tokens": 500,
+        "prompt_tokens_sent": 5390,
+        "runner": "argentor v0.1.0 (intelligence=on)",
+        "started_at": "2026-04-16T00:02:50.776881Z",
+        "succeeded": true,
+        "task_id": "lh_state_05_constraint_tracking",
+        "tool_calls": 0,
+        "tool_description_tokens": 0,
+        "was_blocked": false
+      }
+    ]
+  },
+  "summaries": [
+    {
+      "mean_compaction_savings_pct": -89.30728912353516,
+      "mean_goal_drift_score": 0.0,
+      "mean_memory_recall_rate": 1.0,
+      "mean_tokens_at_turn_10": 6760.533333333334,
+      "mean_turns": 7.5333333015441895,
+      "runner": "argentor v0.1.0 (intelligence=on)",
+      "tasks_run": 15,
+      "tasks_succeeded": 15
+    }
+  ],
+  "timestamp": "2026-04-16T00:02:51.278589+00:00"
+}

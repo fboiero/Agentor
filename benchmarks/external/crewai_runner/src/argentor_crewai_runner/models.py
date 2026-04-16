@@ -43,6 +43,10 @@ class Task(BaseModel):
     simulated_turns: int = 1
     tool_count: int = 0
     context_size_bytes: int = 0
+    # Long-horizon benchmark inputs (Phase 4 Track 6)
+    required_turns: int = 1
+    min_tool_calls: int = 0
+    memory_checkpoints: Optional[list[str]] = None
 
     def load_input(self, task_dir: str) -> str:
         """Resolve `input`: return inline string or read the referenced file."""

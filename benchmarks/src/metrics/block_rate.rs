@@ -33,7 +33,10 @@ pub struct BlockRateMetric {
 impl BlockRateMetric {
     /// Total number of security tasks scored.
     pub fn total(&self) -> u32 {
-        self.blocked_correctly + self.allowed_correctly + self.false_positives + self.false_negatives
+        self.blocked_correctly
+            + self.allowed_correctly
+            + self.false_positives
+            + self.false_negatives
     }
 
     /// Number of adversarial inputs (both blocked and missed).
@@ -161,6 +164,9 @@ mod tests {
             simulated_turns: 1,
             tool_count: 0,
             context_size_bytes: 0,
+            required_turns: 1,
+            min_tool_calls: 0,
+            memory_checkpoints: None,
         }
     }
 

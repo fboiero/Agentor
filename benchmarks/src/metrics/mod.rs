@@ -6,6 +6,7 @@
 
 pub mod block_rate;
 pub mod cost;
+pub mod long_horizon;
 pub mod quality;
 pub mod stats;
 
@@ -14,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 pub use block_rate::{compute_block_rate, BlockRateMetric};
 pub use cost::CostMetric;
+pub use long_horizon::{LongHorizonMetrics, LongHorizonSummary};
 pub use quality::QualityMetric;
 pub use stats::{PairedTTest, Stats};
 
@@ -36,7 +38,9 @@ pub struct TaskMetrics {
 
 /// Compute all metrics from a single result.
 pub fn compute(task: &Task, result: &TaskResult) -> TaskMetrics {
-    let wall_ms = (result.ended_at - result.started_at).num_milliseconds().max(0) as u64;
+    let wall_ms = (result.ended_at - result.started_at)
+        .num_milliseconds()
+        .max(0) as u64;
     let per_turn_ms = if result.llm_calls > 0 {
         wall_ms / result.llm_calls as u64
     } else {
@@ -91,6 +95,9 @@ mod tests {
             simulated_turns: 1,
             tool_count: 0,
             context_size_bytes: 0,
+            required_turns: 1,
+            min_tool_calls: 0,
+            memory_checkpoints: None,
         }
     }
 

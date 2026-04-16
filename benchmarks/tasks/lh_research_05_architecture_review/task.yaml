@@ -1,0 +1,55 @@
+id: lh_research_05_architecture_review
+name: Multi-step Research — Microservice Architecture Review
+description: |
+  Review a proposed microservice split for a monolith and identify risks.
+  Agent must: read current architecture → analyse proposed split → check data
+  coupling → review network overhead → assess deployment complexity → write
+  risk assessment. Tests deep multi-step chaining across 8 tool calls.
+kind: long_horizon
+prompt: |
+  Our team wants to split the Orders service into: OrderCore, OrderHistory,
+  and OrderNotifications. Review the proposal for coupling risks, network
+  overhead, and deployment complexity.
+  Tools: read_architecture, analyse_coupling, check_shared_data, estimate_network_overhead,
+  review_deployment_plan, assess_consistency_model, check_team_capacity, write_risk_assessment.
+  Produce a go/no-go recommendation with justification.
+input: ""
+ground_truth: |
+  Assessment: OrderHistory and OrderCore share the same database table (orders)
+  creating tight data coupling. Splitting requires distributed transactions or
+  event sourcing. Network overhead adds ~2ms per order creation (3 sync calls).
+  Recommendation: Extract OrderNotifications first (event-driven, no shared DB),
+  defer OrderHistory split until event sourcing is in place.
+required_turns: 8
+min_tool_calls: 7
+memory_checkpoints:
+  - "current_architecture_mapped"
+  - "coupling_analysis_done"
+  - "shared_data_identified"
+  - "network_overhead_estimated"
+  - "deployment_plan_reviewed"
+  - "consistency_model_assessed"
+  - "recommendation_formed"
+simulated_turns: 8
+tool_count: 8
+context_size_bytes: 32768
+rubric:
+  criteria:
+    - name: shared_db_identified
+      description: Agent identifies the shared orders table as a coupling risk.
+      weight: 3.0
+    - name: phased_recommendation
+      description: Agent recommends extracting OrderNotifications first.
+      weight: 2.0
+    - name: quantified_tradeoffs
+      description: Agent provides numeric estimates (network overhead, etc.).
+      weight: 2.0
+    - name: goal_focus
+      description: Agent stays on the microservice split, not general architecture patterns.
+      weight: 1.0
+    - name: memory_continuity
+      description: Agent references coupling analysis in the final recommendation.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 11
+allowed_tools: ["read_architecture", "analyse_coupling", "check_shared_data", "estimate_network_overhead", "review_deployment_plan", "assess_consistency_model", "check_team_capacity", "write_risk_assessment"]

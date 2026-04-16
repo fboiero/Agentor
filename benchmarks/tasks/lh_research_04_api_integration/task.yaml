@@ -1,0 +1,52 @@
+id: lh_research_04_api_integration
+name: Multi-step Research — Third-Party API Integration Plan
+description: |
+  Plan an integration with a third-party payment API. Agent must: read API
+  docs → check rate limits → review authentication requirements → check
+  webhook security → identify idempotency requirements → produce integration
+  spec. Measures chain-of-thought quality across 6+ tool calls.
+kind: long_horizon
+prompt: |
+  We need to integrate Stripe's Payment Intents API for one-time charges.
+  Tools: read_api_docs, check_rate_limits, review_auth_requirements,
+  check_webhook_security, identify_idempotency, write_integration_spec.
+  Work through each concern systematically. Don't skip the idempotency step —
+  it's critical for our double-charge prevention requirements.
+input: ""
+ground_truth: |
+  Integration spec must include: API key auth (server-side only), webhook
+  signature validation (Stripe-Signature header + secret), idempotency keys
+  (UUID per payment attempt), rate limit handling (exponential backoff at
+  100/s per key), failure modes and retry policy.
+required_turns: 6
+min_tool_calls: 6
+memory_checkpoints:
+  - "api_docs_read"
+  - "rate_limits_known"
+  - "auth_requirements_known"
+  - "webhook_security_known"
+  - "idempotency_spec_written"
+  - "integration_spec_complete"
+simulated_turns: 6
+tool_count: 6
+context_size_bytes: 16384
+rubric:
+  criteria:
+    - name: idempotency_covered
+      description: Agent explicitly covers idempotency keys in the spec.
+      weight: 3.0
+    - name: webhook_security_covered
+      description: Agent includes Stripe-Signature validation.
+      weight: 2.0
+    - name: all_checkpoints_hit
+      description: Agent touches all 6 tool calls in sequence.
+      weight: 2.0
+    - name: goal_focus
+      description: Agent stays on Stripe integration, not generic payment advice.
+      weight: 1.0
+    - name: memory_continuity
+      description: Agent references the double-charge requirement from the prompt.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 9
+allowed_tools: ["read_api_docs", "check_rate_limits", "review_auth_requirements", "check_webhook_security", "identify_idempotency", "write_integration_spec"]

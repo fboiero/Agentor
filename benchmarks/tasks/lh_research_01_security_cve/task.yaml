@@ -1,0 +1,50 @@
+id: lh_research_01_security_cve
+name: Multi-step Research — CVE Impact Assessment
+description: |
+  Research whether a given CVE (CVE-2024-12345 in libfoo) affects the current
+  project. Requires: search CVE database → read project dependencies → check
+  pinned version → check transitive deps → summarize exposure and remediation.
+  Measures: minimum 6 tool calls, goal drift (does the agent stay on the CVE?).
+kind: long_horizon
+prompt: |
+  Our security team flagged CVE-2024-12345 affecting libfoo < 2.1.3.
+  Assess whether our project is exposed and provide a remediation plan.
+  You have: search_cve, read_dependencies, check_version, list_transitive_deps,
+  read_file, write_report tools.
+  Walk through each step. Do not skip the transitive dependency check.
+input: ""
+ground_truth: |
+  Correct answer: project uses libfoo 2.0.1 (vulnerable), transitively via
+  mylib 1.4. Remediation: upgrade mylib to 1.6+ which pins libfoo >= 2.1.3.
+required_turns: 7
+min_tool_calls: 6
+memory_checkpoints:
+  - "cve_details_retrieved"
+  - "direct_deps_checked"
+  - "version_compared"
+  - "transitive_deps_checked"
+  - "exposure_confirmed"
+  - "remediation_identified"
+simulated_turns: 7
+tool_count: 6
+context_size_bytes: 2048
+rubric:
+  criteria:
+    - name: cve_details_retrieved
+      description: Agent retrieves CVE details before making any claims.
+      weight: 1.0
+    - name: transitive_dep_check
+      description: Agent checks transitive deps, not just direct deps.
+      weight: 3.0
+    - name: correct_exposure
+      description: Agent correctly identifies the project as exposed.
+      weight: 3.0
+    - name: remediation_actionable
+      description: Agent provides a specific upgrade path, not just "upgrade libfoo".
+      weight: 2.0
+    - name: goal_focus
+      description: Agent stays on the CVE without drifting to unrelated security topics.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 10
+allowed_tools: ["search_cve", "read_dependencies", "check_version", "list_transitive_deps", "read_file", "write_report"]

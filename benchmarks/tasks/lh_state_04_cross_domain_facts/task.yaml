@@ -1,0 +1,63 @@
+id: lh_state_04_cross_domain_facts
+name: Stateful Conversation — Cross-Domain Fact Retention
+description: |
+  11-turn conversation that mixes two distinct topic threads (security policy
+  and deployment config). The agent must not cross-contaminate facts between
+  threads and must recall facts from each domain accurately in later turns.
+kind: long_horizon
+prompt: |
+  You are an infrastructure assistant. The conversation covers two topics:
+  security policy (turns 2-3) and deployment configuration (turns 4-5).
+  In turns 8-11, questions will reference both. Keep the domains separate.
+input: |
+  turn_1: "Let's discuss our infrastructure setup."
+  turn_2: "Security policy: all services must use mTLS. API keys are banned for service-to-service auth."
+  turn_3: "We also enforce a 90-day certificate rotation with automated renewal via cert-manager."
+  turn_4: "Deployment: we use Kubernetes 1.29 with Helm charts. Rolling updates only — no blue/green."
+  turn_5: "Max pod restart budget: 10% unavailable during rolling update."
+  turn_6: "Tell me about Kubernetes resource limits best practices."
+  turn_7: "How does cert-manager work generally?"
+  turn_8: "We want to deploy a new internal API service. What auth method should it use?"
+  turn_9: "How should we configure its rolling update strategy?"
+  turn_10: "How often does its certificate need rotation?"
+  turn_11: "Summarise the complete security + deployment policy for the new service."
+ground_truth: |
+  Turn 8: mTLS (not API keys — from turn 2 security policy).
+  Turn 9: Rolling update, max 10% unavailable (from turn 5).
+  Turn 10: 90-day rotation via cert-manager (from turn 3).
+  Turn 11: All 5 facts combined: mTLS, no API keys, 90-day cert rotation, Kubernetes 1.29, 10% restart budget.
+required_turns: 11
+min_tool_calls: 0
+memory_checkpoints:
+  - "mtls_policy_stored"
+  - "api_key_ban_stored"
+  - "cert_rotation_policy_stored"
+  - "k8s_version_stored"
+  - "rolling_update_policy_stored"
+  - "auth_method_recalled_turn_8"
+  - "update_strategy_recalled_turn_9"
+  - "cert_rotation_recalled_turn_10"
+  - "full_policy_recalled_turn_11"
+simulated_turns: 11
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: mtls_recalled_turn_8
+      description: Agent recommends mTLS (not API keys) in turn 8.
+      weight: 3.0
+    - name: rolling_update_recalled_turn_9
+      description: Agent specifies 10% unavailable budget in turn 9.
+      weight: 2.0
+    - name: cert_rotation_recalled_turn_10
+      description: Agent says 90-day rotation in turn 10.
+      weight: 2.0
+    - name: complete_policy_turn_11
+      description: Agent includes all 5 facts in the turn 11 summary.
+      weight: 2.0
+    - name: no_cross_contamination
+      description: Agent doesn't mix security and deployment facts incorrectly.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 13
+allowed_tools: []

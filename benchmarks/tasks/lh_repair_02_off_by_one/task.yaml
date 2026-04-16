@@ -1,0 +1,47 @@
+id: lh_repair_02_off_by_one
+name: Code Repair — Off-by-One in Pagination
+description: |
+  Fix an off-by-one error in a pagination library that causes the last page
+  to contain duplicate items. Agent must read the loop logic, identify the
+  boundary condition bug, patch it, and verify with edge-case tests.
+kind: long_horizon
+prompt: |
+  Our pagination library has a bug: when fetching the last page of results,
+  some items appear twice. The test suite has a failing test: test_last_page_no_duplicates.
+  Files to examine: paginator.py, paginator_test.py, database_mock.py.
+  Use read_file, run_tests, write_file to diagnose and fix. Walk through each step.
+input: ""
+ground_truth: |
+  Root cause: loop uses `i <= total_pages` instead of `i < total_pages`,
+  causing one extra fetch that overlaps with the previous page.
+  Fix: change `<=` to `<` in the page iteration boundary check.
+required_turns: 5
+min_tool_calls: 5
+memory_checkpoints:
+  - "test_failure_observed"
+  - "loop_boundary_identified"
+  - "fix_applied"
+  - "edge_cases_verified"
+simulated_turns: 5
+tool_count: 3
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: boundary_identified
+      description: Agent pinpoints the off-by-one in the loop condition.
+      weight: 2.0
+    - name: minimal_fix
+      description: Agent changes only the boundary condition, not a larger refactor.
+      weight: 2.0
+    - name: edge_case_coverage
+      description: Agent tests the single-page and zero-item edge cases.
+      weight: 2.0
+    - name: turns_efficient
+      description: Completes within 5 turns.
+      weight: 1.0
+    - name: memory_continuity
+      description: References the failing test name in later turns.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 8
+allowed_tools: ["read_file", "write_file", "run_tests"]

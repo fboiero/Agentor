@@ -1,0 +1,60 @@
+id: lh_state_01_user_preferences
+name: Stateful Conversation — User Preference Retention
+description: |
+  10-turn conversation where the user states preferences in turns 2-3 and
+  the agent must apply them correctly in turns 8-9. Simulates a configuration
+  assistant that must remember user settings across many exchanges.
+kind: long_horizon
+prompt: |
+  You are a configuration assistant. The user will tell you their preferences
+  and then ask questions. Remember ALL stated preferences and apply them in
+  later answers. Do not ask the user to repeat themselves.
+  Script: [Turn 2: "I prefer dark mode and 2-space indent"],
+  [Turn 3: "My timezone is UTC+9"],
+  [Turn 7: "Set up my editor"],
+  [Turn 9: "What timezone should I configure for CI?"],
+  [Turn 10: "Show me my complete profile"].
+input: |
+  turn_1: "Hello, can you help me set up my development environment?"
+  turn_2: "I prefer dark mode and 2-space indentation for all my editors."
+  turn_3: "Also, my timezone is UTC+9 (Tokyo)."
+  turn_4: "What IDEs would you recommend for Rust development?"
+  turn_5: "I also work with Python occasionally."
+  turn_6: "What are best practices for Rust error handling?"
+  turn_7: "Okay, now help me set up my editor config."
+  turn_8: "Should I use tabs or spaces in my Python files too?"
+  turn_9: "And what timezone should I set for GitHub Actions CI?"
+  turn_10: "Show me a summary of my complete preferences profile."
+ground_truth: |
+  Turn 8: Agent must say "spaces, 2-space indent" (not ask again).
+  Turn 9: Agent must say "UTC+9" (not ask or give generic advice).
+  Turn 10: Agent must recall dark mode + 2-space + UTC+9 from turns 2-3.
+required_turns: 10
+min_tool_calls: 0
+memory_checkpoints:
+  - "preference_dark_mode_stored"
+  - "preference_indent_stored"
+  - "preference_timezone_stored"
+  - "preferences_applied_turn_8"
+  - "preferences_applied_turn_9"
+  - "full_profile_recalled_turn_10"
+simulated_turns: 10
+tool_count: 0
+context_size_bytes: 0
+rubric:
+  criteria:
+    - name: preference_recall_turn_8
+      description: Agent correctly applies 2-space indent in turn 8 without asking.
+      weight: 3.0
+    - name: preference_recall_turn_9
+      description: Agent provides UTC+9 for CI config without asking.
+      weight: 3.0
+    - name: full_profile_turn_10
+      description: Agent shows all 3 preferences in turn 10 profile.
+      weight: 3.0
+    - name: no_repeated_questions
+      description: Agent never asks the user to re-state a preference.
+      weight: 1.0
+  pass_threshold: 6.0
+max_turns: 12
+allowed_tools: []

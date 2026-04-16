@@ -66,6 +66,48 @@ class PydanticAiAgent:
                 context_history_tokens=b.context_history_tokens,
             )
 
+        # Long-horizon track: PydanticAI has NO built-in memory/session
+        # persistence. Each agent call starts fresh; the caller is responsible
+        # for threading history. In practice this means: full history is passed
+        # in the prompt by the application (not the framework). Token growth is
+        # therefore the same as naive linear — same as cost-track. Recall
+        # depends entirely on whether the application correctly threads history.
+        # We model recall as perfect (checkpoints echoed) since a well-behaved
+        # app would pass history through, but we note this is NOT the framework
+        # providing memory — it's the application.
+        if task.kind == "long_horizon":
+            b = simulate_cost(
+                framework="pydantic-ai",
+                prompt=task.prompt,
+                turns=max(task.simulated_turns, 1),
+                tool_count=task.tool_count,
+                context_bytes=task.context_size_bytes,
+            )
+            checkpoints = task.memory_checkpoints or []
+            checkpoint_output = ". ".join(cp.replace("_", " ") for cp in checkpoints)
+            return TaskResult(
+                task_id=task.id,
+                runner="pydantic-ai v0.5 (mock-llm)",
+                started_at=started,
+                ended_at=datetime.now(timezone.utc),
+                output=(
+                    f"[pydantic-ai-lh-sim] turns={b.llm_calls} tokens={b.prompt_tokens_sent} "
+                    f"memory=none(app-managed) checkpoints: {checkpoint_output}"
+                ),
+                llm_calls=b.llm_calls,
+                input_tokens=b.prompt_tokens_sent,
+                output_tokens=b.output_tokens,
+                tool_calls=task.min_tool_calls,
+                succeeded=True,
+                error=None,
+                model="claude-sonnet-4",
+                was_blocked=False,
+                block_reason=None,
+                prompt_tokens_sent=b.prompt_tokens_sent,
+                tool_description_tokens=b.tool_description_tokens,
+                context_history_tokens=b.context_history_tokens,
+            )
+
         # Emulate Pydantic AI agent construction: minimal Python dataclass
         # validation + model provider lookup + tool schema generation. The
         # framework's design goal is to stay out of the hot path; 8ms is the

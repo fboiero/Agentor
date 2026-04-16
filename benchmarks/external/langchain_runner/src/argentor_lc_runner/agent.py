@@ -8,6 +8,13 @@ rendering + agent executor invocation.
 The emulated overhead is LOWER-BOUND: a real LangChain AgentExecutor with tools
 would add more layers (tool-parsing, intermediate-step tracking). This keeps
 our numbers conservative — we're not inflating LangChain's reported cost.
+
+LangChain long-horizon behaviour (documented, LOWER-BOUND):
+- Memory: ConversationBufferMemory stores the full history every turn. No
+  compaction or summarization by default. History grows quadratically.
+- Tool manifest: all tools shipped every turn (no per-turn filtering).
+- Memory recall: the full conversation is in-context, so recall is high —
+  but at the cost of growing token usage.
 """
 from __future__ import annotations
 
@@ -54,6 +61,44 @@ class LangChainAgent:
                 input_tokens=b.prompt_tokens_sent,
                 output_tokens=b.output_tokens,
                 tool_calls=0,
+                succeeded=True,
+                error=None,
+                model="claude-sonnet-4",
+                was_blocked=False,
+                block_reason=None,
+                prompt_tokens_sent=b.prompt_tokens_sent,
+                tool_description_tokens=b.tool_description_tokens,
+                context_history_tokens=b.context_history_tokens,
+            )
+
+        # Long-horizon track: simulate LangChain ConversationBufferMemory
+        # behaviour. Full history shipped every turn — no compaction.
+        # Memory recall is modelled as perfect (all checkpoints echoed) since
+        # ConversationBufferMemory keeps the full context in-window. The cost
+        # is the trade-off: tokens grow quadratically.
+        if task.kind == "long_horizon":
+            b = simulate_cost(
+                framework="langchain",
+                prompt=task.prompt,
+                turns=max(task.simulated_turns, 1),
+                tool_count=task.tool_count,
+                context_bytes=task.context_size_bytes,
+            )
+            checkpoints = task.memory_checkpoints or []
+            checkpoint_output = ". ".join(cp.replace("_", " ") for cp in checkpoints)
+            return TaskResult(
+                task_id=task.id,
+                runner="langchain v0.3 (mock-llm)",
+                started_at=started,
+                ended_at=datetime.now(timezone.utc),
+                output=(
+                    f"[langchain-lh-sim] turns={b.llm_calls} tokens={b.prompt_tokens_sent} "
+                    f"memory=ConversationBufferMemory checkpoints: {checkpoint_output}"
+                ),
+                llm_calls=b.llm_calls,
+                input_tokens=b.prompt_tokens_sent,
+                output_tokens=b.output_tokens,
+                tool_calls=task.min_tool_calls,
                 succeeded=True,
                 error=None,
                 model="claude-sonnet-4",
