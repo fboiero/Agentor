@@ -6,6 +6,7 @@
 
 pub mod block_rate;
 pub mod cost;
+pub mod dx;
 pub mod long_horizon;
 pub mod quality;
 pub mod stats;
@@ -15,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 pub use block_rate::{compute_block_rate, BlockRateMetric};
 pub use cost::CostMetric;
+pub use dx::{compute_all as compute_dx_scores, DxMetric, ErrorScenarioScore};
 pub use long_horizon::{LongHorizonMetrics, LongHorizonSummary};
 pub use quality::QualityMetric;
 pub use stats::{PairedTTest, Stats};

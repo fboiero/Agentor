@@ -184,7 +184,10 @@ mod tests {
         assert!(matches!(Scale::parse("small"), Some(Scale::Small)));
         assert!(matches!(Scale::parse("MID"), Some(Scale::Mid)));
         assert!(matches!(Scale::parse("large"), Some(Scale::Large)));
-        assert!(matches!(Scale::parse("Enterprise"), Some(Scale::Enterprise)));
+        assert!(matches!(
+            Scale::parse("Enterprise"),
+            Some(Scale::Enterprise)
+        ));
         assert!(Scale::parse("foo").is_none());
     }
 

@@ -102,11 +102,8 @@ impl PairedTTest {
         let n = a.len();
         let diffs: Vec<f64> = a.iter().zip(b.iter()).map(|(x, y)| x - y).collect();
         let mean_diff: f64 = diffs.iter().sum::<f64>() / n as f64;
-        let variance: f64 = diffs
-            .iter()
-            .map(|d| (d - mean_diff).powi(2))
-            .sum::<f64>()
-            / (n - 1) as f64;
+        let variance: f64 =
+            diffs.iter().map(|d| (d - mean_diff).powi(2)).sum::<f64>() / (n - 1) as f64;
         let stddev_diff = variance.sqrt();
 
         if stddev_diff == 0.0 {
