@@ -680,6 +680,19 @@ The Helm chart includes templates for Deployment, Service, Ingress, HPA, PVC, an
 
 ---
 
+## Benchmarks
+
+Argentor is compared to LangChain, CrewAI, Pydantic AI, and the Claude Agent SDK across six measurable dimensions (latency, quality, security, cost, developer experience, long-horizon). Every number is reproducible from the `benchmarks/` harness.
+
+- **[Benchmarks Index](docs/BENCHMARKS_INDEX.md)** — one-page entry point to every track.
+- **[Benchmark Synthesis](docs/BENCHMARK_SYNTHESIS.md)** — executive report with integral ranking, sensitivity analysis, and honest losses.
+- **[Evolution Roadmap](docs/EVOLUTION_ROADMAP.md)** — ~20 benchmark-driven engineering items (P0/P1/P2).
+
+Headline claims (all cited):
+- Argentor adds ~2 ms of framework overhead vs 11–55 ms for competitors (N=10 paired, p < 0.0001).
+- Argentor blocks 58.3% of adversarial prompts with zero false positives out of the box; competitors block 0%.
+- On 50-tool workloads Argentor ships 7.9x fewer tokens than LangChain.
+
 ## What's Next?
 
 - **[10 Step-by-Step Tutorials](docs/tutorials/)** — From empty directory to production-ready multi-agent systems. Covers first agent, skills, orchestration, RAG, custom skills, guardrails, agent intelligence, MCP, deployment, and observability.
